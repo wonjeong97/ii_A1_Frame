@@ -1,0 +1,126 @@
+{
+  "page1": {
+    "descriptionText": {
+      "name": "Text_\"두 사람 모두 태그하면, 체험이 시작됩니다.\"",
+      "position": {"x": 960, "y": -832.6},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "두 사람 모두 태그하면, 체험이 시작됩니다.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "isBold": true
+    }
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_\"각자의 자리에 서서 휠을 한 바퀴 돌려주세요.\"",
+      "position": {"x": 960, "y": -833.66},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "각자의 자리에 서서 휠을 한 바퀴 돌려주세요.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "isBold": true
+    },
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130.46, "y": -568.39},
+      "text": "아영님",
+      "fontName": "font2",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 3, "comment": "middle left"
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1789.54, "y": -568.39},
+      "text": "길동님",
+      "fontName": "font2",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 5, "comment": "middle right"
+    }
+  },
+  "page3": {
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": 748.4, "y": -357.5},
+      "text": "아영님",
+      "fontName": "font2",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "alignment": 4
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1198, "y": -357.21},
+      "text": "길동님",
+      "fontName": "font2",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "alignment": 4
+    }
+  },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_\"이 공간에서는 함께 카메라의 포커스를 맞춰...\"",
+      "position": {"x": 960.9, "y": -266.08},
+      "text": "이 공간에서는 함께 카메라의 포커스를 맞춰\n질문들을 찾아보고, 서로에게 솔직한 우리의 모습을 담아볼 거예요!",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    }
+  },
+  "page5": {
+    "txtA_Start": {
+      "name": "Text_\"oo님, 휠을 돌려주세요.\"",
+      "position": {"x": 960.9, "y": -266.08},
+      "text": "아영님, 휠을 돌려주세요.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "txtA_Info": {
+      "name": "Text_\"oo님은 위, 아래로만 움직일 수 있습니다.\"",
+      "position": {"x": 960.9, "y": -266.08},
+      "text": "아영님은 위, 아래로만 움직일 수 있습니다.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "txtB_Start": {
+      "name": "Text_\"ㅁㅁ님, 휠을 돌려주세요.\"",
+      "position": {"x": 960.9, "y": -266.08},
+      "text": "길동님, 휠을 돌려주세요.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "txtB_Info": {
+      "name": "Text_\"ㅁㅁ님은 양옆으로만 움직일 수 있습니다.\"",
+      "position": {"x": 960.9, "y": -266.08},
+      "text": "길동님은 양옆으로만 움직일 수 있습니다.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    }
+  },
+  "page6": {
+    "descriptionText1": {
+      "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
+      "position": {"x": 960.9, "y": -300},
+      "text": "포커스를 움직여\n숨은 질문을 찾아보세요",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "descriptionText2": {
+      "name": "Text_\"상하, 좌우로 동시에 움직일 수 없습니다.\"",
+      "position": {"x": 960.9, "y": -420},
+      "text": "상하, 좌우로 동시에 움직일 수 없습니다.",
+      "fontName": "font1",
+      "fontSize": 38,
+      "fontColor": {"r": 0.5686275, "g": 0.5176471, "b": 0.4823529, "a": 1}
+    }
+  }
+}

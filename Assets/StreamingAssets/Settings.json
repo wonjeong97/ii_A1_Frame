@@ -1,0 +1,16 @@
+{
+  "inactivityTime": 999,
+  "closeSetting": {
+    "position": { "x": 1.0, "y": 1.0 },  
+    "numToClose": 10,
+    "resetClickTime": 3.0,
+    "imageAlpha": 0.0
+  },
+  "fadeTime": 1,
+  "fontMap": {
+    "font1": "Fonts/Freesentation-4Regular.ttf",
+    "font2": "Fonts/Freesentation-8ExtraBold.ttf",
+    "font3": "Fonts/Freesentation-7Bold.ttf",
+    "font4": "Fonts/Freesentation-6SemiBold.ttf"
+  }
+}
