@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
-namespace My.Scripts._02_Play.Pages
+namespace My.Scripts._02_Play_Tutorial.Pages
 {
     [Serializable]
     public class PlayTutorialPage4Data
@@ -22,7 +22,7 @@ namespace My.Scripts._02_Play.Pages
         [SerializeField] private CanvasGroup contentGroup; // 텍스트+이미지 그룹
         [SerializeField] private RectTransform buttonRect; // 버튼 이미지
 
-        private bool _isCompleted = false;
+        private bool _isCompleted;
 
         public override void SetupData(object data)
         {

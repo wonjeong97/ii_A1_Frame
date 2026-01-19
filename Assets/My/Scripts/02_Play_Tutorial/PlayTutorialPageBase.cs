@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace My.Scripts._02_Play
+namespace My.Scripts._02_Play_Tutorial
 {
     public abstract class PlayTutorialPageBase : MonoBehaviour
     {
