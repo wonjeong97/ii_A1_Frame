@@ -1,32 +1,38 @@
 using System;
 using System.Collections;
-using My.Scripts._02_Play_Tutorial.Pages;
-using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Wonjeong.UI;
+using My.Scripts._03_Play_Q1.Pages;
+using My.Scripts.Global;
 using Wonjeong.Utils;
+using Wonjeong.UI;
 
-namespace My.Scripts._02_Play_Tutorial
+namespace My.Scripts._03_Play_Q1
 {
+    // [임시] 아직 생성되지 않은 페이지용 데이터 클래스
+    [Serializable] public class PlayQ1Page3Data { }
+    [Serializable] public class PlayQ1Page4Data { }
+    [Serializable] public class PlayQ1Page5Data { }
+    [Serializable] public class PlayQ1Page6Data { }
+
     [Serializable]
-    public class PlaySetting
+    public class PlayQ1Setting
     {
-        public PlayTutorialPage1Data page1;
-        public PlayTutorialPage2Data page2;
-        public PlayTutorialPage3Data page3;
-        public PlayTutorialPage4Data page4;
-        public PlayTutorialPage5Data page5;
-        public PlayTutorialPage6Data page6;
+        public PlayQ1Page1Data page1;
+        public PlayQ1Page2Data page2;
+        public PlayQ1Page3Data page3;
+        public PlayQ1Page4Data page4;
+        public PlayQ1Page5Data page5;
+        public PlayQ1Page6Data page6;
     }
     
-    public class PlayTutorialManager : MonoBehaviour
+    public class PlayQ1Manager : MonoBehaviour
     {
         [Header("Pages Config")]
-        [SerializeField] private PlayTutorialPageBase[] pages;
+        [SerializeField] private PlayQ1PageBase[] pages;
 
-        private readonly string jsonFileName = GameConstants.Path.PlayTutorial; 
-        private PlaySetting _setting;
+        private readonly string jsonFileName = GameConstants.Path.PlayQ1; 
+        private PlayQ1Setting _setting;
         
         private int _currentPageIndex = -1;
         private bool _isTransitioning;
@@ -46,17 +52,22 @@ namespace My.Scripts._02_Play_Tutorial
             {
                 _currentPageIndex = 0;
                 var firstPage = pages[0];
-                if (firstPage == null) yield break;
-                
-                firstPage.SetAlpha(1f);
-                firstPage.OnEnter();
+                if (firstPage != null)
+                {
+                    firstPage.SetAlpha(1f);
+                    firstPage.OnEnter();
+                }
             }
         }
 
         private void LoadSettings()
         {
-            _setting = JsonLoader.Load<PlaySetting>(jsonFileName);
-            if (_setting == null) return;
+            _setting = JsonLoader.Load<PlayQ1Setting>(jsonFileName);
+            if (_setting == null)
+            {
+                Debug.LogWarning($"[PlayQ1Manager] JSON 로드 실패: {jsonFileName}");
+                return;
+            }
 
             if (pages.Length > 0) pages[0].SetupData(_setting.page1);
             if (pages.Length > 1) pages[1].SetupData(_setting.page2);
@@ -96,8 +107,11 @@ namespace My.Scripts._02_Play_Tutorial
 
         private void OnAllPagesFinished()
         {
-            Debug.Log("[PlayManager] 모든 Play Tutorial 페이지 종료.");
-            SceneManager.LoadScene(GameConstants.Scene.PlayQ1);
+            Debug.Log("[PlayQ1Manager] 모든 페이지 종료.");
+            if (GameManager.Instance != null)
+                GameManager.Instance.ReturnToTitle();
+            else
+                SceneManager.LoadScene(GameConstants.Scene.Title);
         }
 
         private void TransitionToPage(int targetIndex, int triggerInfo = 0)
@@ -111,41 +125,17 @@ namespace My.Scripts._02_Play_Tutorial
         {
             _isTransitioning = true;
 
-            PlayTutorialPageBase currentTutorialPage = null;
+            PlayQ1PageBase currentPage = null;
             if (_currentPageIndex >= 0 && _currentPageIndex < pages.Length)
-                currentTutorialPage = pages[_currentPageIndex];
+                currentPage = pages[_currentPageIndex];
 
             // -----------------------------------------------------------------------
-            // Case 1: Page 1 -> 2 (Index 0 -> 1)
-            // 배경 깜빡임 방지용 Overlap (동시 페이드)
+            // Case 1: Page 1 -> 2
+            // FadeManager를 사용한 전환 (FadeOut -> Swap -> FadeIn)
             // -----------------------------------------------------------------------
             if (_currentPageIndex == 0 && targetIndex == 1)
             {
-                _currentPageIndex = targetIndex;
-                var nextPage = pages[targetIndex];
-                
-                if (nextPage != null)
-                {
-                    nextPage.OnEnter();
-                    nextPage.SetAlpha(0f);
-                    HandleTriggerInfo(nextPage, triggerInfo);
-
-                    yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
-                }
-
-                if (currentTutorialPage != null)
-                {
-                    yield return StartCoroutine(FadePage(currentTutorialPage, 1f, 0f));
-                    currentTutorialPage.OnExit();
-                }
-            }
-            // -----------------------------------------------------------------------
-            // Case 3: Page 4 -> 5 (Index 3 -> 4) 
-            // [검은 화면 전환] FadeManager 사용
-            // -----------------------------------------------------------------------
-            else if (_currentPageIndex == 3 && targetIndex == 4)
-            {
-                // 1. Fade Out (검은 화면)
+                // 1. Fade Out (화면 어두워짐)
                 if (FadeManager.Instance != null)
                 {
                     bool fadeDone = false;
@@ -158,7 +148,7 @@ namespace My.Scripts._02_Play_Tutorial
                 }
 
                 // 2. 페이지 교체
-                if (currentTutorialPage != null) currentTutorialPage.OnExit();
+                if (currentPage != null) currentPage.OnExit();
                 
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
@@ -166,59 +156,84 @@ namespace My.Scripts._02_Play_Tutorial
                 if (nextPage != null)
                 {
                     nextPage.OnEnter();
-                    nextPage.SetAlpha(1f); 
-                    HandleTriggerInfo(nextPage, triggerInfo);
+                    nextPage.SetAlpha(1f); // 검은 화면 뒤에서 보이도록 설정
+                    // HandleTriggerInfo(nextPage, triggerInfo);
                 }
 
-                // 3. Fade In
+                // 3. Fade In (화면 밝아짐)
                 if (FadeManager.Instance != null)
                 {
                     FadeManager.Instance.FadeIn(1.0f);
                 }
             }
             // -----------------------------------------------------------------------
-            // [추가] Case 4: Page 5 -> 6 (Index 4 -> 5)
-            // Page 5가 끝날 때 이미 FadeManager로 화면이 어두워진 상태입니다.
+            // Case 3: Page 4 -> 5 (FadeManager Out -> Swap -> In)
             // -----------------------------------------------------------------------
-            else if (_currentPageIndex == 4 && targetIndex == 5)
+            else if (_currentPageIndex == 3 && targetIndex == 4)
             {
-                // 1. 이전 페이지(5) 종료
-                // (Page 5 Controller에서 이미 FadeOut을 호출하고 완료한 상태)
-                if (currentTutorialPage != null) currentTutorialPage.OnExit();
+                if (FadeManager.Instance != null)
+                {
+                    bool fadeDone = false;
+                    FadeManager.Instance.FadeOut(1.0f, () => fadeDone = true);
+                    while (!fadeDone) yield return null;
+                }
+                else
+                {
+                    yield return new WaitForSeconds(0.5f);
+                }
 
-                // 2. 다음 페이지(6) 준비
+                if (currentPage != null) currentPage.OnExit();
+                
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
 
                 if (nextPage != null)
                 {
                     nextPage.OnEnter();
-                    // 검은 화면 뒤에서 컨텐츠가 보일 준비를 해야 하므로 Alpha 1
-                    nextPage.SetAlpha(1f); 
-                    HandleTriggerInfo(nextPage, triggerInfo);
+                    nextPage.SetAlpha(1f);
+                    // HandleTriggerInfo(nextPage, triggerInfo);
                 }
 
-                // 3. 화면 밝히기 (Fade In)
                 if (FadeManager.Instance != null)
                 {
                     FadeManager.Instance.FadeIn(1.0f);
                 }
-                else if (nextPage != null)
+            }
+            // -----------------------------------------------------------------------
+            // Case 4: Page 5 -> 6 (Page 5 종료 시 화면 어두움 -> 교체 -> FadeIn)
+            // -----------------------------------------------------------------------
+            else if (_currentPageIndex == 4 && targetIndex == 5)
+            {
+                if (currentPage != null) currentPage.OnExit();
+
+                _currentPageIndex = targetIndex;
+                var nextPage = pages[targetIndex];
+
+                if (nextPage != null)
                 {
-                    // Fallback: FadeManager가 없으면 캔버스 그룹 페이드인
+                    nextPage.OnEnter();
+                    nextPage.SetAlpha(1f); 
+                    // HandleTriggerInfo(nextPage, triggerInfo);
+                }
+
+                if (FadeManager.Instance != null)
+                {
+                    FadeManager.Instance.FadeIn(1.0f);
+                }
+                else
+                {
                     yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
                 }
             }
             // -----------------------------------------------------------------------
-            // Case 2: 그 외 일반 전환 (2->3 등)
-            // 순차 전환: Out -> Wait -> In
+            // Default: Sequential (Out -> Wait -> In)
             // -----------------------------------------------------------------------
             else
             {
-                if (currentTutorialPage != null)
+                if (currentPage != null)
                 {
-                    yield return StartCoroutine(FadePage(currentTutorialPage, 1f, 0f));
-                    currentTutorialPage.OnExit();
+                    yield return StartCoroutine(FadePage(currentPage, 1f, 0f));
+                    currentPage.OnExit();
                 }
 
                 yield return new WaitForSeconds(1.0f);
@@ -230,7 +245,7 @@ namespace My.Scripts._02_Play_Tutorial
                 {
                     nextPage.OnEnter();
                     nextPage.SetAlpha(0f);
-                    HandleTriggerInfo(nextPage, triggerInfo);
+                    // HandleTriggerInfo(nextPage, triggerInfo);
 
                     yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
                 }
@@ -239,28 +254,17 @@ namespace My.Scripts._02_Play_Tutorial
             _isTransitioning = false;
         }
 
-        private void HandleTriggerInfo(PlayTutorialPageBase tutorialPage, int triggerInfo)
-        {
-            if (triggerInfo == 0) return;
-
-            if (tutorialPage is PlayTutorialPage3Controller p3)
-            {
-                if (triggerInfo == 1) p3.ActivatePlayerCheck(true);  
-                else if (triggerInfo == 2) p3.ActivatePlayerCheck(false); 
-            }
-        }
-
-        private IEnumerator FadePage(PlayTutorialPageBase tutorialPage, float start, float end)
+        private IEnumerator FadePage(PlayQ1PageBase page, float start, float end)
         {
             float timer = 0f;
-            tutorialPage.SetAlpha(start);
+            page.SetAlpha(start);
             while (timer < _fadeDuration)
             {
                 timer += Time.deltaTime;
-                tutorialPage.SetAlpha(Mathf.Lerp(start, end, timer / _fadeDuration));
+                page.SetAlpha(Mathf.Lerp(start, end, timer / _fadeDuration));
                 yield return null;
             }
-            tutorialPage.SetAlpha(end);
+            page.SetAlpha(end);
         }
     }
 }

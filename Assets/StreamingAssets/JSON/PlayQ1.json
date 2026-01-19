@@ -1,0 +1,149 @@
+{
+  "page1": {
+    "descriptionText": {
+      "name": "Text_각자 자신의 자리에 서주세요.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "자, 이제 첫 번째 질문을 시작하겠습니다.\n각자 자신의 자리에 서 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "playerAName": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "아영님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 3, "comment": "middle left"
+    },
+    "playerBName": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1790, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "길동님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 5, "comment": "middle right"
+    }
+  },
+  "page2":
+  {
+    "descriptionText1": {
+      "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "포커스를 움직여\n숨은 질문을 찾아보세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText2": {
+      "name": "Text_\"상하, 좌우로 동시에 움직일 수 없습니다.\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "상하, 좌우로 동시에 움직일 수 없습니다.",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText3": {
+      "name": "Text_\"숨은 문항을 모두 찾아주세요!\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "숨은 문항을 모두 찾아주세요!",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "questions": [
+      {
+        "name": "01_나는",
+        "position": {"x": 285, "y": -105},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "나는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_상대와",
+        "position": {"x": 574, "y": -212.8} ,
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대와",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_함께 있을 때,",
+        "position": {"x": 337.4, "y": -537.8},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "함께 있을 때,",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_말보다",
+        "position": {"x": 871.5, "y":-321.3},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "말보다",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_그때의",
+        "position": {"x": 952.6, "y": -861.1},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "그때의",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_느낌이",
+        "position": {"x": 1249.7, "y": -537},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "느낌이",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "07_더 크게",
+        "position": {"x": 1444, "y": -106},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "더 크게",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "08_남는.",
+        "position": {"x": 1560.4, "y": -427.5},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "남는.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "09_편이다..",
+        "position": {"x": 1450, "y": -861.4},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "편이다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ]
+  }
+}

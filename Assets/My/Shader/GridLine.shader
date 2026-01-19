@@ -8,8 +8,10 @@ Shader "UI/GridLine"
         _GridSize ("Grid Size", Float) = 10
         _Thickness ("Line Thickness", Range(0, 0.5)) = 0.02
         
-        // [추가] 점선 패턴의 반복 빈도 (높을수록 촘촘함)
-        _DashFreq ("Dash Frequency", Float) = 50 
+        // 점선 패턴의 반복 빈도 (높을수록 촘촘함)
+        _DashFreq ("Dash Frequency", Float) = 50
+        
+        _MaskTex ("Mask Texture", 2D) = "black" {}
         
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -75,7 +77,9 @@ Shader "UI/GridLine"
             fixed4 _LineColor;
             float _GridSize;
             float _Thickness;
-            float _DashFreq; // [추가] 점선 빈도 변수
+            float _DashFreq;
+            sampler2D _MaskTex;
+            
 
             v2f vert(appdata_t IN)
             {
@@ -99,7 +103,7 @@ Shader "UI/GridLine"
                 float2 dist = abs(frac(gridPos) - 0.5);
                 float2 lineAlpha = step(0.5 - dist, _Thickness);
                 
-                // 3. [수정] 점선 패턴 생성
+                // 3. 점선 패턴 생성
                 // sin 함수를 이용해 주기적으로 0과 1을 오가는 패턴 생성
                 // 가로선(Horizontal)은 X축 좌표에 따라 패턴이 생김
                 float dashPatternX = step(0, sin(gridPos.x * _DashFreq));
@@ -117,6 +121,10 @@ Shader "UI/GridLine"
                 // 색상 합성 (점 관련 로직은 삭제됨)
                 fixed4 finalColor = lerp(_Color, _LineColor, isLine);
                 finalColor.a *= IN.color.a;
+                
+                fixed4 maskCol = tex2D(_MaskTex, IN.texcoord);
+                float alphaFactor = 1.0 - maskCol.r;
+                finalColor.a *= alphaFactor;
 
                 return finalColor;
             }

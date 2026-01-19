@@ -8,9 +8,14 @@
   },
   "fadeTime": 1,
   "fontMap": {
-    "font1": "Fonts/Freesentation-4Regular.ttf",
-    "font2": "Fonts/Freesentation-8ExtraBold.ttf",
-    "font3": "Fonts/Freesentation-7Bold.ttf",
-    "font4": "Fonts/Freesentation-6SemiBold.ttf"
+    "font1": "Fonts/Freesentation-1Thin.ttf",
+    "font2": "Fonts/Freesentation-2ExtraLight.ttf",
+    "font3": "Fonts/Freesentation-3Light.ttf",
+    "font4": "Fonts/Freesentation-4Regular.ttf",
+    "font5": "Fonts/Freesentation-5Medium.ttf",
+    "font6": "Fonts/Freesentation-6SemiBold.ttf",
+    "font7": "Fonts/Freesentation-7Bold.ttf",
+    "font8": "Fonts/Freesentation-8ExtraBold.ttf",
+    "font9": "Fonts/Freesentation-9Black.ttf"
   }
 }
