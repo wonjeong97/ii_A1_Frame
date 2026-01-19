@@ -40,6 +40,20 @@ namespace My.Scripts._03_Play_Q1
 
         private void Start()
         {
+            if (pages == null || pages.Length == 0)
+            {
+                Debug.LogWarning("[PlayQ1Manager] pages가 비어 있습니다.");
+                return;
+            }
+
+            for (int i = 0; i < pages.Length; i++)
+            {
+                if (pages[i] == null)
+                {
+                    Debug.LogWarning($"[PlayQ1Manager] pages[{i}]가 비어 있습니다.");
+                    return;
+                }
+            }
             LoadSettings();
             InitializePages();
             StartCoroutine(StartPlayFlow());

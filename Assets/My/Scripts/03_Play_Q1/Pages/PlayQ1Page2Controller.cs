@@ -50,6 +50,7 @@ namespace My.Scripts._03_Play_Q1.Pages
         private RectTransform _blackRect;
         private Texture2D _maskTexture;
         private Material _eraserMaterial;
+        private Material _gridMaterial;
         private static readonly int MaskTexID = Shader.PropertyToID("_MaskTex");
 
         private float _cellWidth;
@@ -195,7 +196,9 @@ namespace My.Scripts._03_Play_Q1.Pages
             // 4. Grid 이미지에도 동일한 마스크 전달
             if (imageGrid != null)
             {
-                imageGrid.material.SetTexture(MaskTexID, _maskTexture);
+                _gridMaterial = Instantiate(imageGrid.material);
+                imageGrid.material = _gridMaterial;
+                _gridMaterial.SetTexture(MaskTexID, _maskTexture);
             }
 
             _activeFades.Clear();
@@ -484,6 +487,7 @@ namespace My.Scripts._03_Play_Q1.Pages
         {
             if (_maskTexture != null) { Destroy(_maskTexture); _maskTexture = null; }
             if (_eraserMaterial != null) { Destroy(_eraserMaterial); _eraserMaterial = null; }
+            if (_gridMaterial != null) { Destroy(_gridMaterial); _gridMaterial = null; }
         }
     }
 }
