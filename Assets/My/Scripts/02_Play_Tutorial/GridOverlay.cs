@@ -1,8 +1,7 @@
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace My.Scripts._02_Play
+namespace My.Scripts._02_Play_Tutorial
 {
     [ExecuteInEditMode]
     [RequireComponent(typeof(Image))]

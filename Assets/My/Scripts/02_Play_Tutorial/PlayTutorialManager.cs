@@ -1,12 +1,12 @@
 using System;
 using System.Collections;
-using My.Scripts._02_Play.Pages;
+using My.Scripts._02_Play_Tutorial.Pages;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Wonjeong.Utils; // FadeManager 접근용
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
-namespace My.Scripts._02_Play
+namespace My.Scripts._02_Play_Tutorial
 {
     [Serializable]
     public class PlaySetting
@@ -96,11 +96,6 @@ namespace My.Scripts._02_Play
         private void OnAllPagesFinished()
         {
             Debug.Log("[PlayManager] 모든 Play Tutorial 페이지 종료.");
-            // if (GameManager.Instance != null)
-            //     GameManager.Instance.ReturnToTitle();
-            // else
-            //     SceneManager.LoadScene(GameConstants.Scene.Title);
-
             SceneManager.LoadScene(GameConstants.Scene.PlayQ1);
         }
 

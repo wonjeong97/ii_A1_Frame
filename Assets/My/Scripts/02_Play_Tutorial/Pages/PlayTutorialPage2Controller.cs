@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
-namespace My.Scripts._02_Play.Pages
+namespace My.Scripts._02_Play_Tutorial.Pages
 {   
     [Serializable]
     public class PlayTutorialPage2Data
