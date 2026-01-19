@@ -34,7 +34,25 @@ namespace My.Scripts._02_Play_Tutorial
 
         private void Start()
         {
-            LoadSettings();
+            if (pages == null || pages.Length == 0)
+            {
+                Debug.LogWarning("[PlayTutorialManager] pages가 비어 있습니다.");
+                return;
+            }
+
+            for (int i = 0; i < pages.Length; i++)
+            {
+                if (pages[i] == null)
+                {
+                    Debug.LogWarning($"[PlayTutorialManager] pages[{i}]가 비어 있습니다.");
+                    return;
+                }
+            }
+
+            if (!LoadSettings())
+            {
+                return;
+            }
             InitializePages();
             StartCoroutine(StartPlayFlow());
         }
@@ -53,10 +71,10 @@ namespace My.Scripts._02_Play_Tutorial
             }
         }
 
-        private void LoadSettings()
+        private bool LoadSettings()
         {
             _setting = JsonLoader.Load<PlaySetting>(jsonFileName);
-            if (_setting == null) return;
+            if (_setting == null) return false;
 
             if (pages.Length > 0) pages[0].SetupData(_setting.page1);
             if (pages.Length > 1) pages[1].SetupData(_setting.page2);
@@ -64,6 +82,7 @@ namespace My.Scripts._02_Play_Tutorial
             if (pages.Length > 3) pages[3].SetupData(_setting.page4);
             if (pages.Length > 4) pages[4].SetupData(_setting.page5);
             if (pages.Length > 5) pages[5].SetupData(_setting.page6);
+            return true;
         }
 
         private void InitializePages()

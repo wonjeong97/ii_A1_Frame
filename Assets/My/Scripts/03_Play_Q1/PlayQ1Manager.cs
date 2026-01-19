@@ -54,7 +54,11 @@ namespace My.Scripts._03_Play_Q1
                     return;
                 }
             }
-            LoadSettings();
+
+            if (!LoadSettings())
+            {
+                return;
+            }
             InitializePages();
             StartCoroutine(StartPlayFlow());
         }
@@ -74,13 +78,13 @@ namespace My.Scripts._03_Play_Q1
             }
         }
 
-        private void LoadSettings()
+        private bool LoadSettings()
         {
             _setting = JsonLoader.Load<PlayQ1Setting>(jsonFileName);
             if (_setting == null)
             {
                 Debug.LogWarning($"[PlayQ1Manager] JSON 로드 실패: {jsonFileName}");
-                return;
+                return false;
             }
 
             if (pages.Length > 0) pages[0].SetupData(_setting.page1);
@@ -89,6 +93,7 @@ namespace My.Scripts._03_Play_Q1
             if (pages.Length > 3) pages[3].SetupData(_setting.page4);
             if (pages.Length > 4) pages[4].SetupData(_setting.page5);
             if (pages.Length > 5) pages[5].SetupData(_setting.page6);
+            return true;
         }
 
         private void InitializePages()
