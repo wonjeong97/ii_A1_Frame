@@ -5,7 +5,7 @@
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "포커스를 움직여\n숨은 질문을 찾아보세요.",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "isBold": true
@@ -15,7 +15,7 @@
       "position": {"x": 960, "y": -1024},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "상하, 좌우로 동시에 움직일 수 없습니다.",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 38,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "isBold": true
@@ -25,11 +25,85 @@
       "position": {"x": 960, "y": -1024},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "숨은 문항을 모두 찾아주세요!",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 38,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "isBold": true
-    }
+    },
+    "questions": [
+      {
+        "name": "01_나는",
+        "position": {"x": 480, "y": -216.5},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "나는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },    
+      {
+        "name": "02_상대방의",
+        "position": {"x": 360, "y": -647.7},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대방의",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_기분을",
+        "position": {"x": 672, "y": -324.3},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "기분을",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },      
+      {
+        "name": "04_헤아리기",
+        "position": {"x": 961.5, "y": -647.8},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "헤아리기",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_위해",
+        "position": {"x": 1248, "y": -432},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "위해",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_많은",
+        "position": {"x": 1440.8, "y": -756},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "많은",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "07_에너지를",
+        "position": {"x": 1633.7, "y": -429.3},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "에너지를",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "08_쏟는다.",
+        "position": {"x": 1445.8, "y": -104.9},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "쏟는다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ]
   },
   "page2": {
     "descriptionText": {
@@ -37,18 +111,18 @@
       "position": { "x": 960, "y": -300 },
       "scale": { "x": 1, "y": 1, "z": 1 },
       "text": "바닥 화살표를 따라 각자 이동해\n버튼을 눌러 답변해 주세요.",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 55,
-      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}      
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     },
     "questionText": {
       "name": "Text_Question",
       "position": { "x": 0, "y": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
       "text": "Q.나는 상대방의 기분을 헤아리기 위해 많은 에너지를 쏟는다.",
-      "fontName": "font3",
+      "fontName": "font7",
       "fontSize": 40,
-      "fontColor": { "r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1 }      
+      "fontColor": { "r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1 }
     },
     "answerTexts": [
       {
@@ -56,7 +130,7 @@
         "position": { "x": 0, "y": 0 },
         "scale": { "x": 1, "y": 1, "z": 1 },
         "text": "전혀 아니다.",
-        "fontName": "font2",
+        "fontName": "font8",
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       },
@@ -65,7 +139,7 @@
         "position": { "x": 0, "y": 0 },
         "scale": { "x": 1, "y": 1, "z": 1 },
         "text": "아니다.",
-        "fontName": "font2",
+        "fontName": "font8",
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       },
@@ -74,7 +148,7 @@
         "position": { "x": 0, "y": 0 },
         "scale": { "x": 1, "y": 1, "z": 1 },
         "text": "보통이다.",
-        "fontName": "font2",
+        "fontName": "font8",
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       },
@@ -83,7 +157,7 @@
         "position": { "x": 0, "y": 0 },
         "scale": { "x": 1, "y": 1, "z": 1 },
         "text": "그렇다.",
-        "fontName": "font2",
+        "fontName": "font8",
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       },
@@ -92,7 +166,7 @@
         "position": { "x": 0, "y": 0 },
         "scale": { "x": 1, "y": 1, "z": 1 },
         "text": "매우 그렇다.",
-        "fontName": "font2",
+        "fontName": "font8",
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       }
@@ -103,7 +177,7 @@
       "name": "Text_PlayerA",
       "position": {"x": 748.4, "y": -357.5},
       "text": "아영님",
-      "fontName": "font2",
+      "fontName": "font8",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "alignment": 4
@@ -112,7 +186,7 @@
       "name": "Text_PlayerB",
       "position": {"x": 1198, "y": -357.21},
       "text": "길동님",
-      "fontName": "font2",
+      "fontName": "font8",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "alignment": 4
@@ -125,7 +199,7 @@
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "답변이 완료되었습니다.\n촬영 버튼을 눌러 촬영해 주세요.",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     }
@@ -138,7 +212,7 @@
       "position": {"x": 960, "y": -265},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "사진이 기록되었습니다.",
-      "fontName": "font1",
+      "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     }

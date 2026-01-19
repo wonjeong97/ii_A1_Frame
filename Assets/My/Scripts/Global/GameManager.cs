@@ -1,4 +1,5 @@
 using System.Collections;
+using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Wonjeong.Data;

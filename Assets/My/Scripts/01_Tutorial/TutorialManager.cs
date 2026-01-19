@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using My.Scripts._01_Tutorial.Pages;
+using My.Scripts.Global;
 using UnityEngine;
 using Wonjeong.UI;
 using Wonjeong.Utils;
