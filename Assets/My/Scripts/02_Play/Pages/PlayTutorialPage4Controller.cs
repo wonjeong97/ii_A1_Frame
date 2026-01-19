@@ -8,12 +8,12 @@ using Wonjeong.UI;
 namespace My.Scripts._02_Play.Pages
 {
     [Serializable]
-    public class PlayPage4Data
+    public class PlayTutorialPage4Data
     {
         public TextSetting descriptionText;
     }
 
-    public class PlayPage4Controller : PlayPageBase
+    public class PlayTutorialPage4Controller : PlayTutorialPageBase
     {
         [Header("Page 4 UI")]
         [SerializeField] private Text descriptionText;
@@ -26,7 +26,7 @@ namespace My.Scripts._02_Play.Pages
 
         public override void SetupData(object data)
         {
-            var pageData = data as PlayPage4Data;
+            var pageData = data as PlayTutorialPage4Data;
             if (pageData == null) return;
 
             if (descriptionText) 

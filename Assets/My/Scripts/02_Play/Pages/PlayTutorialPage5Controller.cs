@@ -7,12 +7,12 @@ using Wonjeong.UI;
 namespace My.Scripts._02_Play.Pages
 {
     [Serializable]
-    public class PlayPage5Data
+    public class PlayTutorialPage5Data
     {
         // 빈 데이터
     }
 
-    public class PlayPage5Controller : PlayPageBase
+    public class PlayTutorialPage5Controller : PlayTutorialPageBase
     {
         [Header("Page 5 UI")]
         [SerializeField] private RawImage cameraDisplay; 

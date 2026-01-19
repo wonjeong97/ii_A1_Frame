@@ -3,11 +3,9 @@ using UnityEngine;
 
 namespace My.Scripts._02_Play
 {
-
-    
-    public abstract class PlayPageBase : MonoBehaviour
+    public abstract class PlayTutorialPageBase : MonoBehaviour
     {
-        public Action<int> OnStepComplete;
+        public Action<int> onStepComplete;
 
         protected CanvasGroup canvasGroup;
 
@@ -39,7 +37,7 @@ namespace My.Scripts._02_Play
 
         protected void CompleteStep(int triggerInfo = 0)
         {
-            OnStepComplete?.Invoke(triggerInfo);
+            onStepComplete?.Invoke(triggerInfo);
         }
     }
 }

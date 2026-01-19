@@ -9,14 +9,14 @@ using Wonjeong.UI;
 namespace My.Scripts._02_Play.Pages
 {
     [Serializable]
-    public class PlayPage1Data
+    public class PlayTutorialPage1Data
     {
         public TextSetting descriptionText1;
         public TextSetting descriptionText2; // 기본/동시이동 경고
         public TextSetting descriptionText3; // 10초 대기 경고
     }
 
-    public class PlayPage1Controller : PlayPageBase
+    public class PlayTutorialPage1Controller : PlayTutorialPageBase
     {
         [Header("Page 1 UI")]
         [SerializeField] private Text text1;
@@ -53,7 +53,7 @@ namespace My.Scripts._02_Play.Pages
         private bool _isInputBlocked;   
 
         // 문항 찾기 관련 변수
-        private HashSet<Vector2Int> _foundSpots = new HashSet<Vector2Int>();
+        private readonly HashSet<Vector2Int> _foundSpots = new HashSet<Vector2Int>();
         private int _totalQuestionCount;
         private bool _isStageCompleted; 
 
@@ -77,11 +77,11 @@ namespace My.Scripts._02_Play.Pages
             public float targetVal; 
             public float timer;
         }
-        private List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
+        private readonly List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
 
         public override void SetupData(object data)
         {
-            var pageData = data as PlayPage1Data;
+            var pageData = data as PlayTutorialPage1Data;
             if (pageData == null) return;
             
             if (text1) UIManager.Instance.SetText(text1.gameObject, pageData.descriptionText1);
@@ -163,9 +163,11 @@ namespace My.Scripts._02_Play.Pages
             _eraserMaterial = Instantiate(imageBlack.material);
             imageBlack.material = _eraserMaterial;
 
-            _maskTexture = new Texture2D(gridSize, gridSize, TextureFormat.R8, false);
-            _maskTexture.filterMode = FilterMode.Point;
-            
+            _maskTexture = new Texture2D(gridSize, gridSize, TextureFormat.R8, false)
+            {
+                filterMode = FilterMode.Point
+            };
+
             Color32[] colors = new Color32[gridSize * gridSize];
             _maskTexture.SetPixels32(colors);
             _maskTexture.Apply();
