@@ -74,7 +74,12 @@ namespace My.Scripts._02_Play_Tutorial
         private bool LoadSettings()
         {
             _setting = JsonLoader.Load<PlaySetting>(jsonFileName);
-            if (_setting == null) return false;
+            if (_setting == null)
+            {
+                Debug.LogWarning($"[PlayTutorialManager] JSON 로드 실패: {jsonFileName}");
+                return false;
+            }
+                
 
             if (pages.Length > 0) pages[0].SetupData(_setting.page1);
             if (pages.Length > 1) pages[1].SetupData(_setting.page2);

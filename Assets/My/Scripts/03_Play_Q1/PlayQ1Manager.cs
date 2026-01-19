@@ -216,6 +216,7 @@ namespace My.Scripts._03_Play_Q1
                 if (FadeManager.Instance != null)
                 {
                     FadeManager.Instance.FadeIn(1.0f);
+                    yield return new WaitForSeconds(1.0f);
                 }
             }
             // -----------------------------------------------------------------------
@@ -238,6 +239,7 @@ namespace My.Scripts._03_Play_Q1
                 if (FadeManager.Instance != null)
                 {
                     FadeManager.Instance.FadeIn(1.0f);
+                    yield return new WaitForSeconds(1.0f);
                 }
                 else
                 {
