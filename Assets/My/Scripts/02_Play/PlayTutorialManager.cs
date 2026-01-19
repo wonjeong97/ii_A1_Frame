@@ -207,7 +207,7 @@ namespace My.Scripts._02_Play
                 {
                     FadeManager.Instance.FadeIn(1.0f);
                 }
-                else
+                else if (nextPage != null)
                 {
                     // Fallback: FadeManager가 없으면 캔버스 그룹 페이드인
                     yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
