@@ -2,9 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils; 
 
 namespace My.Scripts._02_Play.Pages
 {
