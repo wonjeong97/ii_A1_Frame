@@ -129,5 +129,18 @@
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     }
+  },
+  "page5": {},
+  "page6":  {
+    "descriptionText":
+    {
+      "name": "Text_사진이 기록되었습니다.",
+      "position": {"x": 960, "y": -265},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "사진이 기록되었습니다.",
+      "fontName": "font1",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
   }
 }

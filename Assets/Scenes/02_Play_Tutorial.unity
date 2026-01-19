@@ -359,7 +359,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 337498054}
   m_Father: {fileID: 199686957}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -579,6 +580,7 @@ GameObject:
   m_Component:
   - component: {fileID: 199686957}
   - component: {fileID: 199686958}
+  - component: {fileID: 199686959}
   m_Layer: 5
   m_Name: Page6_tutorial
   m_TagString: Untagged
@@ -599,7 +601,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 88641764}
-  - {fileID: 337498054}
   m_Father: {fileID: 1628474611}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -619,6 +620,19 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &199686959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 199686956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e909159ec8825fb4cb08a67b02521ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  descriptionText: {fileID: 337498055}
 --- !u!1 &226291452
 GameObject:
   m_ObjectHideFlags: 0
@@ -1020,7 +1034,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 199686957}
+  m_Father: {fileID: 88641764}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -3018,7 +3032,7 @@ GameObject:
   - component: {fileID: 1053106311}
   - component: {fileID: 1053106310}
   m_Layer: 0
-  m_Name: PlayManager
+  m_Name: PlayTutorialManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3037,11 +3051,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pages:
-  - {fileID: 1314940353}
+  - {fileID: 1314940355}
   - {fileID: 1899113015}
   - {fileID: 1787095672}
   - {fileID: 226291455}
   - {fileID: 1201273723}
+  - {fileID: 199686959}
 --- !u!4 &1053106311
 Transform:
   m_ObjectHideFlags: 0
@@ -3395,7 +3410,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1201273721
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4019,8 +4034,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1314940352}
-  - component: {fileID: 1314940353}
   - component: {fileID: 1314940354}
+  - component: {fileID: 1314940355}
   m_Layer: 5
   m_Name: Page1_tutorial
   m_TagString: Untagged
@@ -4053,7 +4068,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1314940353
+--- !u!225 &1314940354
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1314940351}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &1314940355
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4097,18 +4124,6 @@ MonoBehaviour:
   - {x: 7, y: 0}
   - {x: 7, y: 1}
   cellFadeDuration: 0.5
---- !u!225 &1314940354
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1314940351}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &1343750592
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,14 +8,14 @@ using Wonjeong.UI;
 namespace My.Scripts._02_Play.Pages
 {   
     [Serializable]
-    public class PlayPage2Data
+    public class PlayTutorialPage2Data
     {
         public TextSetting descriptionText;
         public TextSetting questionText;
         public TextSetting[] answerTexts; // 배열로 답변 텍스트 관리
     }
 
-    public class PlayPage2Controller : PlayPageBase
+    public class PlayTutorialPage2Controller : PlayTutorialPageBase
     {
         [Header("Page 2 UI")]
         [SerializeField] private Text descriptionText;
@@ -33,7 +33,7 @@ namespace My.Scripts._02_Play.Pages
 
         public override void SetupData(object data)
         {
-            var pageData = data as PlayPage2Data;
+            var pageData = data as PlayTutorialPage2Data;
             if (pageData == null) return;
 
             // 1. 설명 텍스트 적용

@@ -8,13 +8,13 @@ using Wonjeong.UI;
 namespace My.Scripts._02_Play.Pages
 {
     [Serializable]
-    public class PlayPage3Data
+    public class PlayTutorialPage3Data
     {
         public TextSetting nicknamePlayerA;
         public TextSetting nicknamePlayerB;
     }
 
-    public class PlayPage3Controller : PlayPageBase
+    public class PlayTutorialPage3Controller : PlayTutorialPageBase
     {
         [Header("Page 3 UI")]
         [SerializeField] private Text nicknameA;
@@ -32,7 +32,7 @@ namespace My.Scripts._02_Play.Pages
 
         public override void SetupData(object data)
         {
-            var pageData = data as PlayPage3Data;
+            var pageData = data as PlayTutorialPage3Data;
             if (pageData == null) return;
 
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, pageData.nicknamePlayerA);
