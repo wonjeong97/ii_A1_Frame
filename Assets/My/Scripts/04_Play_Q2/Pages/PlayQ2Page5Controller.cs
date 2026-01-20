@@ -35,7 +35,15 @@ namespace My.Scripts._04_Play_Q2.Pages
         // 외부(Manager)에서 파일명을 설정하는 함수
         public void SetPhotoFilename(string name)
         {
-            _photoFileName = name;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _photoFileName = "Default_Q2";
+                return;
+            }
+            // 경로/금지 문자 제거
+            string safe = string.Concat(name.Split(Path.GetInvalidFileNameChars()));
+            safe = Path.GetFileName(safe);
+            _photoFileName = string.IsNullOrWhiteSpace(safe) ? "Default_Q2" : safe;
         }
 
         public override void OnEnter()
@@ -179,7 +187,7 @@ namespace My.Scripts._04_Play_Q2.Pages
                 SavePhotoToCustomFolder(_capturedPhoto);
 
                 StopWebCam();
-                Debug.Log($"[PlayQ1Page6] 투명 배경 사진 캡쳐 완료: {_capturedPhoto.width}x{_capturedPhoto.height}");
+                Debug.Log($"[PlayQ2Page6] 투명 배경 사진 캡쳐 완료: {_capturedPhoto.width}x{_capturedPhoto.height}");
             }
         }
 
@@ -203,7 +211,7 @@ namespace My.Scripts._04_Play_Q2.Pages
                 if (!Directory.Exists(picturesFolderPath))
                 {
                     Directory.CreateDirectory(picturesFolderPath);
-                    Debug.Log($"[PlayQ1Page6] 폴더 생성됨: {picturesFolderPath}");
+                    Debug.Log($"[PlayQ2Page6] 폴더 생성됨: {picturesFolderPath}");
                 }
 
                 // 4. 파일 저장
@@ -212,11 +220,11 @@ namespace My.Scripts._04_Play_Q2.Pages
 
                 File.WriteAllBytes(fullPath, bytes);
 
-                Debug.Log($"[PlayQ1Page6] 사진 파일 저장됨: {fullPath}");
+                Debug.Log($"[PlayQ2Page6] 사진 파일 저장됨: {fullPath}");
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PlayQ1Page6] 사진 저장 실패: {e.Message}");
+                Debug.LogError($"[PlayQ2Page6] 사진 저장 실패: {e.Message}");
             }
         }
 

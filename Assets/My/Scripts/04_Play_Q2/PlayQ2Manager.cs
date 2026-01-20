@@ -19,15 +19,15 @@ namespace My.Scripts._04_Play_Q2
         public PlayQ2Page5Data page5; // Camera (Masking)
         public PlayQ2Page6Data page6; // Ending
     }
-    
+
     public class PlayQ2Manager : MonoBehaviour
     {
-        [Header("Pages Config")]
-        [SerializeField] private PlayQ2PageBase[] pages;
+        [Header("Pages Config")] [SerializeField]
+        private PlayQ2PageBase[] pages;
 
-        private readonly string jsonFileName = GameConstants.Path.PlayQ2; 
+        private readonly string jsonFileName = GameConstants.Path.PlayQ2;
         private PlayQ2Setting _setting;
-        
+
         private int _currentPageIndex = -1;
         private bool _isTransitioning;
         private readonly float _fadeDuration = 0.5f;
@@ -36,14 +36,14 @@ namespace My.Scripts._04_Play_Q2
         {
             if (pages == null || pages.Length == 0) return;
             if (!LoadSettings()) return;
-            
+
             InitializePages();
             StartCoroutine(StartPlayFlow());
         }
-        
+
         private IEnumerator StartPlayFlow()
         {
-            yield return null; 
+            yield return null;
             if (pages.Length > 0)
             {
                 TransitionToPage(0);
@@ -71,6 +71,7 @@ namespace My.Scripts._04_Play_Q2
             {
                 cameraPage.SetPhotoFilename("아영길동_Q2");
             }
+
             return true;
         }
 
@@ -111,59 +112,121 @@ namespace My.Scripts._04_Play_Q2
         private IEnumerator TransitionRoutine(int targetIndex, int triggerInfo)
         {
             _isTransitioning = true;
-            PlayQ2PageBase currentPage = (_currentPageIndex >= 0 && _currentPageIndex < pages.Length) ? pages[_currentPageIndex] : null;
+            PlayQ2PageBase currentPage = (_currentPageIndex >= 0 && _currentPageIndex < pages.Length)
+                ? pages[_currentPageIndex]
+                : null;
 
             // 1. P1 -> P2 (Intro -> Game): Overlap
             if (_currentPageIndex == 0 && targetIndex == 1)
             {
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
-                if (nextPage) { nextPage.OnEnter(); nextPage.SetAlpha(0f); HandleTriggerInfo(nextPage, triggerInfo); yield return StartCoroutine(FadePage(nextPage, 0f, 1f)); }
-                if (currentPage) { yield return StartCoroutine(FadePage(currentPage, 1f, 0f)); currentPage.OnExit(); }
+                if (nextPage)
+                {
+                    nextPage.OnEnter();
+                    nextPage.SetAlpha(0f);
+                    HandleTriggerInfo(nextPage, triggerInfo);
+                    yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
+                }
+
+                if (currentPage)
+                {
+                    yield return StartCoroutine(FadePage(currentPage, 1f, 0f));
+                    currentPage.OnExit();
+                }
             }
             // 2. P4 -> P5 (Button -> Camera): Fade Black
             else if (_currentPageIndex == 3 && targetIndex == 4)
             {
-                if (FadeManager.Instance) { bool d=false; FadeManager.Instance.FadeOut(1f, ()=>d=true); while(!d) yield return null; } else yield return new WaitForSeconds(0.5f);
+                if (FadeManager.Instance)
+                {
+                    bool d = false;
+                    FadeManager.Instance.FadeOut(1f, () => d = true);
+                    while (!d) yield return null;
+                }
+                else yield return new WaitForSeconds(0.5f);
+
                 if (currentPage) currentPage.OnExit();
-                
+
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
-                if (nextPage) { nextPage.OnEnter(); nextPage.SetAlpha(1f); HandleTriggerInfo(nextPage, triggerInfo); }
-                
+                if (nextPage)
+                {
+                    nextPage.OnEnter();
+                    nextPage.SetAlpha(1f);
+                    HandleTriggerInfo(nextPage, triggerInfo);
+                }
+
                 if (FadeManager.Instance) FadeManager.Instance.FadeIn(1f);
             }
             // 3. P5 -> P6 (Camera -> Ending): Already Faded Out by Camera
             else if (_currentPageIndex == 4 && targetIndex == 5)
+                else if (_currentPageIndex == 4 && targetIndex == 5)
             {
                 if (currentPage) currentPage.OnExit();
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
-                if (nextPage) { nextPage.OnEnter(); nextPage.SetAlpha(1f); HandleTriggerInfo(nextPage, triggerInfo); }
-                if (FadeManager.Instance) FadeManager.Instance.FadeIn(1f); else yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
+                if (nextPage)
+                {
+                    nextPage.OnEnter();
+                    HandleTriggerInfo(nextPage, triggerInfo);
+                    if (FadeManager.Instance)
+                    {
+                        nextPage.SetAlpha(1f);
+                        FadeManager.Instance.FadeIn(1f);
+                    }
+                    else
+                    {
+                        nextPage.SetAlpha(0f);
+                        yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
+                    }
+                }
             }
             // 4. Default Sequential
             else
             {
-                if (currentPage) { yield return StartCoroutine(FadePage(currentPage, 1f, 0f)); currentPage.OnExit(); }
+                if (currentPage)
+                {
+                    yield return StartCoroutine(FadePage(currentPage, 1f, 0f));
+                    currentPage.OnExit();
+                }
+
                 yield return new WaitForSeconds(1.0f);
                 _currentPageIndex = targetIndex;
                 var nextPage = pages[targetIndex];
-                if (nextPage) { nextPage.OnEnter(); nextPage.SetAlpha(0f); HandleTriggerInfo(nextPage, triggerInfo); yield return StartCoroutine(FadePage(nextPage, 0f, 1f)); }
+                if (nextPage)
+                {
+                    nextPage.OnEnter();
+                    nextPage.SetAlpha(0f);
+                    HandleTriggerInfo(nextPage, triggerInfo);
+                    yield return StartCoroutine(FadePage(nextPage, 0f, 1f));
+                }
             }
+
             _isTransitioning = false;
         }
 
         private void HandleTriggerInfo(PlayQ2PageBase page, int info)
         {
             if (info == 0) return;
-            if (page is PlayQ2Page3Controller p3) { if (info == 1) p3.ActivatePlayerCheck(true); else if (info == 2) p3.ActivatePlayerCheck(false); }
+            if (page is PlayQ2Page3Controller p3)
+            {
+                if (info == 1) p3.ActivatePlayerCheck(true);
+                else if (info == 2) p3.ActivatePlayerCheck(false);
+            }
         }
 
         private IEnumerator FadePage(PlayQ2PageBase page, float s, float e)
         {
-            float t = 0f; page.SetAlpha(s);
-            while (t < _fadeDuration) { t += Time.deltaTime; page.SetAlpha(Mathf.Lerp(s, e, t / _fadeDuration)); yield return null; }
+            float t = 0f;
+            page.SetAlpha(s);
+            while (t < _fadeDuration)
+            {
+                t += Time.deltaTime;
+                page.SetAlpha(Mathf.Lerp(s, e, t / _fadeDuration));
+                yield return null;
+            }
+
             page.SetAlpha(e);
         }
     }

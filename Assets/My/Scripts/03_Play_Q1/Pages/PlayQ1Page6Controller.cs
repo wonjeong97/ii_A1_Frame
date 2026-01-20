@@ -40,7 +40,15 @@ namespace My.Scripts._03_Play_Q1.Pages
         // 외부(Manager)에서 파일명을 설정하는 함수
         public void SetPhotoFilename(string name)
         {
-            _photoFileName = name;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _photoFileName = "Default_Q1";
+                return;
+            }
+            // 경로/금지 문자 제거
+            string safe = string.Concat(name.Split(Path.GetInvalidFileNameChars()));
+            safe = Path.GetFileName(safe);
+            _photoFileName = string.IsNullOrWhiteSpace(safe) ? "Default_Q1" : safe;
         }
 
         public override void OnEnter()
