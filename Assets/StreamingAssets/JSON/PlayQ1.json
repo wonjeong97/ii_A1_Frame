@@ -17,7 +17,7 @@
       "fontName": "font8",
       "fontSize": 60,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 3, "comment": "middle left"
+      "alignment": 3
     },
     "playerBName": {
       "name": "Text_PlayerB",
@@ -27,11 +27,10 @@
       "fontName": "font8",
       "fontSize": 60,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 5, "comment": "middle right"
+      "alignment": 5
     }
   },
-  "page2":
-  {
+  "page2": {
     "descriptionText1": {
       "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
       "position": {"x": 960, "y": -300},
@@ -74,7 +73,7 @@
       },
       {
         "name": "02_상대와",
-        "position": {"x": 574, "y": -212.8} ,
+        "position": {"x": 574, "y": -212.8},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대와",
         "fontName": "font7",
@@ -145,5 +144,116 @@
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ]
+  },
+  "page3": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": { "x": 960, "y": -300 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "text": "바닥 화살표를 따라 각자 이동해\n버튼을 눌러 답변해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "questionText": {
+      "name": "Text_Question",
+      "position": { "x": 0, "y": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "text": "Q.나는 상대와 함께 있을 때, 말보다 그때의 느낌이 더 크게 남는 편이다.",
+      "fontName": "font7",
+      "fontSize": 35,
+      "fontColor": { "r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1 }
+    },
+    "answerTexts": [
+      {
+        "name": "Text_Ans1",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "전혀 아니다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans2",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "아니다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans3",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "보통이다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans4",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "그렇다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans5",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "매우 그렇다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      }
+    ]
+  },
+  "page4": {
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": 748.4, "y": -357.5},
+      "text": "아영님",
+      "fontName": "font8",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "alignment": 4
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1198, "y": -357.21},
+      "text": "길동님",
+      "fontName": "font8",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "alignment": 4
+    }
+  },
+  "page5": {
+    "descriptionText": {
+      "name": "Text_답변이 완료되었습니다.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "답변이 완료되었습니다.\n촬영 버튼을 눌러 촬영해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    }
+  },
+  "page6": {},
+  "page7": {
+    "descriptionText":
+    {
+      "name": "Text_사진이 기록되었습니다.",
+      "position": {"x": 960, "y": -265},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "사진이 기록되었습니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
   }
 }
