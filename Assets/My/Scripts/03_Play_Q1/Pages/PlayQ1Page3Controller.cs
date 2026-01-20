@@ -102,7 +102,13 @@ namespace My.Scripts._03_Play_Q1.Pages
         {
             if (canvasGroup != null)
             {
-                yield return new WaitUntil(() => canvasGroup.alpha >= 1f);
+                const float timeout = 2f;
+                float t = 0f;
+                while (canvasGroup.alpha < 1f && t < timeout)
+                {
+                    t += Time.unscaledDeltaTime;
+                    yield return null;
+                }
             }
 
             yield return StartCoroutine(FadeCanvasGroup(questionGroup, 0f, 1f, 1.0f));

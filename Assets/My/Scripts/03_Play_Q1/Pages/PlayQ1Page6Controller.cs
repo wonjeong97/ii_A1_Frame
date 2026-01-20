@@ -4,6 +4,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.UI;
+using My.Scripts.Global;
 
 namespace My.Scripts._03_Play_Q1.Pages
 {
@@ -29,14 +30,14 @@ namespace My.Scripts._03_Play_Q1.Pages
         private WebCamTexture _webCamTexture;
         private Texture2D _capturedPhoto; 
         
-        // [추가] 파일명 저장을 위한 변수 (기본값 설정)
+        // 파일명 저장을 위한 변수 (기본값 설정)
         private string _photoFileName = "Default_Q1";
 
         public override void SetupData(object data)
         {
         }
 
-        // [추가] 외부(Manager)에서 파일명을 설정하는 함수
+        // 외부(Manager)에서 파일명을 설정하는 함수
         public void SetPhotoFilename(string name)
         {
             _photoFileName = name;
@@ -76,7 +77,8 @@ namespace My.Scripts._03_Play_Q1.Pages
         }
 
         private void OnDestroy()
-        {
+        {   
+            StopWebCam();
             CleanupPhoto();
         }
 
@@ -144,7 +146,7 @@ namespace My.Scripts._03_Play_Q1.Pages
         {
             if (_webCamTexture != null && _webCamTexture.isPlaying)
             {
-                // [수정 1] ARGB32 포맷의 렌더 텍스처 생성 (투명도 지원)
+                // ARGB32 포맷 (투명도 지원)
                 RenderTexture rt = RenderTexture.GetTemporary(
                     _webCamTexture.width, 
                     _webCamTexture.height, 
@@ -161,7 +163,7 @@ namespace My.Scripts._03_Play_Q1.Pages
                     Graphics.Blit(_webCamTexture, rt);
                 }
 
-                // [수정 2] RGB24 -> RGBA32 (알파 채널 포함)
+                // RGB24 -> RGBA32 (알파 채널 포함)
                 _capturedPhoto = new Texture2D(_webCamTexture.width, _webCamTexture.height, TextureFormat.RGBA32, false);
 
                 RenderTexture currentRT = RenderTexture.active; 
@@ -178,14 +180,16 @@ namespace My.Scripts._03_Play_Q1.Pages
                     cameraDisplay.texture = _capturedPhoto;
                 }
 
-                SavePhotoToTempFolder(_capturedPhoto);
+                // 커스텀 경로 저장 함수 호출
+                SavePhotoToCustomFolder(_capturedPhoto);
 
                 StopWebCam();
                 Debug.Log($"[PlayQ1Page6] 투명 배경 사진 캡쳐 완료: {_capturedPhoto.width}x{_capturedPhoto.height}");
             }
         }
 
-        private void SavePhotoToTempFolder(Texture2D photo)
+        // 프로젝트/빌드 폴더 내 Pictures 폴더에 저장
+        private void SavePhotoToCustomFolder(Texture2D photo)
         {
             if (photo == null) return;
 
@@ -193,13 +197,27 @@ namespace My.Scripts._03_Play_Q1.Pages
             {
                 byte[] bytes = photo.EncodeToPNG();
 
-                // [수정] 설정된 파일명 사용
+                // 1. 루트 경로 결정 
+                DirectoryInfo parentDir = Directory.GetParent(Application.dataPath);
+                string rootPath = (parentDir != null) ? parentDir.FullName : Application.dataPath;
+
+                // 2. Pictures 폴더 경로
+                string picturesFolderPath = Path.Combine(rootPath, "Pictures");
+
+                // 3. 폴더가 없으면 생성
+                if (!Directory.Exists(picturesFolderPath))
+                {
+                    Directory.CreateDirectory(picturesFolderPath);
+                    Debug.Log($"[PlayQ1Page6] 폴더 생성됨: {picturesFolderPath}");
+                }
+
+                // 4. 파일 저장
                 string filename = $"{_photoFileName}.png";
-                string path = Path.Combine(Application.temporaryCachePath, filename);
+                string fullPath = Path.Combine(picturesFolderPath, filename);
 
-                File.WriteAllBytes(path, bytes);
+                File.WriteAllBytes(fullPath, bytes);
 
-                Debug.Log($"[PlayQ1Page6] 사진 파일 저장됨: {path}");
+                Debug.Log($"[PlayQ1Page6] 사진 파일 저장됨: {fullPath}");
             }
             catch (Exception e)
             {
