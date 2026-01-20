@@ -161,7 +161,6 @@ namespace My.Scripts._04_Play_Q2
             }
             // 3. P5 -> P6 (Camera -> Ending): Already Faded Out by Camera
             else if (_currentPageIndex == 4 && targetIndex == 5)
-                else if (_currentPageIndex == 4 && targetIndex == 5)
             {
                 if (currentPage) currentPage.OnExit();
                 _currentPageIndex = targetIndex;
