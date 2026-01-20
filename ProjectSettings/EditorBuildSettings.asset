@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/03_Play_Q1.unity
     guid: f9c712c2f01dbf44a8b75711175eaf84
+  - enabled: 1
+    path: Assets/Scenes/04_Play_Q2.unity
+    guid: 651352ccf054d334fb0060e379f1568a
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: d9897a25155f29545af588e7a95d7ec0,
       type: 2}

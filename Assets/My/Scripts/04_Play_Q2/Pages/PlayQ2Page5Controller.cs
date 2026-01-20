@@ -6,32 +6,27 @@ using UnityEngine.UI;
 using Wonjeong.UI;
 using My.Scripts.Global;
 
-namespace My.Scripts._03_Play_Q1.Pages
+namespace My.Scripts._04_Play_Q2.Pages
 {
     [Serializable]
-    public class PlayQ1Page6Data
+    public class PlayQ2Page5Data
     {
-        // 빈 데이터
-    }
+    } // 빈 데이터
 
-    public class PlayQ1Page6Controller : PlayQ1PageBase
+    public class PlayQ2Page5Controller : PlayQ2PageBase
     {
-        [Header("Page 6 UI")]
-        [SerializeField] private RawImage cameraDisplay; 
-        [SerializeField] private Text countdownText;     
-        
-        [Header("Effects")]
-        [SerializeField] private Image flashImage;       
+        [Header("Page 5 UI")] [SerializeField] private RawImage cameraDisplay;
+        [SerializeField] private Text countdownText;
+
+        [Header("Effects")] [SerializeField] private Image flashImage;
         [SerializeField] private CanvasGroup contentCanvasGroup;
-        
-        [Header("Masking Settings")]
-        [SerializeField] private Material maskingMaterial;
+
+        [Header("Masking Settings")] [SerializeField]
+        private Material maskingMaterial;
 
         private WebCamTexture _webCamTexture;
-        private Texture2D _capturedPhoto; 
-        
-        // 파일명 저장을 위한 변수 (기본값 설정)
-        private string _photoFileName = "Default_Q1";
+        private Texture2D _capturedPhoto;
+        private string _photoFileName = "Default_Q2";
 
         public override void SetupData(object data)
         {
@@ -42,13 +37,13 @@ namespace My.Scripts._03_Play_Q1.Pages
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                _photoFileName = "Default_Q1";
+                _photoFileName = "Default_Q2";
                 return;
             }
             // 경로/금지 문자 제거
             string safe = string.Concat(name.Split(Path.GetInvalidFileNameChars()));
             safe = Path.GetFileName(safe);
-            _photoFileName = string.IsNullOrWhiteSpace(safe) ? "Default_Q1" : safe;
+            _photoFileName = string.IsNullOrWhiteSpace(safe) ? "Default_Q2" : safe;
         }
 
         public override void OnEnter()
@@ -146,7 +141,7 @@ namespace My.Scripts._03_Play_Q1.Pages
                 yield return new WaitForSeconds(1.0f);
             }
 
-            Debug.Log("Q1 촬영 시퀀스 종료");
+            Debug.Log("Q2 촬영 시퀀스 종료");
             CompleteStep(); 
         }
 
@@ -192,7 +187,7 @@ namespace My.Scripts._03_Play_Q1.Pages
                 SavePhotoToCustomFolder(_capturedPhoto);
 
                 StopWebCam();
-                Debug.Log($"[PlayQ1Page6] 투명 배경 사진 캡쳐 완료: {_capturedPhoto.width}x{_capturedPhoto.height}");
+                Debug.Log($"[PlayQ2Page6] 투명 배경 사진 캡쳐 완료: {_capturedPhoto.width}x{_capturedPhoto.height}");
             }
         }
 
@@ -216,7 +211,7 @@ namespace My.Scripts._03_Play_Q1.Pages
                 if (!Directory.Exists(picturesFolderPath))
                 {
                     Directory.CreateDirectory(picturesFolderPath);
-                    Debug.Log($"[PlayQ1Page6] 폴더 생성됨: {picturesFolderPath}");
+                    Debug.Log($"[PlayQ2Page6] 폴더 생성됨: {picturesFolderPath}");
                 }
 
                 // 4. 파일 저장
@@ -225,11 +220,11 @@ namespace My.Scripts._03_Play_Q1.Pages
 
                 File.WriteAllBytes(fullPath, bytes);
 
-                Debug.Log($"[PlayQ1Page6] 사진 파일 저장됨: {fullPath}");
+                Debug.Log($"[PlayQ2Page6] 사진 파일 저장됨: {fullPath}");
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PlayQ1Page6] 사진 저장 실패: {e.Message}");
+                Debug.LogError($"[PlayQ2Page6] 사진 저장 실패: {e.Message}");
             }
         }
 
