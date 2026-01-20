@@ -132,7 +132,9 @@ namespace My.Scripts.Core.Pages
 
             if (_totalQuestionCount == 0)
             {
-                _questionMap[5, 5] = true;
+                int defaultX = Mathf.Min(5, gridSize - 1);
+                int defaultY = Mathf.Min(5, gridSize - 1);
+                _questionMap[defaultX, defaultY] = true;
                 _totalQuestionCount = 1;
             }
 
