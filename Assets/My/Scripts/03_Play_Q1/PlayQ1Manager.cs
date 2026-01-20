@@ -84,11 +84,7 @@ namespace My.Scripts._03_Play_Q1
             if (pages.Length > 5) pages[5].SetupData(_setting.page6);
             if (pages.Length > 6) pages[6].SetupData(_setting.page7);
 
-            // ---------------------------------------------------------
-            // [추가] 사진 파일명 설정 (임시 하드코딩)
-            // ---------------------------------------------------------
-            // 추후 API 연동 시 JSON 데이터 등을 활용하여 동적으로 변경할 예정
-            // 현재는 "아영길동_Q1"으로 고정
+            // 사진 파일명 설정 (임시 하드코딩)
             if (pages.Length > 5 && pages[5] is PlayQ1Page6Controller cameraPage)
             {
                 string finalFileName = "아영길동_Q1"; 
@@ -129,11 +125,12 @@ namespace My.Scripts._03_Play_Q1
 
         private void OnAllPagesFinished()
         {
-            Debug.Log("[PlayQ1Manager] 모든 페이지 종료.");
+            Debug.Log("[PlayQ1Manager] 모든 페이지 종료. Play_Q2로 이동합니다.");
+            
             if (GameManager.Instance != null)
-                GameManager.Instance.ReturnToTitle();
+                GameManager.Instance.ChangeScene(GameConstants.Scene.PlayQ2);
             else
-                SceneManager.LoadScene(GameConstants.Scene.Title);
+                SceneManager.LoadScene(GameConstants.Scene.PlayQ2);
         }
 
         private void TransitionToPage(int targetIndex, int triggerInfo = 0)
