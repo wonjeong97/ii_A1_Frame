@@ -92,7 +92,9 @@ namespace My.Scripts.Core.Pages
             _isInputBlocked = false;
             _currentIdleTime = 0f;
             InitializeGame();
-            SetFocusToGrid(4, 4, true);
+            int startX = Mathf.Min(4, gridSize - 1);
+            int startY = Mathf.Min(4, gridSize - 1);
+            SetFocusToGrid(startX, startY, true);
         }
 
         private void InitializeGame()

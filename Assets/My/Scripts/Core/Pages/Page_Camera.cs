@@ -76,14 +76,16 @@ namespace My.Scripts.Core.Pages
         }
 
         public override void OnExit()
-        {
+        {   
+            StopAllCoroutines();
             base.OnExit();
             StopWebCam();
             CleanupPhoto();
         }
 
         private void OnDestroy()
-        {
+        {   
+            StopAllCoroutines();
             StopWebCam();
             CleanupPhoto();
         }

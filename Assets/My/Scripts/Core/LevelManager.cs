@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
-using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -85,9 +84,9 @@ namespace My.Scripts.Core
 
         private bool LoadAndSetup()
         {
-            string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}"; // 경로 수정됨
+            string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
 
-            // 공통: 카메라 설정 (Tutorial은 저장X 마스크X, Q1~Q15는 저장O 마스크O)
+            // 공통: 카메라 설정
             int camIdx = 4; // Page 5 (Index 4)
             if (pages.Length > camIdx && pages[camIdx] is Page_Camera cam)
             {
@@ -202,6 +201,27 @@ namespace My.Scripts.Core
                 // P6(End1) -> P7(NewIntro) (Sequence on WhiteBG)
                 else if (_currentPageIndex == 5 && target == 6)
                     yield return StartCoroutine(SequenceTransition(current, next, globalWhiteBackground, info, 0.5f));
+
+                // 예외 경로(Fallback): 정의되지 않은 구간은 기본 페이드 전환
+                else
+                {
+                    if (current)
+                    {
+                        yield return StartCoroutine(FadePage(current, 1f, 0f));
+                        current.OnExit();
+                    }
+
+                    yield return new WaitForSeconds(0.5f);
+
+                    _currentPageIndex = target;
+                    if (next != null)
+                    {
+                        next.OnEnter();
+                        next.SetAlpha(0f);
+                        HandleTrigger(next, info);
+                        yield return StartCoroutine(FadePage(next, 0f, 1f));
+                    }
+                }
             }
             // --------------------------------------------------------------------------------
             // [Standard Mode: Q1 ~ Q15] (6 Pages)
@@ -231,10 +251,13 @@ namespace My.Scripts.Core
 
                     yield return new WaitForSeconds(0.5f);
                     _currentPageIndex = target;
-                    next.OnEnter();
-                    next.SetAlpha(0f);
-                    HandleTrigger(next, info);
-                    yield return StartCoroutine(FadePage(next, 0f, 1f));
+                    if (next != null)
+                    {
+                        next.OnEnter();
+                        next.SetAlpha(0f);
+                        HandleTrigger(next, info);
+                        yield return StartCoroutine(FadePage(next, 0f, 1f));
+                    }
                 }
             }
 
