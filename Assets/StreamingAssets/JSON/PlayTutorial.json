@@ -216,5 +216,36 @@
       "fontSize": 55,
       "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     }
+  },
+  "page7": {
+    "descriptionText": {
+      "name": "Text_각자 자신의 자리에 서주세요.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "자, 이제 첫 번째 질문을 시작하겠습니다.\n각자 자신의 자리에 서 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "playerAName": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "아영님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 3
+    },
+    "playerBName": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1790, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "길동님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 5
+    }
   }
 }
