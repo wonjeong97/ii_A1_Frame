@@ -18,6 +18,7 @@ namespace My.Scripts.Global
             public const string Tutorial = "JSON/Tutorial";
             public const string PlayTutorial = "JSON/PlayTutorial";
             public const string PlayQ1 = "JSON/PlayQ1";
+            public const string PlayQ2 = "JSON/PlayQ2";
         }
     }
 }
