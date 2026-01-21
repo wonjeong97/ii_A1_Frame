@@ -32,82 +32,64 @@
     },
     "questions": [
       {
-        "name": "01_나는",
-        "position": {"x": 284.5, "y": -866},
+        "name": "01_문득",
+        "position": {"x": 1634, "y": -648},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는",
+        "text": "문득",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },    
       {
-        "name": "02_상대가",
-        "position": {"x": 480, "y": -545},
+        "name": "02_스쳐지나간,",
+        "position": {"x": 199, "y": -106},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대가",
+        "text": "스쳐지나간",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },
       {
-        "name": "03_“괜찮아”라고",
-        "position": {"x": 1327.7, "y": -862},
+        "name": "03_상대방의",
+        "position": {"x": 1442, "y": -215},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "“괜찮아”라고",
+        "text": "상대방의",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },      
       {
-        "name": "04_말하면",
-        "position": {"x": 868, "y": -318.7},
+        "name": "04_반응이",
+        "position": {"x": 864, "y": -427},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "말하면",
+        "text": "반응이",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },
       {
-        "name": "05_오히려",
-        "position": {"x": 1250, "y": -537.3},
+        "name": "05_떠올라",
+        "position": {"x": 288, "y": -862},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "오히려",
+        "text": "떠올라",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },     
+      {
+        "name": "06_돌아보게 되는",
+        "position": {"x": 389, "y": -539},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "돌아보게 되는",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },
       {
-        "name": "06_마음에",
-        "position": {"x": 1829.2, "y": -112},
+        "name": "07_때가 있다.",
+        "position": {"x": 1352, "y": -971},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "마음에",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "07_오래",
-        "position": {"x": 1827, "y": -967},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "오래",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "08_남을 때가",
-        "position": {"x": 154, "y": -108},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "남을 때가",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "09_있다.",
-        "position": {"x": 1443, "y": -110},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "있다.",
+        "text": "때가 있다.",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
@@ -128,7 +110,7 @@
       "name": "Text_Question",
       "position": { "x": 0, "y": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
-      "text": "Q.나는 상대가 “괜찮아”라고 말하면 오히려 마음에 오래 남을 때가 있다.",
+      "text": "Q.문득 스쳐지나간 상대방의 반응이 떠올라 돌아보게 되는 때가 있다.",
       "fontName": "font7",
       "fontSize": 40,
       "fontColor": { "r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1 }

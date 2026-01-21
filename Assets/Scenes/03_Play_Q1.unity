@@ -1456,8 +1456,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 501.7, y: -446.54}
-  m_SizeDelta: {x: 916.6, y: 80.42}
+  m_AnchoredPosition: {x: 416.7, y: -446.54}
+  m_SizeDelta: {x: 1086.6, y: 80.42}
   m_Pivot: {x: 0, y: 1}
 --- !u!225 &396243554
 CanvasGroup:
@@ -3191,7 +3191,7 @@ GameObject:
   - component: {fileID: 1053106311}
   - component: {fileID: 1053106312}
   m_Layer: 0
-  m_Name: PlayQ1_LevelManager
+  m_Name: PlayQ1LevelManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4813,7 +4813,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1512233944}
   - component: {fileID: 1512233946}
-  - component: {fileID: 1512233947}
   - component: {fileID: 1512233948}
   m_Layer: 5
   m_Name: Page6
@@ -4854,19 +4853,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &1512233947
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1512233943}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e30ef97e23d9bc14dad15b5c8971869c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  descriptionText: {fileID: 1142379714}
 --- !u!114 &1512233948
 MonoBehaviour:
   m_ObjectHideFlags: 0
