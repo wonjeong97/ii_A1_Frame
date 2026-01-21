@@ -1,36 +1,5 @@
 {
   "page1": {
-    "descriptionText": {
-      "name": "Text_각자 자신의 자리에 서주세요.",
-      "position": {"x": 960, "y": -300},
-      "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "자, 이제 첫 번째 질문을 시작하겠습니다.\n각자 자신의 자리에 서 주세요.",
-      "fontName": "font4",
-      "fontSize": 55,
-      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
-    },
-    "playerAName": {
-      "name": "Text_PlayerA",
-      "position": {"x": 130, "y": -603},
-      "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "아영님",
-      "fontName": "font8",
-      "fontSize": 60,
-      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 3
-    },
-    "playerBName": {
-      "name": "Text_PlayerB",
-      "position": {"x": 1790, "y": -603},
-      "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "길동님",
-      "fontName": "font8",
-      "fontSize": 60,
-      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 5
-    }
-  },
-  "page2": {
     "descriptionText1": {
       "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
       "position": {"x": 960, "y": -300},
@@ -126,10 +95,10 @@
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       },
       {
-        "name": "08_남는.",
+        "name": "08_남는",
         "position": {"x": 1560.4, "y": -427.5},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "남는.",
+        "text": "남는",
         "fontName": "font7",
         "fontSize": 55,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
@@ -145,7 +114,7 @@
       }
     ]
   },
-  "page3": {
+  "page2": {
     "descriptionText": {
       "name": "Text_Description",
       "position": { "x": 960, "y": -300 },
@@ -161,7 +130,7 @@
       "scale": { "x": 1, "y": 1, "z": 1 },
       "text": "Q.나는 상대와 함께 있을 때, 말보다 그때의 느낌이 더 크게 남는 편이다.",
       "fontName": "font7",
-      "fontSize": 35,
+      "fontSize": 40,
       "fontColor": { "r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1 }
     },
     "answerTexts": [
@@ -212,7 +181,7 @@
       }
     ]
   },
-  "page4": {
+  "page3": {
     "nicknamePlayerA": {
       "name": "Text_PlayerA",
       "position": {"x": 748.4, "y": -357.5},
@@ -232,7 +201,7 @@
       "alignment": 4
     }
   },
-  "page5": {
+  "page4": {
     "descriptionText": {
       "name": "Text_답변이 완료되었습니다.",
       "position": {"x": 960, "y": -300},
@@ -243,8 +212,8 @@
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     }
   },
-  "page6": {},
-  "page7": {
+  "page5": {},
+  "page6": {
     "descriptionText":
     {
       "name": "Text_사진이 기록되었습니다.",

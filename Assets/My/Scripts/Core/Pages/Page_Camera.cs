@@ -27,6 +27,9 @@ namespace My.Scripts.Core.Pages
         private WebCamTexture _webCamTexture;
         private Texture2D _capturedPhoto;
         private string _photoFileName = "Default_Photo";
+        
+        private const int PhotoWidth = 1920;
+        private const int PhotoHeight = 1080;
 
         protected override void Awake()
         {
@@ -139,18 +142,16 @@ namespace My.Scripts.Core.Pages
         {
             if (_webCamTexture != null && _webCamTexture.isPlaying)
             {
-                RenderTexture rt = RenderTexture.GetTemporary(_webCamTexture.width, _webCamTexture.height, 0,
-                    RenderTextureFormat.ARGB32);
+                RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
 
                 if (_currentMaskingMaterial != null) Graphics.Blit(_webCamTexture, rt, _currentMaskingMaterial);
                 else Graphics.Blit(_webCamTexture, rt);
 
-                _capturedPhoto = new Texture2D(_webCamTexture.width, _webCamTexture.height, TextureFormat.RGBA32,
-                    false);
+                _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
 
                 RenderTexture prev = RenderTexture.active;
                 RenderTexture.active = rt;
-                _capturedPhoto.ReadPixels(new Rect(0, 0, _webCamTexture.width, _webCamTexture.height), 0, 0);
+                _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);
                 _capturedPhoto.Apply();
 
                 RenderTexture.active = prev;
@@ -238,7 +239,7 @@ namespace My.Scripts.Core.Pages
         {
             if (cameraDisplay && _webCamTexture == null)
             {
-                _webCamTexture = new WebCamTexture();
+                _webCamTexture = new WebCamTexture(PhotoWidth, PhotoHeight);
                 cameraDisplay.texture = _webCamTexture;
                 _webCamTexture.Play();
             }

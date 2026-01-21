@@ -19,7 +19,46 @@ EditorBuildSettings:
     guid: f9c712c2f01dbf44a8b75711175eaf84
   - enabled: 1
     path: Assets/Scenes/04_Play_Q2.unity
+    guid: 6e17af80e42acc947841f14aaba1d1bb
+  - enabled: 1
+    path: Assets/Scenes/05_Play_Q3.unity
     guid: 651352ccf054d334fb0060e379f1568a
+  - enabled: 1
+    path: Assets/Scenes/06_Play_Q4.unity
+    guid: 7807c3ad46ec9f841a4043d998b8364c
+  - enabled: 1
+    path: Assets/Scenes/07_Play_Q5.unity
+    guid: 714ec40de2a967b438feec985ab6fde9
+  - enabled: 1
+    path: Assets/Scenes/08_Play_Q6.unity
+    guid: 4ecfcb679d75a7640b8f24810fba2602
+  - enabled: 1
+    path: Assets/Scenes/09_Play_Q7.unity
+    guid: bd1771ddc28feff4a92a31f6a1a278c1
+  - enabled: 1
+    path: Assets/Scenes/10_Play_Q8.unity
+    guid: 6d60498d7dce1a440a324ffbf5a03de4
+  - enabled: 1
+    path: Assets/Scenes/11_Play_Q9.unity
+    guid: faa9a7a9e3829aa4a8e27f5fc0977e8f
+  - enabled: 1
+    path: Assets/Scenes/12_Play_Q10.unity
+    guid: e34a56d1ba606f8448289bae67b147c5
+  - enabled: 1
+    path: Assets/Scenes/13_Play_Q11.unity
+    guid: a3652dfbb6d265948b6ef2dfb09dd6d6
+  - enabled: 1
+    path: Assets/Scenes/14_Play_Q12.unity
+    guid: 7fea994b490b74149bc93a44f67db9fb
+  - enabled: 1
+    path: Assets/Scenes/15_Play_Q13.unity
+    guid: a134f6e3b9436904980edd3344d7f5ce
+  - enabled: 1
+    path: Assets/Scenes/16_Play_Q14.unity
+    guid: f92ca000c709aee44abf1f44183d2c78
+  - enabled: 1
+    path: Assets/Scenes/17_Play_Q15.unity
+    guid: a7b5493135d760a45a3a937ffef03f36
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: d9897a25155f29545af588e7a95d7ec0,
       type: 2}
