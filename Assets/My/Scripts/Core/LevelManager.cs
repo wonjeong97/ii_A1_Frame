@@ -18,7 +18,9 @@ namespace My.Scripts.Core
         public GridPageData page1; // Grid
         public QnAPageData page2; // QnA
         public CheckPageData page3; // Check
+
         public TransitionPageData page4; // Ready
+
         // Page 5: Camera (No Data)
         public TransitionPageData page6; // End
     }
@@ -30,7 +32,9 @@ namespace My.Scripts.Core
         public GridPageData page1;
         public QnAPageData page2;
         public CheckPageData page3;
+
         public TransitionPageData page4;
+
         // Page 5: Camera
         public TransitionPageData page6; // End 1
         public TransitionPageData page7; // End 2 (Next Intro)
@@ -38,20 +42,21 @@ namespace My.Scripts.Core
 
     public class LevelManager : MonoBehaviour
     {
-        [Header("Level Settings")]
-        [SerializeField] private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
+        [Header("Level Settings")] [SerializeField]
+        private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
+
         [SerializeField] private string nextSceneName = "00_Title";
         [SerializeField] private bool useFadeTransition = true;
 
-        [Header("Pages")] 
-        [SerializeField] private GamePage[] pages;
+        [Header("Pages")] [SerializeField] private GamePage[] pages;
 
-        [Header("Global Backgrounds")] 
-        [SerializeField] private CanvasGroup globalBlackCanvasGroup;
+        [Header("Global Backgrounds")] [SerializeField]
+        private CanvasGroup globalBlackCanvasGroup;
+
         [SerializeField] private Image globalWhiteBackground;
 
-        [Header("Camera Config")] 
-        [SerializeField] private Material cameraMaskMaterial; // Q1~Q15용 마스크
+        [Header("Camera Config")] [SerializeField]
+        private Material cameraMaskMaterial; // Q1~Q15용 마스크
 
         private int _currentPageIndex = -1;
         private bool _isTransitioning;
@@ -81,7 +86,7 @@ namespace My.Scripts.Core
 
         private bool LoadAndSetup()
         {
-           // 1. 공통 데이터 로드 (PlayCommon.json)
+            // 1. 공통 데이터 로드 (PlayCommon.json)
             var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
             if (commonData == null)
             {
@@ -129,8 +134,8 @@ namespace My.Scripts.Core
 
             return true;
         }
-        
-       // 1. 튜토리얼 레벨용 병합 메서드
+
+        // 1. 튜토리얼 레벨용 병합 메서드
         private void MergeCommonData(TutorialLevelSetting specific, StandardLevelSetting common)
         {
             // [Page 1] Grid
@@ -141,7 +146,7 @@ namespace My.Scripts.Core
                 specific.page1.descriptionText2 = common.page1.descriptionText2;
                 specific.page1.descriptionText3 = common.page1.descriptionText3;
             }
-            
+
             // [Page 2] QnA
             if (specific.page2 == null) specific.page2 = new QnAPageData();
             if (common.page2 != null)
@@ -216,7 +221,7 @@ namespace My.Scripts.Core
                 specific.page6.descriptionText = common.page6.descriptionText;
             }
         }
-        
+
         private void SetCameraFileName(CheckPageData checkPageData)
         {
             // 1. 데이터가 없거나 카메라 페이지(Index 4)가 없으면 리턴
@@ -226,8 +231,8 @@ namespace My.Scripts.Core
             if (cameraPage == null) return;
 
             // 2. 닉네임 가져오기 (데이터가 없으면 기본값)
-            string nameA = checkPageData.nicknamePlayerA != null ? checkPageData.nicknamePlayerA.text : "PlayerA";
-            string nameB = checkPageData.nicknamePlayerB != null ? checkPageData.nicknamePlayerB.text : "PlayerB";
+            string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text) ? checkPageData.nicknamePlayerA.text : "PlayerA";
+            string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text) ? checkPageData.nicknamePlayerB.text : "PlayerB";
 
             // 3. 파일명에 쓸 수 없는 문자(줄바꿈, 특수문자 등) 제거
             nameA = SanitizeString(nameA);
@@ -238,7 +243,7 @@ namespace My.Scripts.Core
 
             // 5. 카메라 페이지에 설정
             cameraPage.SetPhotoFilename(fileName);
-            
+
             Debug.Log($"[LevelManager] Photo Filename Set: {fileName}.png");
         }
 
@@ -246,12 +251,12 @@ namespace My.Scripts.Core
         private string SanitizeString(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
-            
+
             // 1. 줄바꿈(\n) 제거
             string clean = input.Replace("\n", "").Replace("\r", "");
-            
+
             // 2. 닉네임 뒤의 '님' 제거
-            clean = clean.Replace("님", ""); 
+            clean = clean.Replace("님", "");
 
             // 3. 공백 제거
             clean = clean.Trim();
