@@ -135,29 +135,43 @@ namespace My.Scripts.Core
         {
             // [Page 1] Grid
             if (specific.page1 == null) specific.page1 = new GridPageData();
-            specific.page1.descriptionText1 = common.page1.descriptionText1;
-            specific.page1.descriptionText2 = common.page1.descriptionText2;
-            specific.page1.descriptionText3 = common.page1.descriptionText3;
-            // specific.page1.questions는 개별 파일 사용
-
+            if (common.page1 != null)
+            {
+                specific.page1.descriptionText1 = common.page1.descriptionText1;
+                specific.page1.descriptionText2 = common.page1.descriptionText2;
+                specific.page1.descriptionText3 = common.page1.descriptionText3;
+            }
+            
             // [Page 2] QnA
             if (specific.page2 == null) specific.page2 = new QnAPageData();
-            specific.page2.descriptionText = common.page2.descriptionText;
-            specific.page2.answerTexts = common.page2.answerTexts;
-            // specific.page2.questionText는 개별 파일 사용
+            if (common.page2 != null)
+            {
+                specific.page2.descriptionText = common.page2.descriptionText;
+                specific.page2.answerTexts = common.page2.answerTexts;
+            }
 
             // [Page 3] Check
             if (specific.page3 == null) specific.page3 = new CheckPageData();
-            specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
-            specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            if (common.page3 != null)
+            {
+                specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
+                specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            }
 
             // [Page 4] Transition (Ready)
             if (specific.page4 == null) specific.page4 = new TransitionPageData();
-            specific.page4.descriptionText = common.page4.descriptionText;
+            if (common.page4 != null)
+            {
+                specific.page4.descriptionText = common.page4.descriptionText;
+            }
 
             // [Page 6] Transition (End)
             if (specific.page6 == null) specific.page6 = new TransitionPageData();
-            specific.page6.descriptionText = common.page6.descriptionText;
+            // PlayCommon.json 구조상 page6이 있다면 적용
+            if (common.page6 != null)
+            {
+                specific.page6.descriptionText = common.page6.descriptionText;
+            }
         }
 
         // 2. 일반 레벨용 병합 메서드
@@ -165,27 +179,42 @@ namespace My.Scripts.Core
         {
             // [Page 1]
             if (specific.page1 == null) specific.page1 = new GridPageData();
-            specific.page1.descriptionText1 = common.page1.descriptionText1;
-            specific.page1.descriptionText2 = common.page1.descriptionText2;
-            specific.page1.descriptionText3 = common.page1.descriptionText3;
+            if (common.page1 != null)
+            {
+                specific.page1.descriptionText1 = common.page1.descriptionText1;
+                specific.page1.descriptionText2 = common.page1.descriptionText2;
+                specific.page1.descriptionText3 = common.page1.descriptionText3;
+            }
 
             // [Page 2]
             if (specific.page2 == null) specific.page2 = new QnAPageData();
-            specific.page2.descriptionText = common.page2.descriptionText;
-            specific.page2.answerTexts = common.page2.answerTexts;
+            if (common.page2 != null)
+            {
+                specific.page2.descriptionText = common.page2.descriptionText;
+                specific.page2.answerTexts = common.page2.answerTexts;
+            }
 
             // [Page 3]
             if (specific.page3 == null) specific.page3 = new CheckPageData();
-            specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
-            specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            if (common.page3 != null)
+            {
+                specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
+                specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            }
 
             // [Page 4]
             if (specific.page4 == null) specific.page4 = new TransitionPageData();
-            specific.page4.descriptionText = common.page4.descriptionText;
+            if (common.page4 != null)
+            {
+                specific.page4.descriptionText = common.page4.descriptionText;
+            }
 
             // [Page 6]
             if (specific.page6 == null) specific.page6 = new TransitionPageData();
-            specific.page6.descriptionText = common.page6.descriptionText;
+            if (common.page6 != null)
+            {
+                specific.page6.descriptionText = common.page6.descriptionText;
+            }
         }
         
         private void SetCameraFileName(CheckPageData checkPageData)
