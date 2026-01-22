@@ -2,14 +2,13 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 public class TimeLapseRecorder : MonoBehaviour
 {
     public static TimeLapseRecorder Instance;
 
     [Header("Settings")]
-    // [수정] 프레임 간격(int) 대신 초당 촬영 횟수(float)로 변경
-    // 15로 설정 시: 1초에 15장 저장 -> 45초 촬영 시 675장 -> 30fps 영상으로 만들면 약 22.5초 분량
     [Tooltip("초당 몇 장을 찍을지 설정 (15 권장)")]
     public float captureFPS = 15f; 
     
@@ -19,13 +18,19 @@ public class TimeLapseRecorder : MonoBehaviour
     private WebCamTexture _webCam;
     private bool _isRecording;
     private string _saveFolderPath;
-    private int _globalFrameIndex = 0; 
+    private int _globalFrameIndex; 
     
-    // [추가] 시간 누적용 변수
-    private float _timer = 0f;
-    private float _captureInterval; // 1 / captureFPS
-
+    private float _timer;
+    private float _captureInterval;
     private Texture2D _tempTexture;
+    
+    private Process _ffmpegProcess;
+    public bool IsConverting => _ffmpegProcess != null && !_ffmpegProcess.HasExited;
+
+    // 외부에서 FFmpeg 상태를 확인할 수 있는 프로퍼티
+    public bool IsProcessing { get; private set; }
+    public bool IsConversionSuccessful { get; private set; }
+    public int LastExitCode { get; private set; }
 
     private void Awake()
     {
@@ -45,8 +50,13 @@ public class TimeLapseRecorder : MonoBehaviour
                 Directory.CreateDirectory(_saveFolderPath);
             }
             
-            // 인터벌 계산 (예: 1/15 = 0.066초마다 촬영)
-            if (captureFPS > 0) _captureInterval = 1f / captureFPS;
+            if (captureFPS > 0)  _captureInterval = 1f / captureFPS;
+            else
+            {
+                Debug.LogWarning("[TimeLapseRecorder] captureFPS가 0 이하입니다. 기본값 15로 설정합니다.");
+                captureFPS = 15f;
+                _captureInterval = 1f / captureFPS;
+            }
         }
         else Destroy(gameObject);
     }
@@ -54,6 +64,8 @@ public class TimeLapseRecorder : MonoBehaviour
     public void ClearRecordingData()
     {
         _globalFrameIndex = 0;
+        IsProcessing = false;
+        IsConversionSuccessful = false;
         
         if (Directory.Exists(_saveFolderPath))
         {
@@ -70,9 +82,8 @@ public class TimeLapseRecorder : MonoBehaviour
     {
         _webCam = cam;
         _isRecording = true;
-        _timer = 0f; // 타이머 초기화
+        _timer = 0f;
 
-        // 설정값 갱신
         if (captureFPS > 0) _captureInterval = 1f / captureFPS;
         
         if (_tempTexture == null || _tempTexture.width != captureWidth || _tempTexture.height != captureHeight)
@@ -89,22 +100,19 @@ public class TimeLapseRecorder : MonoBehaviour
     {
         if (!_isRecording || _webCam == null || !_webCam.isPlaying) return;
 
-        // [핵심 수정] 프레임 카운트가 아닌 실제 시간(Time.deltaTime)을 누적하여 체크
         _timer += Time.deltaTime;
 
         if (_timer >= _captureInterval)
         {
-            // 타이머에서 인터벌만큼 뺌 (0으로 초기화하면 오차가 누적될 수 있음)
             _timer -= _captureInterval;
-            
-            StartCoroutine(CaptureFrameRoutine());
+            int frameIndex = _globalFrameIndex;
+            _globalFrameIndex++;
+            StartCoroutine(CaptureFrameRoutine(frameIndex));
         }
     }
 
-    private IEnumerator CaptureFrameRoutine()
+    private IEnumerator CaptureFrameRoutine(int frameIndex)
     {
-        // 이미 프레임 끝을 기다렸다가 캡처하는 방식이므로, 
-        // Update 타이밍과 렌더링 타이밍을 맞추기 위해 WaitForEndOfFrame 유지
         yield return new WaitForEndOfFrame();
 
         if (_webCam != null && _webCam.isPlaying)
@@ -118,17 +126,12 @@ public class TimeLapseRecorder : MonoBehaviour
             RenderTexture.active = null;
             RenderTexture.ReleaseTemporary(rt);
 
-            // 화질 70 유지
             byte[] bytes = _tempTexture.EncodeToJPG(70); 
             
-            string fileName = $"img_{_globalFrameIndex:D5}.jpg"; 
+            string fileName = $"img_{frameIndex:D5}.jpg"; 
             string path = Path.Combine(_saveFolderPath, fileName);
             
-            // 비동기 파일 쓰기 (File.WriteAllBytesAsync)가 있다면 좋겠지만, 
-            // 유니티 버전에 따라 호환성이 다르므로 동기 방식 유지하되
-            // 1초에 15번 정도면 요즘 SSD에서는 부하가 거의 없음
             File.WriteAllBytes(path, bytes);
-            _globalFrameIndex++;
         }
     }
 
@@ -137,19 +140,24 @@ public class TimeLapseRecorder : MonoBehaviour
         Application.OpenURL($"file://{_saveFolderPath}");
     }
     
+    // FFmpeg 프로세스를 실행하고 모니터링 코루틴 시작
     public void ConvertToVideo()
     {
         string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg.exe"); 
+        
+        if (!File.Exists(ffmpegPath))
+        {
+            UnityEngine.Debug.LogError($"[FFmpeg] ffmpeg.exe를 찾을 수 없습니다: {ffmpegPath}");
+            return;
+        }
+        
         string inputPattern = Path.Combine(_saveFolderPath, "img_%05d.jpg");
         string outputPath = Path.Combine(_saveFolderPath, "Final_Timelapse.mp4");
-
         if (File.Exists(outputPath)) File.Delete(outputPath);
-
-        UnityEngine.Debug.Log($"[FFmpeg] 변환 시작: {inputPattern} -> {outputPath}");
-
+        Debug.Log($"[FFmpeg] 변환 시작: {inputPattern} -> {outputPath}");
+        
         // 30fps로 영상을 만듦 (15fps로 찍었으니 2배속 영상이 됨)
         string args = $"-framerate 30 -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
-
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = ffmpegPath,
@@ -157,7 +165,34 @@ public class TimeLapseRecorder : MonoBehaviour
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        _ffmpegProcess = Process.Start(startInfo);
+    }
 
-        Process.Start(startInfo);
+    // 프로세스 완료 대기 코루틴
+    private IEnumerator WaitForFFmpegRoutine(Process process)
+    {
+        IsProcessing = true;
+        IsConversionSuccessful = false;
+        LastExitCode = -1;
+
+        // 프로세스가 끝날 때까지 대기
+        while (!process.HasExited)
+        {
+            yield return null;
+        }
+
+        LastExitCode = process.ExitCode;
+        IsProcessing = false;
+
+        if (LastExitCode == 0)
+        {
+            IsConversionSuccessful = true;
+            Debug.Log("[TimeLapseRecorder] FFmpeg 변환 성공");
+        }
+        else
+        {
+            IsConversionSuccessful = false;
+            Debug.LogError($"[TimeLapseRecorder] FFmpeg 변환 실패. ExitCode: {LastExitCode}");
+        }
     }
 }
