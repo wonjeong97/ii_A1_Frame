@@ -2217,8 +2217,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 501.7, y: -446.54}
-  m_SizeDelta: {x: 916.6, y: 80.42}
+  m_AnchoredPosition: {x: 416.7, y: -446.54}
+  m_SizeDelta: {x: 1086.6, y: 80.42}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &630808329
 MonoBehaviour:
@@ -3341,6 +3341,7 @@ MonoBehaviour:
   - {fileID: 536983982}
   globalBlackCanvasGroup: {fileID: 1439879874}
   globalWhiteBackground: {fileID: 149912162}
+  cameraMaskMaterial: {fileID: 0}
 --- !u!1 &1106596529
 GameObject:
   m_ObjectHideFlags: 0
@@ -3730,8 +3731,8 @@ MonoBehaviour:
   countdownText: {fileID: 489531819}
   flashImage: {fileID: 351893381}
   contentCanvasGroup: {fileID: 1466673941}
-  maskingMaterial: {fileID: 0}
-  savePhoto: 0
+  defaultMaskingMaterial: {fileID: 0}
+  defaultSavePhoto: 1
 --- !u!1 &1204149396
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Text.RegularExpressions;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
 using UnityEngine;
@@ -41,20 +42,21 @@ namespace My.Scripts.Core
 
     public class LevelManager : MonoBehaviour
     {
-        [Header("Level Settings")]
-        [SerializeField] private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
+        [Header("Level Settings")] [SerializeField]
+        private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
+
         [SerializeField] private string nextSceneName = "00_Title";
         [SerializeField] private bool useFadeTransition = true;
 
-        [Header("Pages")] 
-        [SerializeField] private GamePage[] pages;
+        [Header("Pages")] [SerializeField] private GamePage[] pages;
 
-        [Header("Global Backgrounds")] 
-        [SerializeField] private CanvasGroup globalBlackCanvasGroup;
+        [Header("Global Backgrounds")] [SerializeField]
+        private CanvasGroup globalBlackCanvasGroup;
+
         [SerializeField] private Image globalWhiteBackground;
 
-        [Header("Camera Config")] 
-        [SerializeField] private Material cameraMaskMaterial; // Q1~Q15용 마스크
+        [Header("Camera Config")] [SerializeField]
+        private Material cameraMaskMaterial; // Q1~Q15용 마스크
 
         private int _currentPageIndex = -1;
         private bool _isTransitioning;
@@ -84,44 +86,187 @@ namespace My.Scripts.Core
 
         private bool LoadAndSetup()
         {
-            string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
-
-            // 공통: 카메라 설정
-            int camIdx = 4; // Page 5 (Index 4)
-            if (pages.Length > camIdx && pages[camIdx] is Page_Camera cam)
+            // 1. 공통 데이터 로드 (PlayCommon.json)
+            var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
+            if (commonData == null)
             {
-                cam.SetPhotoFilename($"아영길동_{levelID}");
-
-                if (_isTutorialMode) cam.Configure(shouldSave: false, maskMat: null);
-                else cam.Configure(shouldSave: true, maskMat: cameraMaskMaterial);
+                Debug.LogError("[LevelManager] Failed to load PlayCommon.json");
+                return false;
             }
+
+            string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
 
             if (_isTutorialMode)
             {
-                var setting = JsonLoader.Load<TutorialLevelSetting>(path);
-                if (setting == null) return false;
+                // 2-A. 튜토리얼 데이터 로드 (Page 7 포함)
+                var tutorialSetting = JsonLoader.Load<TutorialLevelSetting>(path);
+                if (tutorialSetting == null) return false;
 
-                if (pages.Length > 0) pages[0].SetupData(setting.page1);
-                if (pages.Length > 1) pages[1].SetupData(setting.page2);
-                if (pages.Length > 2) pages[2].SetupData(setting.page3);
-                if (pages.Length > 3) pages[3].SetupData(setting.page4);
-                if (pages.Length > 5) pages[5].SetupData(setting.page6);
-                if (pages.Length > 6) pages[6].SetupData(setting.page7);
+                // 3. 데이터 병합 (공통 -> 튜토리얼)
+                MergeCommonData(tutorialSetting, commonData);
+                SetCameraFileName(tutorialSetting.page3);
+
+                // 4. 페이지 세팅
+                if (pages.Length > 0) pages[0].SetupData(tutorialSetting.page1);
+                if (pages.Length > 1) pages[1].SetupData(tutorialSetting.page2);
+                if (pages.Length > 2) pages[2].SetupData(tutorialSetting.page3);
+                if (pages.Length > 3) pages[3].SetupData(tutorialSetting.page4);
+                if (pages.Length > 5) pages[5].SetupData(tutorialSetting.page6);
+                if (pages.Length > 6) pages[6].SetupData(tutorialSetting.page7); // Page 7은 튜토리얼 전용
             }
             else
             {
-                // Standard (Q1 ~ Q15)
-                var setting = JsonLoader.Load<StandardLevelSetting>(path);
-                if (setting == null) return false;
+                // 2-B. 일반 레벨 데이터 로드
+                var levelSetting = JsonLoader.Load<StandardLevelSetting>(path);
+                if (levelSetting == null) return false;
 
-                if (pages.Length > 0) pages[0].SetupData(setting.page1);
-                if (pages.Length > 1) pages[1].SetupData(setting.page2);
-                if (pages.Length > 2) pages[2].SetupData(setting.page3);
-                if (pages.Length > 3) pages[3].SetupData(setting.page4);
-                if (pages.Length > 5) pages[5].SetupData(setting.page6);
+                // 3. 데이터 병합 (공통 -> 레벨)
+                MergeCommonData(levelSetting, commonData);
+                SetCameraFileName(levelSetting.page3);
+
+                // 4. 페이지 세팅
+                if (pages.Length > 0) pages[0].SetupData(levelSetting.page1);
+                if (pages.Length > 1) pages[1].SetupData(levelSetting.page2);
+                if (pages.Length > 2) pages[2].SetupData(levelSetting.page3);
+                if (pages.Length > 3) pages[3].SetupData(levelSetting.page4);
+                if (pages.Length > 5) pages[5].SetupData(levelSetting.page6);
             }
 
             return true;
+        }
+
+        // 1. 튜토리얼 레벨용 병합 메서드
+        private void MergeCommonData(TutorialLevelSetting specific, StandardLevelSetting common)
+        {
+            // [Page 1] Grid
+            if (specific.page1 == null) specific.page1 = new GridPageData();
+            if (common.page1 != null)
+            {
+                specific.page1.descriptionText1 = common.page1.descriptionText1;
+                specific.page1.descriptionText2 = common.page1.descriptionText2;
+                specific.page1.descriptionText3 = common.page1.descriptionText3;
+            }
+
+            // [Page 2] QnA
+            if (specific.page2 == null) specific.page2 = new QnAPageData();
+            if (common.page2 != null)
+            {
+                specific.page2.descriptionText = common.page2.descriptionText;
+                specific.page2.answerTexts = common.page2.answerTexts;
+            }
+
+            // [Page 3] Check
+            if (specific.page3 == null) specific.page3 = new CheckPageData();
+            if (common.page3 != null)
+            {
+                specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
+                specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            }
+
+            // [Page 4] Transition (Ready)
+            if (specific.page4 == null) specific.page4 = new TransitionPageData();
+            if (common.page4 != null)
+            {
+                specific.page4.descriptionText = common.page4.descriptionText;
+            }
+
+            // [Page 6] Transition (End)
+            if (specific.page6 == null) specific.page6 = new TransitionPageData();
+            // PlayCommon.json 구조상 page6이 있다면 적용
+            if (common.page6 != null)
+            {
+                specific.page6.descriptionText = common.page6.descriptionText;
+            }
+        }
+
+        // 2. 일반 레벨용 병합 메서드
+        private void MergeCommonData(StandardLevelSetting specific, StandardLevelSetting common)
+        {
+            // [Page 1]
+            if (specific.page1 == null) specific.page1 = new GridPageData();
+            if (common.page1 != null)
+            {
+                specific.page1.descriptionText1 = common.page1.descriptionText1;
+                specific.page1.descriptionText2 = common.page1.descriptionText2;
+                specific.page1.descriptionText3 = common.page1.descriptionText3;
+            }
+
+            // [Page 2]
+            if (specific.page2 == null) specific.page2 = new QnAPageData();
+            if (common.page2 != null)
+            {
+                specific.page2.descriptionText = common.page2.descriptionText;
+                specific.page2.answerTexts = common.page2.answerTexts;
+            }
+
+            // [Page 3]
+            if (specific.page3 == null) specific.page3 = new CheckPageData();
+            if (common.page3 != null)
+            {
+                specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
+                specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+            }
+
+            // [Page 4]
+            if (specific.page4 == null) specific.page4 = new TransitionPageData();
+            if (common.page4 != null)
+            {
+                specific.page4.descriptionText = common.page4.descriptionText;
+            }
+
+            // [Page 6]
+            if (specific.page6 == null) specific.page6 = new TransitionPageData();
+            if (common.page6 != null)
+            {
+                specific.page6.descriptionText = common.page6.descriptionText;
+            }
+        }
+
+        private void SetCameraFileName(CheckPageData checkPageData)
+        {
+            // 1. 데이터가 없거나 카메라 페이지(Index 4)가 없으면 리턴
+            if (checkPageData == null || pages.Length <= 4) return;
+
+            var cameraPage = pages[4] as Page_Camera;
+            if (cameraPage == null) return;
+
+            // 2. 닉네임 가져오기 (데이터가 없으면 기본값)
+            string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text) ? checkPageData.nicknamePlayerA.text : "PlayerA";
+            string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text) ? checkPageData.nicknamePlayerB.text : "PlayerB";
+
+            // 3. 파일명에 쓸 수 없는 문자(줄바꿈, 특수문자 등) 제거
+            nameA = SanitizeString(nameA);
+            nameB = SanitizeString(nameB);
+
+            // 4. 파일명 조합: "아영길동_Q1"
+            string fileName = $"{nameA}{nameB}_{levelID}";
+
+            // 5. 카메라 페이지에 설정
+            cameraPage.SetPhotoFilename(fileName);
+
+            Debug.Log($"[LevelManager] Photo Filename Set: {fileName}.png");
+        }
+
+        // 문자열 정제 (줄바꿈 제거, 파일명 금지 문자 제거)
+        private string SanitizeString(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "";
+
+            // 1. 줄바꿈(\n) 제거
+            string clean = input.Replace("\n", "").Replace("\r", "");
+
+            // 2. 닉네임 뒤의 '님' 제거
+            clean = clean.Replace("님", "");
+
+            // 3. 공백 제거
+            clean = clean.Trim();
+
+            // 4. 파일 시스템에서 허용하지 않는 특수문자 제거 정규식
+            // (Windows/Mac 공통 금지 문자: \ / : * ? " < > | )
+            string invalidChars = Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
+            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+
+            return Regex.Replace(clean, invalidRegStr, "");
         }
 
         private void InitializePages()
