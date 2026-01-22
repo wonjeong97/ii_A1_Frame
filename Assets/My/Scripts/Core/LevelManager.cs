@@ -130,33 +130,60 @@ namespace My.Scripts.Core
             return true;
         }
         
-        // 공통 데이터를 특정 레벨 설정에 덮어씌우거나 채워넣는 헬퍼 메서드
-        // dynamic을 사용하여 StandardLevelSetting과 TutorialLevelSetting 모두 처리
-        private void MergeCommonData(dynamic specific, StandardLevelSetting common)
+       // 1. 튜토리얼 레벨용 병합 메서드
+        private void MergeCommonData(TutorialLevelSetting specific, StandardLevelSetting common)
         {
-            // [Page 1] Common의 설명 텍스트를 주입
+            // [Page 1] Grid
             if (specific.page1 == null) specific.page1 = new GridPageData();
             specific.page1.descriptionText1 = common.page1.descriptionText1;
             specific.page1.descriptionText2 = common.page1.descriptionText2;
             specific.page1.descriptionText3 = common.page1.descriptionText3;
-            // specific.page1.questions는 개별 파일에 있는 것을 그대로 사용
+            // specific.page1.questions는 개별 파일 사용
 
-            // [Page 2] Common의 설명 및 답변 보기를 주입
+            // [Page 2] QnA
             if (specific.page2 == null) specific.page2 = new QnAPageData();
             specific.page2.descriptionText = common.page2.descriptionText;
             specific.page2.answerTexts = common.page2.answerTexts;
-            // specific.page2.questionText는 개별 파일에 있는 것을 그대로 사용
+            // specific.page2.questionText는 개별 파일 사용
 
-            // [Page 3] 닉네임 주입
+            // [Page 3] Check
             if (specific.page3 == null) specific.page3 = new CheckPageData();
             specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
             specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
 
-            // [Page 4] 완료 멘트 주입
+            // [Page 4] Transition (Ready)
             if (specific.page4 == null) specific.page4 = new TransitionPageData();
             specific.page4.descriptionText = common.page4.descriptionText;
 
-            // [Page 6] 사진 기록 멘트 주입
+            // [Page 6] Transition (End)
+            if (specific.page6 == null) specific.page6 = new TransitionPageData();
+            specific.page6.descriptionText = common.page6.descriptionText;
+        }
+
+        // 2. 일반 레벨용 병합 메서드
+        private void MergeCommonData(StandardLevelSetting specific, StandardLevelSetting common)
+        {
+            // [Page 1]
+            if (specific.page1 == null) specific.page1 = new GridPageData();
+            specific.page1.descriptionText1 = common.page1.descriptionText1;
+            specific.page1.descriptionText2 = common.page1.descriptionText2;
+            specific.page1.descriptionText3 = common.page1.descriptionText3;
+
+            // [Page 2]
+            if (specific.page2 == null) specific.page2 = new QnAPageData();
+            specific.page2.descriptionText = common.page2.descriptionText;
+            specific.page2.answerTexts = common.page2.answerTexts;
+
+            // [Page 3]
+            if (specific.page3 == null) specific.page3 = new CheckPageData();
+            specific.page3.nicknamePlayerA = common.page3.nicknamePlayerA;
+            specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
+
+            // [Page 4]
+            if (specific.page4 == null) specific.page4 = new TransitionPageData();
+            specific.page4.descriptionText = common.page4.descriptionText;
+
+            // [Page 6]
             if (specific.page6 == null) specific.page6 = new TransitionPageData();
             specific.page6.descriptionText = common.page6.descriptionText;
         }
