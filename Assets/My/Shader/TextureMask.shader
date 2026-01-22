@@ -2,18 +2,17 @@ Shader "Custom/TextureMask"
 {
     Properties
     {
-        [PerRendererData] _MainTex ("Webcam (UI)", 2D) = "white" {}
+        _MainTex ("Webcam (RGB)", 2D) = "white" {}
         _MaskTex ("Mask Image", 2D) = "white" {} 
     }
     SubShader
     {
-        Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" "PreviewType"="Plane" }
+        Tags { "RenderType"="Opaque" "Queue"="Transparent" }
         
-        Cull Off
-        Lighting Off
-        ZWrite Off
-        ZTest [unity_GUIZTestMode]
-        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Off 
+        Lighting Off 
+        ZWrite Off 
+        ZTest Always
 
         Pass
         {
@@ -34,14 +33,23 @@ Shader "Custom/TextureMask"
                 float4 vertex : SV_POSITION;
             };
 
-            sampler2D _MainTex;
+            sampler2D _MainTex;            
+            float4 _MainTex_TexelSize; 
+            
             sampler2D _MaskTex;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv; 
+                o.uv = v.uv;
+                
+                
+                #if UNITY_UV_STARTS_AT_TOP
+                if (_MainTex_TexelSize.y < 0) 
+                    o.uv.y = 1 - o.uv.y;
+                #endif
+                
                 return o;
             }
 
@@ -50,11 +58,8 @@ Shader "Custom/TextureMask"
                 fixed4 col = tex2D(_MainTex, i.uv);
                 fixed4 maskCol = tex2D(_MaskTex, i.uv);
 
-                // 마스크 이미지: 도형 부분(Alpha 0) -> 보임(1), 배경(Alpha 1) -> 안보임(0)
                 float maskValue = 1.0 - maskCol.a;
 
-                // [수정됨] 배경색 합성 대신, 알파값(투명도)에 마스크 적용
-                // maskValue가 1이면 불투명(보임), 0이면 투명(안보임)
                 col.a *= maskValue;
 
                 return col;

@@ -73,7 +73,15 @@ namespace My.Scripts.Core
 
             if (globalWhiteBackground != null) globalWhiteBackground.gameObject.SetActive(false);
 
-            _isTutorialMode = (levelID == "Tutorial");
+            _isTutorialMode = string.Equals(levelID, "Tutorial", StringComparison.OrdinalIgnoreCase);
+            
+            if (string.Equals(levelID, "Q1", StringComparison.OrdinalIgnoreCase))
+            {
+                if (TimeLapseRecorder.Instance != null)
+                {
+                    TimeLapseRecorder.Instance.ClearRecordingData();
+                }
+            }
 
             if (!LoadAndSetup())
             {
@@ -105,6 +113,11 @@ namespace My.Scripts.Core
                 // 3. 데이터 병합 (공통 -> 튜토리얼)
                 MergeCommonData(tutorialSetting, commonData);
                 SetCameraFileName(tutorialSetting.page3);
+                if (pages.Length > 4 && pages[4] is Page_Camera camPageTut)
+                {
+                    camPageTut.Configure(false, cameraMaskMaterial);
+                    Debug.Log("[LevelManager] Configured Camera for Tutorial: Save=False");
+                }
 
                 // 4. 페이지 세팅
                 if (pages.Length > 0) pages[0].SetupData(tutorialSetting.page1);
@@ -123,6 +136,11 @@ namespace My.Scripts.Core
                 // 3. 데이터 병합 (공통 -> 레벨)
                 MergeCommonData(levelSetting, commonData);
                 SetCameraFileName(levelSetting.page3);
+                if (pages.Length > 4 && pages[4] is Page_Camera camPage)
+                {
+                    camPage.Configure(true, cameraMaskMaterial);
+                    Debug.Log($"[LevelManager] Configured Camera for Level {levelID}: Save=True");
+                }
 
                 // 4. 페이지 세팅
                 if (pages.Length > 0) pages[0].SetupData(levelSetting.page1);
@@ -305,7 +323,15 @@ namespace My.Scripts.Core
         }
 
         private void OnAllFinished()
-        {
+        {   
+            if (string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase))
+            {
+                if (TimeLapseRecorder.Instance != null)
+                {
+                    TimeLapseRecorder.Instance.ConvertToVideo();
+                }
+            }
+            
             if (useFadeTransition && GameManager.Instance != null) GameManager.Instance.ChangeScene(nextSceneName);
             else SceneManager.LoadScene(nextSceneName);
         }

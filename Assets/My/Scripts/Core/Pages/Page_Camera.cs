@@ -23,6 +23,9 @@ namespace My.Scripts.Core.Pages
         // 내부 변수
         private Material _currentMaskingMaterial;
         private bool _shouldSavePhoto;
+        
+        // [핵심 수정 1] 설정 여부를 확인하는 변수 추가
+        private bool _isConfigured = false; 
 
         private WebCamTexture _webCamTexture;
         private Texture2D _capturedPhoto;
@@ -34,14 +37,16 @@ namespace My.Scripts.Core.Pages
         protected override void Awake()
         {
             base.Awake();
-            // 기본값 초기화
-            _currentMaskingMaterial = defaultMaskingMaterial;
-            _shouldSavePhoto = defaultSavePhoto;
+            
+            // [핵심 수정 2] 외부(LevelManager)에서 Configure가 먼저 호출되었다면 기본값으로 덮어쓰지 않음
+            if (!_isConfigured)
+            {
+                _currentMaskingMaterial = defaultMaskingMaterial;
+                _shouldSavePhoto = defaultSavePhoto;
+            }
         }
 
-        public override void SetupData(object data)
-        {
-        }
+        public override void SetupData(object data) { }
 
         public void SetPhotoFilename(string fileName)
         {
@@ -52,6 +57,11 @@ namespace My.Scripts.Core.Pages
         {
             _shouldSavePhoto = shouldSave;
             _currentMaskingMaterial = maskMat;
+            
+            // [핵심 수정 3] 설정이 완료되었음을 표시
+            _isConfigured = true; 
+            
+            Debug.Log($"[Page_Camera] Configured: Save={_shouldSavePhoto}, Mask={(maskMat != null ? maskMat.name : "None")}");
         }
 
         public override void OnEnter()
@@ -94,23 +104,33 @@ namespace My.Scripts.Core.Pages
         }
 
         private IEnumerator CountdownRoutine()
-        {
+        {   
             yield return new WaitForSeconds(1.0f);
+            
+            if (TimeLapseRecorder.Instance != null && _webCamTexture != null)
+            {
+                TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
+            }
             yield return StartCoroutine(ShowAndFadeNumber("3"));
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
+            
+            if (TimeLapseRecorder.Instance != null)
+            {
+                TimeLapseRecorder.Instance.StopCapture();
+            }
+            
             yield return StartCoroutine(FlashAndCaptureRoutine());
         }
 
         private IEnumerator FlashAndCaptureRoutine()
         {
-            // 최대 밝기를 0.8로 제한
             float maxAlpha = 0.8f;
 
             if (flashImage)
             {
                 flashImage.gameObject.SetActive(true);
-                SetImageAlpha(flashImage, maxAlpha); // 1f -> 0.8f
+                SetImageAlpha(flashImage, maxAlpha);
             }
 
             if (contentCanvasGroup) contentCanvasGroup.alpha = 0f;
@@ -125,16 +145,13 @@ namespace My.Scripts.Core.Pages
                 while (t < 0.5f)
                 {
                     t += Time.deltaTime;
-                    // 0.8에서 0으로 페이드 아웃
                     SetImageAlpha(flashImage, Mathf.Lerp(maxAlpha, 0f, t / 0.5f)); 
                     yield return null;
                 }
-
                 flashImage.gameObject.SetActive(false);
             }
 
             yield return new WaitForSeconds(2.0f);
-
             CompleteStep();
         }
 
@@ -144,7 +161,9 @@ namespace My.Scripts.Core.Pages
             {
                 RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
 
-                if (_currentMaskingMaterial != null) Graphics.Blit(_webCamTexture, rt, _currentMaskingMaterial);
+                Material maskToUse = _currentMaskingMaterial;
+
+                if (maskToUse != null) Graphics.Blit(_webCamTexture, rt, maskToUse);
                 else Graphics.Blit(_webCamTexture, rt);
 
                 _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
@@ -159,7 +178,15 @@ namespace My.Scripts.Core.Pages
 
                 if (cameraDisplay) cameraDisplay.texture = _capturedPhoto;
 
-                if (_shouldSavePhoto) SavePhotoToCustomFolder(_capturedPhoto);
+                // [핵심 수정 5] 저장 여부(_shouldSavePhoto) 확실히 체크
+                if (_shouldSavePhoto)
+                {
+                    SavePhotoToCustomFolder(_capturedPhoto);
+                }
+                else
+                {
+                    Debug.Log($"[Page_Camera] Photo save skipped. (shouldSavePhoto is false)");
+                }
 
                 StopWebCam();
             }
@@ -171,10 +198,8 @@ namespace My.Scripts.Core.Pages
             try
             {
                 byte[] bytes = photo.EncodeToPNG();
-
                 string dataPath = Application.dataPath;
                 DirectoryInfo parentDir = Directory.GetParent(dataPath);
-                
                 string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
                 
                 string folder = Path.Combine(rootPath, "Pictures");
