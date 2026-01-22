@@ -75,7 +75,7 @@ public class TimeLapseRecorder : MonoBehaviour
                 try { File.Delete(file); } catch { }
             }
         }
-        UnityEngine.Debug.Log("[TimeLapseRecorder] 이전 데이터 초기화 완료");
+        Debug.Log("[TimeLapseRecorder] 이전 데이터 초기화 완료");
     }
 
     public void StartCapture(WebCamTexture cam)
@@ -166,6 +166,7 @@ public class TimeLapseRecorder : MonoBehaviour
             CreateNoWindow = true
         };
         _ffmpegProcess = Process.Start(startInfo);
+        StartCoroutine(WaitForFFmpegRoutine(_ffmpegProcess));
     }
 
     // 프로세스 완료 대기 코루틴
