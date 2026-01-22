@@ -158,13 +158,13 @@ namespace My.Scripts.Core.Pages
 
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+//#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (Input.GetKeyDown(KeyCode.Space) && !_isStageCompleted)
             {
                 _isStageCompleted = true;
                 StartCoroutine(ShowCompletionRoutine());
             }
-#endif
+//#endif
             HandleMovement();
             UpdateCellFades();
             HandleIdleCheck();

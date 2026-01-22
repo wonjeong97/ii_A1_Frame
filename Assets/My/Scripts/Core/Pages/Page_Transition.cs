@@ -29,6 +29,7 @@ namespace My.Scripts.Core.Pages
         [SerializeField] private CanvasGroup namesGroup;
 
         private bool _isCompleted;
+        private float _enterTime;
 
         public override void SetupData(object data)
         {
@@ -46,6 +47,7 @@ namespace My.Scripts.Core.Pages
         {
             base.OnEnter();
             _isCompleted = false;
+            _enterTime = Time.time;
 
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
@@ -57,15 +59,15 @@ namespace My.Scripts.Core.Pages
         private void Update()
         {
             if (_isCompleted) return;
-            
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (Time.time - _enterTime < 1f) return;
+//#if UNITY_EDITOR || DEVELOPMENT_BUILD
             // 스페이스바 입력 시 강제 완료
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 _isCompleted = true;
                 CompleteStep();
             }
-#endif
+//#endif
         }
 
         private IEnumerator SequenceRoutine()

@@ -22,6 +22,7 @@ namespace My.Scripts.Global
             public const string PlayQ13 = "15_Play_Q13";
             public const string PlayQ14 = "16_Play_Q14";
             public const string PlayQ15 = "17_Play_Q15";
+            public const string Ending = "18_Ending";
         }
 
         public static class Path
