@@ -29,5 +29,25 @@
       "fontSize": 55,
       "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     }
+  },
+  "page3": {
+    "descriptionText": {
+      "name": "Text_체험이 완료되었습니다.",
+      "position": {"x": 960, "y": -867},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "체험이 완료되었습니다.\n카드에 표시된 블록으로 이동해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "allFinishedText": {
+      "name": "Text_모든 체험이 완료되었습니다.",
+      "position": {"x": 960, "y": -867},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "모든 체험이 완료되었습니다.\n결과 출력 공간으로 이동해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
   }
 }
