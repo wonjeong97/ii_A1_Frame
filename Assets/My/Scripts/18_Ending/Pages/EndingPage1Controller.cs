@@ -91,6 +91,7 @@ namespace My.Scripts._18_Ending.Pages
                 if (!TimeLapseRecorder.Instance.IsConversionSuccessful)
                 {
                     Debug.LogError($"[EndingPage1] 변환 실패. 종료합니다.");
+                    CompleteStep();
                     yield break; 
                 }
             }
@@ -106,6 +107,7 @@ namespace My.Scripts._18_Ending.Pages
             if (!File.Exists(filePath))
             {
                 Debug.LogError($"[EndingPage1] 파일을 찾을 수 없음: {filePath}");
+                CompleteStep();
                 yield break;
             }
 
@@ -123,7 +125,12 @@ namespace My.Scripts._18_Ending.Pages
                 prepareWait += Time.deltaTime;
             }
 
-            if (!videoPlayer.isPrepared) yield break;
+            if (!videoPlayer.isPrepared)
+            {
+                Debug.LogError("[EndingPage1] VideoPlayer 준비 실패.");
+                CompleteStep();
+                yield break;
+            }
 
             // 텍스처 연결
             videoDisplay.texture = videoPlayer.texture;
