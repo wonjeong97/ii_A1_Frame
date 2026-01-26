@@ -11,7 +11,7 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core
 {
-    // [인터페이스 정의]
+    /// <summary> 레벨 설정 데이터 인터페이스 </summary>
     public interface ILevelSetting
     {
         GridPageData Page1 { get; set; }
@@ -21,6 +21,7 @@ namespace My.Scripts.Core
         TransitionPageData Page6 { get; set; }
     }
 
+    /// <summary> 일반 레벨 설정 데이터 </summary>
     [Serializable]
     public class StandardLevelSetting : ILevelSetting
     {
@@ -61,6 +62,7 @@ namespace My.Scripts.Core
         }
     }
 
+    /// <summary> 튜토리얼 레벨 설정 데이터 </summary>
     [Serializable]
     public class TutorialLevelSetting : ILevelSetting
     {
@@ -102,24 +104,24 @@ namespace My.Scripts.Core
         }
     }
 
+    /// <summary> Q1~Q15 및 튜토리얼 씬 핵심 매니저 </summary>
     public class LevelManager : BaseFlowManager
     {
-        [Header("Level Settings")] [SerializeField]
-        private string levelID = "Q2";
+        [Header("Level Settings")] 
+        [SerializeField] private string levelID = "Q2"; // 레벨 식별자
+        [SerializeField] private string nextSceneName = "00_Title"; // 다음 씬 이름
+        [SerializeField] private bool useFadeTransition = true; // 페이드 전환 사용 여부
 
-        [SerializeField] private string nextSceneName = "00_Title";
-        [SerializeField] private bool useFadeTransition = true;
+        [Header("Global Backgrounds")] 
+        [SerializeField] private CanvasGroup globalBlackCanvasGroup; // 전역 검은 배경
+        [SerializeField] private Image globalWhiteBackground; // 전역 흰 배경
 
-        [Header("Global Backgrounds")] [SerializeField]
-        private CanvasGroup globalBlackCanvasGroup;
+        [Header("Camera Config")] 
+        [SerializeField] private Material cameraMaskMaterial; // 카메라 마스킹 재질
 
-        [SerializeField] private Image globalWhiteBackground;
+        private bool _isTutorialMode; // 튜토리얼 모드 여부
 
-        [Header("Camera Config")] [SerializeField]
-        private Material cameraMaskMaterial;
-
-        private bool _isTutorialMode;
-
+        /// <summary> 데이터 로드 및 설정 </summary>
         protected override void LoadSettings()
         {
             InitializeGlobals();
@@ -139,18 +141,15 @@ namespace My.Scripts.Core
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
                 if (tSetting != null)
                 {
-                    // 인터페이스 덕분에 메서드 하나로 통합됨
                     MergeCommonData(tSetting, commonData);
 
                     SetCameraFileName(tSetting.Page3);
                     ConfigureCameraPage(false);
 
-                    // [리팩토링] 반복되는 null 체크 및 주입 코드를 헬퍼 메서드로 대체
                     SetupPageData(0, tSetting.Page1);
                     SetupPageData(1, tSetting.Page2);
                     SetupPageData(2, tSetting.Page3);
                     SetupPageData(3, tSetting.Page4);
-                    // Page 4(인덱스 4)는 카메라 페이지라 데이터 없음
                     SetupPageData(5, tSetting.Page6);
                     SetupPageData(6, tSetting.page7);
                 }
@@ -174,7 +173,7 @@ namespace My.Scripts.Core
             }
         }
 
-        // [Helper] 초기 설정 분리
+        /// <summary> 전역 객체 초기화 </summary>
         private void InitializeGlobals()
         {
             if (globalBlackCanvasGroup)
@@ -194,16 +193,16 @@ namespace My.Scripts.Core
             }
         }
 
-        // [Helper] 페이지 데이터 주입 간소화
+        /// <summary> 페이지 데이터 주입 </summary>
         private void SetupPageData(int index, object data)
         {
-            if (pages != null && index < pages.Length && pages[index] != null)
+            if (pages != null && index >= 0 && index < pages.Length && pages[index] != null)
             {
                 pages[index].SetupData(data);
             }
         }
 
-        // [리팩토링] 인터페이스를 사용하여 중복 메서드 통합
+        /// <summary> 공통 데이터 병합 </summary>
         private void MergeCommonData(ILevelSetting specific, StandardLevelSetting common)
         {
             if (specific.Page1 == null) specific.Page1 = new GridPageData();
@@ -240,9 +239,8 @@ namespace My.Scripts.Core
                 specific.Page6.descriptionText = common.Page6.descriptionText;
             }
         }
-
-        // ... (OnAllFinished, TransitionRoutine 등 나머지 로직은 기존과 동일하므로 생략하지 않고 유지) ...
-
+        
+        /// <summary> 전체 종료 처리 </summary>
         protected override void OnAllFinished()
         {
             if (string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase))
@@ -255,9 +253,9 @@ namespace My.Scripts.Core
             }
         }
 
+        /// <summary> 페이지 전환 연출 </summary>
         protected override IEnumerator TransitionRoutine(int targetIndex, int info)
         {
-            // (이전 답변에서 제공해드린 TransitionRoutine 코드 그대로 사용)
             isTransitioning = true;
             GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length)
                 ? pages[currentPageIndex]
@@ -344,11 +342,13 @@ namespace My.Scripts.Core
             isTransitioning = false;
         }
 
+        /// <summary> 카메라 페이지 설정 </summary>
         private void ConfigureCameraPage(bool save)
         {
             if (pages.Length > 4 && pages[4] is Page_Camera camPage) camPage.Configure(save, cameraMaskMaterial);
         }
 
+        /// <summary> 카메라 파일명 설정 </summary>
         private void SetCameraFileName(CheckPageData checkPageData)
         {
             if (checkPageData == null || pages.Length <= 4) return;
@@ -365,6 +365,7 @@ namespace My.Scripts.Core
             cameraPage.SetPhotoFilename($"{nameA}{nameB}_{levelID}");
         }
 
+        /// <summary> 문자열 특수문자 제거 </summary>
         private string SanitizeString(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
@@ -374,6 +375,7 @@ namespace My.Scripts.Core
             return Regex.Replace(clean, invalidRegStr, "");
         }
 
+        /// <summary> 영상 변환 대기 및 종료 </summary>
         private IEnumerator ProcessVideoAndFinish()
         {
             if (TimeLapseRecorder.Instance != null)
@@ -392,17 +394,20 @@ namespace My.Scripts.Core
             TransitionToNextScene();
         }
 
+        /// <summary> 다음 씬 이동 </summary>
         private void TransitionToNextScene()
         {
             if (useFadeTransition && GameManager.Instance != null) GameManager.Instance.ChangeScene(nextSceneName);
             else SceneManager.LoadScene(nextSceneName);
         }
 
+        /// <summary> 페이지 트리거 처리 </summary>
         private void HandleTrigger(GamePage page, int info)
         {
             if (info != 0 && page is Page_Check checkPage) checkPage.ActivatePlayerCheck(info == 1);
         }
 
+        /// <summary> 커버 전환 연출 </summary>
         private IEnumerator CoverTransition(GamePage current, GamePage next, int info)
         {
             if (globalBlackCanvasGroup != null)
@@ -421,6 +426,7 @@ namespace My.Scripts.Core
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
         }
 
+        /// <summary> 리빌 전환 연출 </summary>
         private IEnumerator RevealTransition(GamePage current, GamePage next, int info)
         {
             if (globalBlackCanvasGroup != null) globalBlackCanvasGroup.alpha = 1f;
@@ -442,6 +448,7 @@ namespace My.Scripts.Core
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
         }
 
+        /// <summary> 암전 전환 연출 </summary>
         private IEnumerator AmjeonTransition(GamePage current, GamePage next, int info, bool enableWhiteBg = false)
         {
             if (FadeManager.Instance)
@@ -471,6 +478,7 @@ namespace My.Scripts.Core
             if (FadeManager.Instance) FadeManager.Instance.FadeIn(1f);
         }
 
+        /// <summary> 순차 전환 연출 </summary>
         private IEnumerator SequenceTransition(GamePage current, GamePage next, Image background, int info,
             float waitTime = 0f)
         {
@@ -491,6 +499,7 @@ namespace My.Scripts.Core
             }
         }
 
+        /// <summary> 캔버스 그룹 페이드 </summary>
         private IEnumerator FadeCanvasGroup(CanvasGroup cg, float s, float e, float d)
         {
             if (!cg) yield break;

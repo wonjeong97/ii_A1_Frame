@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace My.Scripts.Core
 {
-    // 매니저가 배열로 관리하기 위한 기본 클래스
+    /// <summary> 모든 페이지 컨트롤러의 최상위 부모 </summary>
     public abstract class GamePage : MonoBehaviour
     {
-        public Action<int> onStepComplete;
-        protected CanvasGroup canvasGroup;
+        public Action<int> onStepComplete; // 단계 완료 이벤트 (int: 트리거 정보)
+        protected CanvasGroup canvasGroup; // 투명도 조절 컴포넌트
 
         protected virtual void Awake()
         {
@@ -15,44 +15,48 @@ namespace My.Scripts.Core
             if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
-        public abstract void SetupData(object data); // 매니저용 (타입 모름)
+        /// <summary> 데이터 설정 (타입 미정) </summary>
+        public abstract void SetupData(object data);
 
+        /// <summary> 진입 (활성화) </summary>
         public virtual void OnEnter() 
         { 
             gameObject.SetActive(true);
             SetAlpha(1f);
         }
 
+        /// <summary> 퇴장 (비활성화) </summary>
         public virtual void OnExit() 
         { 
             gameObject.SetActive(false); 
         }
 
+        /// <summary> 투명도 설정 </summary>
         public void SetAlpha(float alpha)
         {
             if (canvasGroup) canvasGroup.alpha = alpha;
         }
 
+        /// <summary> 완료 신호 전송 </summary>
         protected void CompleteStep(int triggerInfo = 0)
         {
             onStepComplete?.Invoke(triggerInfo);
         }
     }
 
-    // 제네릭 버전: 각 페이지 컨트롤러는 이것을 상속받음
+    /// <summary> 제네릭 데이터 페이지 부모 (타입 안전) </summary>
     public abstract class GamePage<T> : GamePage where T : class
     {
-        // 매니저가 호출하는 object 버전을 받아서 -> T 타입으로 안전하게 변환 후 전달
+        /// <summary> 타입 안전 데이터 주입 (매니저 호출용) </summary>
         public sealed override void SetupData(object data)
         {
             if (data is T typedData)
             {
                 SetupData(typedData);
             }
-            // 데이터가 null이거나 타입이 안 맞으면 무시
         }
 
-        // 자식 클래스가 실제로 구현할 메서드 (T 타입 데이터가 바로 들어옴)
+        /// <summary> 실제 데이터 설정 구현 (자식용) </summary>
         protected abstract void SetupData(T data);
     }
 }
