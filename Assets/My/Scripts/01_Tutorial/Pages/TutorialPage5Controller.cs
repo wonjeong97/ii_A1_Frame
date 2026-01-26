@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
@@ -19,7 +20,8 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting txtB_Info;
     }
 
-    public class TutorialPage5Controller : TutorialPageBase
+    // [수정] GamePage<TutorialPage5Data> 상속
+    public class TutorialPage5Controller : GamePage<TutorialPage5Data>
     {
         [Header("Page 5 UI")]
         [SerializeField] private Text descriptionText;
@@ -35,7 +37,6 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private float fadeDuration = 0.5f; 
         [SerializeField] private float centerMoveTime = 0.5f; 
 
-        // 내부 변수들
         private Vector2 _initialPos;            
         private bool _isInitialized;
         private bool _hasStarted; 
@@ -46,17 +47,15 @@ namespace My.Scripts._01_Tutorial.Pages
         private TextSetting _dataB_Start;
         private TextSetting _dataB_Info;
 
-        public override void SetupData(object data)
+        // SetupData 오버라이드
+        protected override void SetupData(TutorialPage5Data data)
         {
-            var pageData = data as TutorialPage5Data;
-            if (pageData == null) return;
-
             if (descriptionText) 
-                UIManager.Instance.SetText(descriptionText.gameObject, pageData.txtA_Start);
+                UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
             
-            _dataA_Info = pageData.txtA_Info;
-            _dataB_Start = pageData.txtB_Start;
-            _dataB_Info = pageData.txtB_Info;
+            _dataA_Info = data.txtA_Info;
+            _dataB_Start = data.txtB_Start;
+            _dataB_Info = data.txtB_Info;
         }
 
         public override void OnEnter()
@@ -69,14 +68,12 @@ namespace My.Scripts._01_Tutorial.Pages
                 _isInitialized = true;
             }
 
-            // 초기화
             _hasStarted = false;
             _isInputBlocked = false;
             _currentStage = 0; 
             
             if (imageFocus) imageFocus.rectTransform.anchoredPosition = _initialPos;
             
-            // 페이지 전체 알파값 초기화 (부모 클래스의 canvasGroup 활용)
             SetAlpha(1f);
             SetTextAlpha(1f);
         }
@@ -130,7 +127,6 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator ProcessStageSequence()
         {
-            // 1. 5초 대기
             yield return new WaitForSeconds(5.0f);
 
             _isInputBlocked = true;
@@ -138,22 +134,18 @@ namespace My.Scripts._01_Tutorial.Pages
 
             if (_currentStage == 0)
             {
-                // [Player A 완료]
                 yield return StartCoroutine(TextChangeSequence(_dataA_Info));
                 yield return new WaitForSeconds(4.0f);
                 yield return StartCoroutine(TextChangeSequence(_dataB_Start));
 
-                // B 단계 리셋
                 _currentStage = 1;
                 _hasStarted = false;
                 _isInputBlocked = false;
             }
             else
             {
-                // [Player B 완료]
                 yield return StartCoroutine(TextChangeSequence(_dataB_Info));
-                yield return new WaitForSeconds(4.0f); // 텍스트 읽을 시간
-                
+                yield return new WaitForSeconds(4.0f);
                 CompleteStep();
             }
         }
