@@ -23,9 +23,9 @@ namespace My.Scripts._18_Ending
             
             if (setting != null)
             {
-                if (pages.Length > 0 && pages[0] is EndingPage1Controller p1) p1.SetupData(setting.page1);
-                if (pages.Length > 1 && pages[1] is EndingPage2Controller p2) p2.SetupData(setting.page2);
-                if (pages.Length > 2 && pages[2] is EndingPage3Controller p3) p3.SetupData(setting.page3);
+                if (pages.Length > 0 && setting.page1 != null && pages[0] is EndingPage1Controller p1) p1.SetupData(setting.page1);
+                if (pages.Length > 1 && setting.page2 != null && pages[1] is EndingPage2Controller p2) p2.SetupData(setting.page2);
+                if (pages.Length > 2 && setting.page3 != null && pages[2] is EndingPage3Controller p3) p3.SetupData(setting.page3);
             }
             else
             {

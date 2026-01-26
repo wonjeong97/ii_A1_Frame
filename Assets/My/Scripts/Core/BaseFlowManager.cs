@@ -14,6 +14,11 @@ namespace My.Scripts.Core
         protected virtual void Start()
         {
             LoadSettings(); // 1. 데이터 로드 
+            if (pages == null || pages.Length == 0)
+            {
+                Debug.LogWarning("[BaseFlowManager] pages가 비어 있습니다.");
+                return;
+            }
             InitializePages(); // 2. 페이지 초기화
             StartFlow(); // 3. 흐름 시작
         }
@@ -25,14 +30,13 @@ namespace My.Scripts.Core
         // 페이지 초기화 및 이벤트 연결
         protected virtual void InitializePages()
         {
+            if (pages == null) return;
             for (int i = 0; i < pages.Length; i++)
             {
                 if (pages[i] == null) continue;
-
                 // 초기 상태: 비활성화 및 투명
                 pages[i].gameObject.SetActive(false);
                 pages[i].SetAlpha(0f);
-
                 // 이벤트 연결: 현재 페이지가 끝나면 -> OnPageComplete 호출
                 int currentIndex = i;
                 int nextIndex = i + 1;
@@ -45,7 +49,7 @@ namespace My.Scripts.Core
 
         protected virtual void StartFlow()
         {
-            if (pages.Length > 0)
+            if (pages != null && pages.Length > 0)
             {
                 TransitionToPage(0);
             }
@@ -68,37 +72,44 @@ namespace My.Scripts.Core
         protected virtual void TransitionToPage(int targetIndex, int info = 0)
         {
             if (isTransitioning) return;
+            if (pages == null || targetIndex < 0 || targetIndex >= pages.Length)
+            {
+                Debug.LogWarning($"[BaseFlowManager] invalid targetIndex: {targetIndex}");
+                return;
+            }
+            isTransitioning = true;
             StartCoroutine(TransitionRoutine(targetIndex, info));
         }
 
         protected virtual IEnumerator TransitionRoutine(int targetIndex, int info)
         {
-            isTransitioning = true;
-
-            // 1. 현재 페이지 퇴장 (있다면)
-            if (currentPageIndex >= 0 && currentPageIndex < pages.Length)
+            try
             {
-                var current = pages[currentPageIndex];
-                if (current != null)
+                // 1. 현재 페이지 퇴장 (있다면)
+                if (currentPageIndex >= 0 && currentPageIndex < pages.Length)
                 {
-                    yield return StartCoroutine(FadePage(current, 1f, 0f));
-                    current.OnExit();
+                    var current = pages[currentPageIndex];
+                    if (current != null)
+                    {
+                        yield return StartCoroutine(FadePage(current, 1f, 0f));
+                        current.OnExit();
+                    }
+                }
+                // 2. 다음 페이지 준비
+                currentPageIndex = targetIndex;
+                var next = pages[targetIndex];
+                if (next != null)
+                {
+                    next.OnEnter(); // 활성화 및 초기화
+                    
+                    // 3. 다음 페이지 등장
+                    yield return StartCoroutine(FadePage(next, 0f, 1f));
                 }
             }
-
-            // 2. 다음 페이지 준비
-            currentPageIndex = targetIndex;
-            var next = pages[targetIndex];
-
-            if (next != null)
+            finally
             {
-                next.OnEnter(); // 활성화 및 초기화
-                
-                // 3. 다음 페이지 등장
-                yield return StartCoroutine(FadePage(next, 0f, 1f));
+                isTransitioning = false;
             }
-
-            isTransitioning = false;
         }
 
         // 공용 페이드 유틸리티
