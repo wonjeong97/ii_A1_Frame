@@ -71,10 +71,22 @@ namespace My.Scripts._18_Ending.Pages
             if (TimeLapseRecorder.Instance != null)
             {
                 // 변환 작업 중이면 대기
-                while (TimeLapseRecorder.Instance.IsProcessing)
+                if (TimeLapseRecorder.Instance != null)
                 {
-                    Debug.Log("[EndingPage1] FFmpeg 변환 중... 잠시만 기다려주세요.");
-                    yield return new WaitForSeconds(0.5f);
+                    // 변환 작업 중이면 대기
+                    float processingTimeout = 60f;  // FFmpeg 변환에 충분한 시간
+                    float processingWait = 0f;
+                    while (TimeLapseRecorder.Instance.IsProcessing && processingWait < processingTimeout)
+                    {
+                        Debug.Log("[EndingPage1] FFmpeg 변환 중... 잠시만 기다려주세요.");
+                        yield return new WaitForSeconds(0.5f);
+                        processingWait += 0.5f;
+                    }
+                    if (TimeLapseRecorder.Instance.IsProcessing)
+                    {
+                        Debug.LogError("[EndingPage1] FFmpeg 변환 대기 시간 초과");
+                        yield break;
+                    }
                 }
 
                 // 변환 실패 시 중단
