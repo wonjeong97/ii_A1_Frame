@@ -1,89 +1,55 @@
-using System.IO;
-using System.Collections;
+using System;
+using My.Scripts._18_Ending.Pages;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Video;
-using My.Scripts.Global;
+using Wonjeong.Utils; // JsonLoader 사용
 
-public class EndingManager : MonoBehaviour
+namespace My.Scripts._18_Ending
 {
-    [Header("UI References")]
-    [SerializeField] private RawImage videoDisplay; 
-    [SerializeField] private VideoPlayer videoPlayer; 
-
-    [Header("Settings")]
-    [SerializeField] private string videoFolderName = "Timelapse"; 
-    [SerializeField] private string videoFileName = "Final_Timelapse.mp4";
-
-    private void Start()
+    // [추가] 엔딩 씬 전체 데이터 구조
+    [Serializable]
+    public class EndingLevelSetting
     {
-        StartCoroutine(PlayVideoRoutine());
+        public EndingPage1Data page1;
     }
 
-    private IEnumerator PlayVideoRoutine()
+    public class EndingManager : MonoBehaviour
     {
-        // 1. 경로 설정
-        string dataPath = Application.dataPath;
-        DirectoryInfo parentDir = Directory.GetParent(dataPath);
-        string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
-        
-        string folderPath = Path.Combine(rootPath, videoFolderName);
-        string filePath = Path.Combine(folderPath, videoFileName);
+        [Header("Pages")]
+        [SerializeField] private EndingPage1Controller page1;
 
-        // 타임랩스 레코더의 상태를 보고 대기
-        if (TimeLapseRecorder.Instance != null)
+        private void Start()
         {
-            // (1) 프로세스 작업 중이라면 무한 대기 (타임아웃 없이 확실하게 기다림)
-            while (TimeLapseRecorder.Instance.IsProcessing)
-            {
-                Debug.Log("[EndingManager] FFmpeg 변환 중... 잠시만 기다려주세요.");
-                yield return new WaitForSeconds(0.5f);
-            }
-
-            // (2) 작업이 끝났는데 실패했다면? -> 재생 포기하고 에러 처리
-            if (!TimeLapseRecorder.Instance.IsConversionSuccessful)
-            {
-                Debug.LogError($"[EndingManager] FFmpeg 변환 실패 (ExitCode: {TimeLapseRecorder.Instance.LastExitCode}). 영상을 재생할 수 없습니다.");
-                yield break; 
-            }
-        }
-        else
-        {
-            Debug.LogWarning("[EndingManager] TimeLapseRecorder 인스턴스를 찾을 수 없습니다. 파일 유무만 확인합니다.");
+            LoadSettings();
+            InitializePages();
         }
 
-        // 프로세스는 성공했다고 하는데, 파일 시스템 딜레이로 없을 수도 있으니 짧게 체크
-        float waitTime = 0f;
-        while (!File.Exists(filePath) && waitTime < 5.0f)
+        // JSON 로드 및 데이터 주입
+        private void LoadSettings()
         {
-            Debug.Log($"[EndingManager] 파일 시스템 동기화 대기 중...");
-            yield return new WaitForSeconds(0.2f);
-            waitTime += 0.2f;
-        }
-
-        if (File.Exists(filePath))
-        {
-            Debug.Log($"[EndingManager] 영상 로드 시작: {filePath}");
-
-            videoPlayer.source = VideoSource.Url;
-            videoPlayer.url = "file://" + filePath; 
-            videoPlayer.renderMode = VideoRenderMode.APIOnly; 
-            videoPlayer.Prepare();
-
-            while (!videoPlayer.isPrepared)
+            // JSON 파일 경로: Resources/JSON/Ending.json
+            var setting = JsonLoader.Load<EndingLevelSetting>("JSON/Ending");
+            
+            if (setting != null)
             {
-                yield return null;
+                if (page1 != null) page1.SetupData(setting.page1);
             }
-
-            if (videoPlayer.texture != null)
+            else
             {
-                videoDisplay.texture = videoPlayer.texture;
-                videoPlayer.Play();
+                Debug.LogWarning("[EndingManager] JSON/Ending 로드 실패 (파일이 없거나 형식이 잘못됨)");
             }
         }
-        else
+
+        private void InitializePages()
         {
-            Debug.LogError($"[EndingManager] 영상 파일을 찾을 수 없습니다: {filePath}");
+            if (page1 != null)
+            {
+                page1.gameObject.SetActive(true);
+                page1.OnEnter();
+            }
+            else
+            {
+                Debug.LogError("[EndingManager] Page1 Controller가 연결되지 않았습니다.");
+            }
         }
     }
 }
