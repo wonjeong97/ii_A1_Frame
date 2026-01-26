@@ -18,9 +18,7 @@ namespace My.Scripts.Core
         public GridPageData page1; // Grid
         public QnAPageData page2; // QnA
         public CheckPageData page3; // Check
-
         public TransitionPageData page4; // Ready
-
         // Page 5: Camera (No Data)
         public TransitionPageData page6; // End
     }
@@ -32,9 +30,7 @@ namespace My.Scripts.Core
         public GridPageData page1;
         public QnAPageData page2;
         public CheckPageData page3;
-
         public TransitionPageData page4;
-
         // Page 5: Camera
         public TransitionPageData page6; // End 1
         public TransitionPageData page7; // End 2 (Next Intro)
@@ -42,21 +38,20 @@ namespace My.Scripts.Core
 
     public class LevelManager : MonoBehaviour
     {
-        [Header("Level Settings")] [SerializeField]
-        private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
-
+        [Header("Level Settings")]
+        [SerializeField] private string levelID = "Q2"; // Tutorial, Q1, Q2 ...
         [SerializeField] private string nextSceneName = "00_Title";
         [SerializeField] private bool useFadeTransition = true;
 
-        [Header("Pages")] [SerializeField] private GamePage[] pages;
+        [Header("Pages")]
+        [SerializeField] private GamePage[] pages;
 
-        [Header("Global Backgrounds")] [SerializeField]
-        private CanvasGroup globalBlackCanvasGroup;
-
+        [Header("Global Backgrounds")] 
+        [SerializeField] private CanvasGroup globalBlackCanvasGroup;
         [SerializeField] private Image globalWhiteBackground;
 
-        [Header("Camera Config")] [SerializeField]
-        private Material cameraMaskMaterial; // Q1~Q15용 마스크
+        [Header("Camera Config")]
+        [SerializeField] private Material cameraMaskMaterial; // Q1~Q15용 마스크
 
         private int _currentPageIndex = -1;
         private bool _isTransitioning;
@@ -74,7 +69,8 @@ namespace My.Scripts.Core
             if (globalWhiteBackground != null) globalWhiteBackground.gameObject.SetActive(false);
 
             _isTutorialMode = string.Equals(levelID, "Tutorial", StringComparison.OrdinalIgnoreCase);
-            
+
+            // Q1 시작 시 타임랩스 데이터 초기화
             if (string.Equals(levelID, "Q1", StringComparison.OrdinalIgnoreCase))
             {
                 if (TimeLapseRecorder.Instance != null)
@@ -94,23 +90,21 @@ namespace My.Scripts.Core
 
         private bool LoadAndSetup()
         {
-            // 1. 공통 데이터 로드 (PlayCommon.json)
+            // 1. 공통 데이터 로드
             var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
             if (commonData == null)
             {
                 Debug.LogError("[LevelManager] Failed to load PlayCommon.json");
-                return false;
+                return false; 
             }
 
             string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
 
             if (_isTutorialMode)
             {
-                // 2-A. 튜토리얼 데이터 로드 (Page 7 포함)
                 var tutorialSetting = JsonLoader.Load<TutorialLevelSetting>(path);
                 if (tutorialSetting == null) return false;
 
-                // 3. 데이터 병합 (공통 -> 튜토리얼)
                 MergeCommonData(tutorialSetting, commonData);
                 SetCameraFileName(tutorialSetting.page3);
                 if (pages.Length > 4 && pages[4] is Page_Camera camPageTut)
@@ -119,21 +113,18 @@ namespace My.Scripts.Core
                     Debug.Log("[LevelManager] Configured Camera for Tutorial: Save=False");
                 }
 
-                // 4. 페이지 세팅
                 if (pages.Length > 0) pages[0].SetupData(tutorialSetting.page1);
                 if (pages.Length > 1) pages[1].SetupData(tutorialSetting.page2);
                 if (pages.Length > 2) pages[2].SetupData(tutorialSetting.page3);
                 if (pages.Length > 3) pages[3].SetupData(tutorialSetting.page4);
                 if (pages.Length > 5) pages[5].SetupData(tutorialSetting.page6);
-                if (pages.Length > 6) pages[6].SetupData(tutorialSetting.page7); // Page 7은 튜토리얼 전용
+                if (pages.Length > 6) pages[6].SetupData(tutorialSetting.page7);
             }
             else
             {
-                // 2-B. 일반 레벨 데이터 로드
                 var levelSetting = JsonLoader.Load<StandardLevelSetting>(path);
                 if (levelSetting == null) return false;
 
-                // 3. 데이터 병합 (공통 -> 레벨)
                 MergeCommonData(levelSetting, commonData);
                 SetCameraFileName(levelSetting.page3);
                 if (pages.Length > 4 && pages[4] is Page_Camera camPage)
@@ -142,7 +133,6 @@ namespace My.Scripts.Core
                     Debug.Log($"[LevelManager] Configured Camera for Level {levelID}: Save=True");
                 }
 
-                // 4. 페이지 세팅
                 if (pages.Length > 0) pages[0].SetupData(levelSetting.page1);
                 if (pages.Length > 1) pages[1].SetupData(levelSetting.page2);
                 if (pages.Length > 2) pages[2].SetupData(levelSetting.page3);
@@ -153,10 +143,8 @@ namespace My.Scripts.Core
             return true;
         }
 
-        // 1. 튜토리얼 레벨용 병합 메서드
         private void MergeCommonData(TutorialLevelSetting specific, StandardLevelSetting common)
         {
-            // [Page 1] Grid
             if (specific.page1 == null) specific.page1 = new GridPageData();
             if (common.page1 != null)
             {
@@ -165,7 +153,6 @@ namespace My.Scripts.Core
                 specific.page1.descriptionText3 = common.page1.descriptionText3;
             }
 
-            // [Page 2] QnA
             if (specific.page2 == null) specific.page2 = new QnAPageData();
             if (common.page2 != null)
             {
@@ -173,7 +160,6 @@ namespace My.Scripts.Core
                 specific.page2.answerTexts = common.page2.answerTexts;
             }
 
-            // [Page 3] Check
             if (specific.page3 == null) specific.page3 = new CheckPageData();
             if (common.page3 != null)
             {
@@ -181,26 +167,21 @@ namespace My.Scripts.Core
                 specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
             }
 
-            // [Page 4] Transition (Ready)
             if (specific.page4 == null) specific.page4 = new TransitionPageData();
             if (common.page4 != null)
             {
                 specific.page4.descriptionText = common.page4.descriptionText;
             }
 
-            // [Page 6] Transition (End)
             if (specific.page6 == null) specific.page6 = new TransitionPageData();
-            // PlayCommon.json 구조상 page6이 있다면 적용
             if (common.page6 != null)
             {
                 specific.page6.descriptionText = common.page6.descriptionText;
             }
         }
 
-        // 2. 일반 레벨용 병합 메서드
         private void MergeCommonData(StandardLevelSetting specific, StandardLevelSetting common)
         {
-            // [Page 1]
             if (specific.page1 == null) specific.page1 = new GridPageData();
             if (common.page1 != null)
             {
@@ -209,7 +190,6 @@ namespace My.Scripts.Core
                 specific.page1.descriptionText3 = common.page1.descriptionText3;
             }
 
-            // [Page 2]
             if (specific.page2 == null) specific.page2 = new QnAPageData();
             if (common.page2 != null)
             {
@@ -217,7 +197,6 @@ namespace My.Scripts.Core
                 specific.page2.answerTexts = common.page2.answerTexts;
             }
 
-            // [Page 3]
             if (specific.page3 == null) specific.page3 = new CheckPageData();
             if (common.page3 != null)
             {
@@ -225,14 +204,12 @@ namespace My.Scripts.Core
                 specific.page3.nicknamePlayerB = common.page3.nicknamePlayerB;
             }
 
-            // [Page 4]
             if (specific.page4 == null) specific.page4 = new TransitionPageData();
             if (common.page4 != null)
             {
                 specific.page4.descriptionText = common.page4.descriptionText;
             }
 
-            // [Page 6]
             if (specific.page6 == null) specific.page6 = new TransitionPageData();
             if (common.page6 != null)
             {
@@ -242,48 +219,26 @@ namespace My.Scripts.Core
 
         private void SetCameraFileName(CheckPageData checkPageData)
         {
-            // 1. 데이터가 없거나 카메라 페이지(Index 4)가 없으면 리턴
             if (checkPageData == null || pages.Length <= 4) return;
-
             var cameraPage = pages[4] as Page_Camera;
             if (cameraPage == null) return;
-
-            // 2. 닉네임 가져오기 (데이터가 없으면 기본값)
+            
             string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text) ? checkPageData.nicknamePlayerA.text : "PlayerA";
             string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text) ? checkPageData.nicknamePlayerB.text : "PlayerB";
-
-            // 3. 파일명에 쓸 수 없는 문자(줄바꿈, 특수문자 등) 제거
+            
             nameA = SanitizeString(nameA);
             nameB = SanitizeString(nameB);
-
-            // 4. 파일명 조합: "아영길동_Q1"
+            
             string fileName = $"{nameA}{nameB}_{levelID}";
-
-            // 5. 카메라 페이지에 설정
             cameraPage.SetPhotoFilename(fileName);
-
-            Debug.Log($"[LevelManager] Photo Filename Set: {fileName}.png");
         }
 
-        // 문자열 정제 (줄바꿈 제거, 파일명 금지 문자 제거)
         private string SanitizeString(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
-
-            // 1. 줄바꿈(\n) 제거
-            string clean = input.Replace("\n", "").Replace("\r", "");
-
-            // 2. 닉네임 뒤의 '님' 제거
-            clean = clean.Replace("님", "");
-
-            // 3. 공백 제거
-            clean = clean.Trim();
-
-            // 4. 파일 시스템에서 허용하지 않는 특수문자 제거 정규식
-            // (Windows/Mac 공통 금지 문자: \ / : * ? " < > | )
+            string clean = input.Replace("\n", "").Replace("\r", "").Replace("님", "").Trim();
             string invalidChars = Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
-
             return Regex.Replace(clean, invalidRegStr, "");
         }
 
@@ -323,17 +278,50 @@ namespace My.Scripts.Core
         }
 
         private void OnAllFinished()
-        {   
+        {
             if (string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase))
             {
-                if (TimeLapseRecorder.Instance != null)
-                {
-                    TimeLapseRecorder.Instance.ConvertToVideo();
-                }
+                // Q15라면 바로 넘어가지 않고, 영상 변환 대기 코루틴 실행
+                StartCoroutine(ProcessVideoAndFinish());
             }
-            
-            if (useFadeTransition && GameManager.Instance != null) GameManager.Instance.ChangeScene(nextSceneName);
-            else SceneManager.LoadScene(nextSceneName);
+            else
+            {
+                // 그 외 레벨은 즉시 다음 씬으로
+                TransitionToNextScene();
+            }
+        }
+
+        private IEnumerator ProcessVideoAndFinish()
+        {
+            if (TimeLapseRecorder.Instance != null)
+            {
+                // 변환 요청
+                TimeLapseRecorder.Instance.ConvertToVideo();
+
+                // 상태 갱신 대기 (1프레임)
+                yield return null;
+
+                // 변환 중(Processing)이라면 씬 전환을 멈추고 대기
+                while (TimeLapseRecorder.Instance.IsProcessing)
+                {
+                    // 필요하다면 여기에 "영상 생성 중..." 같은 UI를 띄울 수도 있음
+                    Debug.Log("[LevelManager] 영상 변환 중... (씬 전환 대기)");
+                    yield return new WaitForSeconds(0.5f);
+                }
+
+                Debug.Log("[LevelManager] 영상 변환 완료 또는 종료. 씬 전환을 시작합니다.");
+            }
+
+            // 대기 종료 후 씬 전환
+            TransitionToNextScene();
+        }
+
+        private void TransitionToNextScene()
+        {
+            if (useFadeTransition && GameManager.Instance != null)
+                GameManager.Instance.ChangeScene(nextSceneName);
+            else
+                SceneManager.LoadScene(nextSceneName);
         }
 
         private void TransitionToPage(int target, int info = 0)
@@ -348,32 +336,18 @@ namespace My.Scripts.Core
             GamePage current = (_currentPageIndex >= 0) ? pages[_currentPageIndex] : null;
             GamePage next = pages[target];
 
-            // --------------------------------------------------------------------------------
-            // [Tutorial Mode] (7 Pages)
-            // --------------------------------------------------------------------------------
             if (_isTutorialMode)
             {
-                // P1 -> P2 (Cover)
                 if (_currentPageIndex == 0 && target == 1)
                     yield return StartCoroutine(CoverTransition(current, next, info));
-
-                // P2 -> P3 -> P4 (Reveal)
                 else if ((_currentPageIndex == 1 && target == 2) || (_currentPageIndex == 2 && target == 3))
                     yield return StartCoroutine(RevealTransition(current, next, info));
-
-                // P4 -> P5 (Amjeon)
                 else if (_currentPageIndex == 3 && target == 4)
                     yield return StartCoroutine(AmjeonTransition(current, next, info));
-
-                // P5(Camera) -> P6(End1) (Amjeon + WhiteBG On)
                 else if (_currentPageIndex == 4 && target == 5)
                     yield return StartCoroutine(AmjeonTransition(current, next, info, enableWhiteBg: true));
-
-                // P6(End1) -> P7(NewIntro) (Sequence on WhiteBG)
                 else if (_currentPageIndex == 5 && target == 6)
                     yield return StartCoroutine(SequenceTransition(current, next, globalWhiteBackground, info, 0.5f));
-
-                // 예외 경로(Fallback): 정의되지 않은 구간은 기본 페이드 전환
                 else
                 {
                     if (current)
@@ -383,7 +357,6 @@ namespace My.Scripts.Core
                     }
 
                     yield return new WaitForSeconds(0.5f);
-
                     _currentPageIndex = target;
                     if (next != null)
                     {
@@ -394,24 +367,14 @@ namespace My.Scripts.Core
                     }
                 }
             }
-            // --------------------------------------------------------------------------------
-            // [Standard Mode: Q1 ~ Q15] (6 Pages)
-            // --------------------------------------------------------------------------------
             else
             {
-                // P1(Grid) -> P2(QnA) (Cover)
                 if (_currentPageIndex == 0 && target == 1)
                     yield return StartCoroutine(CoverTransition(current, next, info));
-
-                // P2 -> P3 -> P4 (Reveal)
                 else if ((_currentPageIndex == 1 && target == 2) || (_currentPageIndex == 2 && target == 3))
                     yield return StartCoroutine(RevealTransition(current, next, info));
-
-                // P4 -> P5 -> P6 (Amjeon)
                 else if ((_currentPageIndex == 3 && target == 4) || (_currentPageIndex == 4 && target == 5))
                     yield return StartCoroutine(AmjeonTransition(current, next, info));
-
-                // Fallback
                 else
                 {
                     if (current)
@@ -435,16 +398,13 @@ namespace My.Scripts.Core
             _currentPageIndex = target;
             _isTransitioning = false;
         }
-
-        // [Transitions]
+        
         private IEnumerator CoverTransition(GamePage current, GamePage next, int info)
         {
             if (globalBlackCanvasGroup != null)
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 0f, 1f, 0.5f));
             yield return new WaitForSeconds(0.5f);
-
             if (current != null) current.OnExit();
-
             _currentPageIndex = Array.IndexOf(pages, next);
             if (next != null)
             {
@@ -492,7 +452,6 @@ namespace My.Scripts.Core
 
             if (current) current.OnExit();
             _currentPageIndex = Array.IndexOf(pages, next);
-
             if (enableWhiteBg && globalWhiteBackground != null)
             {
                 globalWhiteBackground.gameObject.SetActive(true);

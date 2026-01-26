@@ -28,9 +28,11 @@ namespace My.Scripts.Core.Pages
 
         [SerializeField] private List<CanvasGroup> textCanvasGroups;
 
-        [Header("Settings")] [SerializeField] private int gridSize = 10;
+        [Header("Settings")] 
         [SerializeField] private List<Vector2Int> questionSpots;
-        [SerializeField] private float cellFadeDuration = 0.5f;
+        
+        private readonly int gridSize = 10;
+        private readonly float cellFadeDuration = 0.25f;
 
         // 내부 변수
         private RectTransform _blackRect;
