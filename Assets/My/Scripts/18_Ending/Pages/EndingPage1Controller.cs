@@ -110,9 +110,18 @@ namespace My.Scripts._18_Ending.Pages
                 videoPlayer.Prepare();
 
                 // 비디오 준비 대기
-                while (!videoPlayer.isPrepared)
+                float prepareTimeout = 10f;
+                float prepareWait = 0f;
+                while (!videoPlayer.isPrepared && prepareWait < prepareTimeout)
                 {
                     yield return null;
+                    prepareWait += Time.deltaTime;
+                }
+                
+                if (!videoPlayer.isPrepared)
+                {
+                    Debug.LogError("[EndingPage1] 비디오 준비 시간 초과");
+                    yield break;
                 }
 
                 // 텍스처 연결 및 재생
