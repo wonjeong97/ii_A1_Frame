@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
 using System.IO;
+using My.Scripts.Core;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
-using My.Scripts.Core;    
-using My.Scripts.Global;  
 using Wonjeong.Data;
 using Wonjeong.UI;
 
@@ -17,7 +16,7 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting descriptionText;
     }
 
-    public class EndingPage1Controller : GamePage
+    public class EndingPage1Controller : GamePage<EndingPage1Data>
     {
         [Header("UI References")]
         [SerializeField] private RawImage videoDisplay; 
@@ -28,14 +27,11 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private string videoFolderName = "Timelapse"; 
         [SerializeField] private string videoFileName = "Final_Timelapse.mp4";
 
-        public override void SetupData(object data) 
+        protected override void SetupData(EndingPage1Data data)
         {
-            var pageData = data as EndingPage1Data;
-            if (pageData == null) return;
-
             if (descriptionText) 
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, pageData.descriptionText);
+                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
             }
         }
 
@@ -159,11 +155,6 @@ namespace My.Scripts._18_Ending.Pages
                 yield return null;
                 safetyWait += Time.deltaTime;
             }
-
-            // ------------------------------------------------------------------
-            // 5. 페이지 페이드 아웃 (1초)
-            // ------------------------------------------------------------------
-            yield return StartCoroutine(FadePageAlpha(1f, 0f, 1.0f));
             
             CompleteStep();
         }

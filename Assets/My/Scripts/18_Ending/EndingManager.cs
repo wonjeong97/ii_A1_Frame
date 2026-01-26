@@ -1,5 +1,6 @@
 using System;
 using My.Scripts._18_Ending.Pages;
+using My.Scripts.Core;
 using My.Scripts.Global;
 using UnityEngine;
 using Wonjeong.Utils; 
@@ -14,28 +15,22 @@ namespace My.Scripts._18_Ending
         public EndingPage3Data page3; 
     }
 
-    public class EndingManager : MonoBehaviour
+    public class EndingManager : BaseFlowManager
     {
-        [Header("Pages")]
-        [SerializeField] private EndingPage1Controller page1;
-        [SerializeField] private EndingPage2Controller page2;
-        [SerializeField] private EndingPage3Controller page3; 
-
-        private void Start()
-        {
-            LoadSettings();
-            InitializePages();
-        }
-
-        private void LoadSettings()
+        protected override void LoadSettings()
         {
             var setting = JsonLoader.Load<EndingLevelSetting>("JSON/Ending");
             
             if (setting != null)
             {
-                if (page1 != null) page1.SetupData(setting.page1);
-                if (page2 != null) page2.SetupData(setting.page2);
-                if (page3 != null) page3.SetupData(setting.page3);
+                if (pages == null || pages.Length == 0)
+                {
+                    Debug.LogWarning("[EndingManager] pages가 비어 있습니다.");
+                    return;
+                }
+                if (pages.Length > 0 && setting.page1 != null && pages[0] is EndingPage1Controller p1) p1.SetupData(setting.page1);
+                if (pages.Length > 1 && setting.page2 != null && pages[1] is EndingPage2Controller p2) p2.SetupData(setting.page2);
+                if (pages.Length > 2 && setting.page3 != null && pages[2] is EndingPage3Controller p3) p3.SetupData(setting.page3);
             }
             else
             {
@@ -43,57 +38,10 @@ namespace My.Scripts._18_Ending
             }
         }
 
-        private void InitializePages()
+        // 모든 페이지가 끝났을 때의 동작
+        protected override void OnAllFinished()
         {
-            // [Page 1]
-            if (page1 != null)
-            {
-                page1.gameObject.SetActive(true);
-                page1.OnEnter();
-                page1.onStepComplete += (info) => 
-                {
-                    page1.OnExit();
-                    // Page 1 -> Page 2 이동
-                    if (page2 != null)
-                    {
-                        page2.gameObject.SetActive(true);
-                        page2.OnEnter();
-                    }
-                    else ReturnToTitle();
-                };
-            }
-
-            // [Page 2]
-            if (page2 != null)
-            {
-                page2.gameObject.SetActive(false);
-                page2.onStepComplete += (info) => 
-                {
-                    page2.OnExit();
-                    // Page 2 -> Page 3 이동
-                    if (page3 != null)
-                    {
-                        page3.gameObject.SetActive(true);
-                        page3.OnEnter();
-                    }
-                    else ReturnToTitle();
-                };
-            }
-
-            // [Page 3] 
-            if (page3 != null)
-            {
-                page3.gameObject.SetActive(false);
-                page3.onStepComplete += (info) => 
-                {
-                    // Page 3 완료 -> 타이틀로 이동
-                    ReturnToTitle();
-                };
-            }
-        }
-
-        private void ReturnToTitle()
-        {
+            Debug.Log("[EndingManager] 모든 엔딩 페이지 종료 -> 타이틀로 이동");
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
