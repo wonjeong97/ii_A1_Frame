@@ -1,7 +1,7 @@
 {
   "page1": {
     "descriptionText": {
-      "name": "Text_모든 잘문을 찾았습니다.",
+      "name": "Text_모든 질문을 찾았습니다.",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "모든 질문을 찾았습니다.\n기록된 우리 모습을 확인해 볼까요?",

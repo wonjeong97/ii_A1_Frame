@@ -58,7 +58,14 @@ namespace My.Scripts._18_Ending.Pages
         }
 
         private IEnumerator PresentationRoutine()
-        {
+        {   
+            if (videoPlayer == null || videoDisplay == null)
+            {
+                Debug.LogError("[EndingPage1] VideoPlayer 또는 VideoDisplay가 할당되지 않았습니다.");
+                CompleteStep();
+                yield break;
+            }
+            
             // ------------------------------------------------------------------
             // 1. Description Text 페이드 인 (1초)
             // ------------------------------------------------------------------

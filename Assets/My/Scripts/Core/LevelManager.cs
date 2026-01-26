@@ -300,13 +300,22 @@ namespace My.Scripts.Core
 
                 // 상태 갱신 대기 (1프레임)
                 yield return null;
-
+                
+                float timeout = 60f;
+                float elapsed = 0f;
+                
                 // 변환 중(Processing)이라면 씬 전환을 멈추고 대기
-                while (TimeLapseRecorder.Instance.IsProcessing)
+                while (TimeLapseRecorder.Instance.IsProcessing && elapsed < timeout)
                 {
                     // 필요하다면 여기에 "영상 생성 중..." 같은 UI를 띄울 수도 있음
                     Debug.Log("[LevelManager] 영상 변환 중... (씬 전환 대기)");
                     yield return new WaitForSeconds(0.5f);
+                    elapsed += 0.5f;
+                }
+
+                if (elapsed >= timeout)
+                {
+                    Debug.LogWarning("[LevelManager] 영상 변환 타임아웃. 씬 전환을 진행합니다.");
                 }
 
                 Debug.Log("[LevelManager] 영상 변환 완료 또는 종료. 씬 전환을 시작합니다.");
