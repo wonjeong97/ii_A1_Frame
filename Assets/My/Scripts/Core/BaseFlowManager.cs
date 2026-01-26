@@ -116,6 +116,11 @@ namespace My.Scripts.Core
         protected IEnumerator FadePage(GamePage page, float start, float end, float duration = 0.5f)
         {
             if (!page) yield break;
+            if (duration <= 0f)
+            {
+                page.SetAlpha(end);
+                yield break;
+            }
             
             float t = 0f;
             page.SetAlpha(start);
