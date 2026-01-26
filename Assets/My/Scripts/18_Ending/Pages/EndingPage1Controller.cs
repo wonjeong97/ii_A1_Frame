@@ -53,7 +53,12 @@ namespace My.Scripts._18_Ending.Pages
         }
 
         private IEnumerator PlayVideoRoutine()
-        {
+        {   
+            if (videoPlayer == null || videoDisplay == null)
+            {
+                Debug.LogError("[EndingPage1] VideoPlayer 또는 RawImage가 연결되지 않았습니다.");
+                yield break;
+            }
             // 1. 경로 설정
             string dataPath = Application.dataPath;
             DirectoryInfo parentDir = Directory.GetParent(dataPath);
