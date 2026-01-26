@@ -874,9 +874,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 864d4df637c4e804793f9cd323426fe8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  page1: {fileID: 2056315582}
-  page2: {fileID: 181802048}
-  page3: {fileID: 524136133}
+  pages:
+  - {fileID: 2056315582}
+  - {fileID: 181802048}
+  - {fileID: 524136133}
 --- !u!1 &1376975939
 GameObject:
   m_ObjectHideFlags: 0

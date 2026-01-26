@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core;    
-using My.Scripts.Global;  
+using My.Scripts.Core;
+using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
@@ -16,28 +16,24 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting allFinishedText; // 모든 체험 완료 텍스트
     }
 
-    public class EndingPage3Controller : GamePage
+    public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
-        [Header("UI References")]
+        [Header("UI References")] 
         [SerializeField] private Text descriptionText;
 
-        public override void SetupData(object data)
+        protected override void SetupData(EndingPage3Data data)
         {
-            var pageData = data as EndingPage3Data;
-            if (pageData == null) return;
-
-            // 50% 확률 로직 (기존 유지)
             int randomValue = UnityEngine.Random.Range(0, 2);
-            TextSetting textToUse = pageData.descriptionText;
+            TextSetting textToUse = data.descriptionText;
 
-            if (randomValue == 1 && pageData.allFinishedText != null)
+            if (randomValue == 1 && data.allFinishedText != null)
             {
-                textToUse = pageData.allFinishedText;
+                textToUse = data.allFinishedText;
                 Debug.Log("[EndingPage3] Random(50%): 모든 체험 완료 메시지 선택");
             }
             else
             {
-                textToUse = pageData.descriptionText;
+                textToUse = data.descriptionText;
                 Debug.Log("[EndingPage3] Random(50%): 현재 체험 완료 메시지 선택");
             }
 
@@ -50,9 +46,9 @@ namespace My.Scripts._18_Ending.Pages
         public override void OnEnter()
         {
             gameObject.SetActive(true);
-            
+
             // [초기화] 페이지와 텍스트 모두 투명하게 시작
-            SetAlpha(0f); 
+            SetAlpha(0f);
             SetTextAlpha(descriptionText, 0f);
 
             StartCoroutine(SequenceRoutine());
@@ -60,15 +56,14 @@ namespace My.Scripts._18_Ending.Pages
 
         private IEnumerator SequenceRoutine()
         {
-            // 1. 페이지 전체(CanvasGroup) 페이드 인 (1초)
-            yield return StartCoroutine(FadePageAlpha(0f, 1f, 1.0f));
-            
+            yield return new WaitForSeconds(1.0f);
+
             // 2. 텍스트 페이드 인 (1초)
             yield return StartCoroutine(FadeText(descriptionText, 0f, 1f, 1.0f));
-            
+
             // 3. 7초 대기
             yield return new WaitForSeconds(7.0f);
-            
+
             // 4. 완료 -> 타이틀 전환
             CompleteStep();
         }
@@ -84,6 +79,7 @@ namespace My.Scripts._18_Ending.Pages
                 SetAlpha(Mathf.Lerp(start, end, t / duration));
                 yield return null;
             }
+
             SetAlpha(end);
         }
 
@@ -99,19 +95,17 @@ namespace My.Scripts._18_Ending.Pages
                 SetTextAlpha(target, Mathf.Lerp(start, end, t / duration));
                 yield return null;
             }
+
             SetTextAlpha(target, end);
         }
 
         private void SetTextAlpha(Text t, float a)
         {
-            if (t) { Color c = t.color; c.a = a; t.color = c; }
-        }
-        
-        public void OnRestartBtnClick()
-        {
-            if(GameManager.Instance != null)
+            if (t)
             {
-                GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
+                Color c = t.color;
+                c.a = a;
+                t.color = c;
             }
         }
     }
