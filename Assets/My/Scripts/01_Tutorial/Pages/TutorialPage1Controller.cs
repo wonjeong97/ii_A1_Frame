@@ -1,48 +1,38 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
-    // ---------------------------------------------------------
-    // 데이터 클래스
-    // ---------------------------------------------------------
     [Serializable]
     public class TutorialPage1Data
     {
-        public TextSetting descriptionText; // "두 사람 모두 태그하면..."
+        public TextSetting descriptionText;
     }
 
-    // ---------------------------------------------------------
-    // 컨트롤러 클래스
-    // ---------------------------------------------------------
-    public class TutorialPage1Controller : TutorialPageBase
+    //  GamePage<TutorialPage1Data> 상속
+    public class TutorialPage1Controller : GamePage<TutorialPage1Data>
     {
         [Header("Page 1 UI")]
         [SerializeField] private Text descriptionText;
 
-        // 데이터 적용 구현
-        public override void SetupData(object data)
+        //  SetupData 오버라이드
+        protected override void SetupData(TutorialPage1Data data)
         {
-            // object로 들어온 데이터를 TutorialPage1Data으로 형변환
-            var pageData = data as TutorialPage1Data;
-            if (pageData == null) return;
-
-            // UI 매니저를 통해 텍스트 세팅
             if (descriptionText) 
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, pageData.descriptionText);
+                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
             }
         }
 
         private void Update()
         {
-            // 엔터키를 누르면 다음 단계로 진행
             if (Input.GetKeyDown(KeyCode.Return))
             {
-                CompleteStep(); // 매니저에게 "완료" 신호 전송
+                CompleteStep();
             }
         }
     }

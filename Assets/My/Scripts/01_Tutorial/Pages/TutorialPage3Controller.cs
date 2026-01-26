@@ -2,14 +2,13 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using My.Scripts.Core; // [필수] GamePage 사용을 위해 추가
 using Wonjeong.Data;
 using Wonjeong.UI;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
-    // ---------------------------------------------------------
-    // 데이터 클래스
-    // ---------------------------------------------------------
+    // 데이터 클래스는 그대로 유지
     [Serializable]
     public class TutorialPage3Data
     {
@@ -17,10 +16,8 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting nicknamePlayerB;
     }
 
-    // ---------------------------------------------------------
-    // 컨트롤러 클래스
-    // ---------------------------------------------------------
-    public class TutorialPage3Controller : TutorialPageBase
+    // TutorialPageBase -> GamePage<TutorialPage3Data> 상속 변경
+    public class TutorialPage3Controller : GamePage<TutorialPage3Data>
     {
         [Header("Page 3 UI")]
         [SerializeField] private Text nicknameA;
@@ -30,17 +27,14 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private Image imgBackB;
         [SerializeField] private Image imgLightB;
 
-        // 상태 변수
         private bool isLightOnA;
         private bool isLightOnB;
         private bool _completionStarted;
 
-        // 페이지 진입 시 초기화
         public override void OnEnter()
         {
             base.OnEnter();
             
-            // 상태 및 이미지 초기화
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
@@ -50,39 +44,34 @@ namespace My.Scripts._01_Tutorial.Pages
             SetImageAlpha(imgLightB, 0f);
         }
 
-        public override void SetupData(object data)
+        // 제네릭 SetupData 구현
+        protected override void SetupData(TutorialPage3Data data)
         {
-            var pageData = data as TutorialPage3Data;
-            if (pageData == null) return;
-
-            if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, pageData.nicknamePlayerA);
-            if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, pageData.nicknamePlayerB);
+            if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
+            if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
         }
 
         private void Update()
         {
-            // 각 플레이어 상호작용
             if (Input.GetKeyDown(KeyCode.Alpha1)) ActivatePlayerCheck(true);
             if (Input.GetKeyDown(KeyCode.Alpha2)) ActivatePlayerCheck(false);
         }
 
-        // 외부(매니저)에서 트리거 정보를 받아 강제로 켤 때 사용 (Page 2->3 전환 시)
         public void ActivatePlayerCheck(bool isPlayerA)
         {
             if (isPlayerA)
             {
-                if (isLightOnA) return; // 이미 켜짐
+                if (isLightOnA) return;
                 isLightOnA = true;
                 StartCoroutine(TransitionCheckImage(imgBackA, imgLightA));
             }
             else
             {
-                if (isLightOnB) return; // 이미 켜짐
+                if (isLightOnB) return;
                 isLightOnB = true;
                 StartCoroutine(TransitionCheckImage(imgBackB, imgLightB));
             }
             
-            // 두 불이 다 켜졌는지 확인
             if (isLightOnA && isLightOnB)
             {
                 if (!_completionStarted)
@@ -93,7 +82,6 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        // 1초 대기 후 완료 신호 보냄
         private IEnumerator WaitAndComplete()
         {
             yield return new WaitForSeconds(1.0f);
@@ -125,7 +113,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 yield return null;
             }
             
-            // 최종값
             backColor.a = 0f;
             backImage.color = backColor;
             lightColor.a = 1f;
