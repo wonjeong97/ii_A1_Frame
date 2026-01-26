@@ -1,0 +1,33 @@
+{
+  "page1": {
+    "descriptionText": {
+      "name": "Text_모든 질문을 찾았습니다.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "모든 질문을 찾았습니다.\n기록된 우리 모습을 확인해 볼까요?",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  },
+  "page2": {
+    "descriptionText1": {
+      "name": "Text_우리의 딱지",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "우리의 딱지\n0개",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "descriptionText2": {
+      "name": "Text_총 내가 모은 딱지",
+      "position": {"x": 960, "y": -807},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "총 내가 모은 딱지 0개",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  }
+}
