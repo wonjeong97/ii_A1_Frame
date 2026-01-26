@@ -79,16 +79,17 @@ namespace My.Scripts._18_Ending.Pages
             // 2-1. FFmpeg 변환 대기
             if (TimeLapseRecorder.Instance != null)
             {
+                bool didWaitForProcessing = false;
                 float processingTimeout = 60f;
                 float processingWait = 0f;
                 while (TimeLapseRecorder.Instance.IsProcessing && processingWait < processingTimeout)
                 {
+                    didWaitForProcessing = true;
                     Debug.Log("[EndingPage1] FFmpeg 변환 중...");
                     yield return new WaitForSeconds(0.5f);
                     processingWait += 0.5f;
                 }
-                
-                if (!TimeLapseRecorder.Instance.IsConversionSuccessful)
+                if (didWaitForProcessing && !TimeLapseRecorder.Instance.IsConversionSuccessful)
                 {
                     Debug.LogError($"[EndingPage1] 변환 실패. 종료합니다.");
                     CompleteStep();
@@ -113,7 +114,7 @@ namespace My.Scripts._18_Ending.Pages
 
             // 2-3. VideoPlayer 준비
             videoPlayer.source = VideoSource.Url;
-            videoPlayer.url = "file://" + filePath; 
+            videoPlayer.url = new Uri(filePath).AbsoluteUri; 
             videoPlayer.renderMode = VideoRenderMode.APIOnly; 
             videoPlayer.isLooping = false; // 반복 재생 끔
             videoPlayer.Prepare();
