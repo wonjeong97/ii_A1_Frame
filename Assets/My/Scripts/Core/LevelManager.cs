@@ -54,7 +54,7 @@ namespace My.Scripts.Core
 
         // Start는 BaseFlowManager에서 호출됨 -> 로드 -> 초기화 -> 시작
 
-        protected override void LoadSettings()
+         protected override void LoadSettings()
         {
             // 초기 설정
             if (globalBlackCanvasGroup)
@@ -64,15 +64,12 @@ namespace My.Scripts.Core
                 globalBlackCanvasGroup.blocksRaycasts = false;
             }
             if (globalWhiteBackground) globalWhiteBackground.gameObject.SetActive(false);
-
             _isTutorialMode = string.Equals(levelID, "Tutorial", StringComparison.OrdinalIgnoreCase);
-
             // Q1 타임랩스 초기화
             if (string.Equals(levelID, "Q1", StringComparison.OrdinalIgnoreCase))
             {
                 if (TimeLapseRecorder.Instance != null) TimeLapseRecorder.Instance.ClearRecordingData();
             }
-
             // 공통 데이터 로드
             var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
             if (commonData == null)
@@ -80,9 +77,7 @@ namespace My.Scripts.Core
                 Debug.LogError("[LevelManager] PlayCommon.json 로드 실패");
                 return;
             }
-
             string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
-
             if (_isTutorialMode)
             {
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
@@ -95,16 +90,15 @@ namespace My.Scripts.Core
                 MergeCommonData(tSetting, commonData);
                 SetCameraFileName(tSetting.page3);
                 ConfigureCameraPage(false);
-
                 // [핵심] 제네릭 덕분에 setupData 호출이 매우 간결해짐
                 // 순서에 맞춰 데이터 주입 (null 체크는 GamePage 내부에서 안전하게 처리됨)
-                if (pages.Length > 0) pages[0].SetupData(tSetting.page1);
-                if (pages.Length > 1) pages[1].SetupData(tSetting.page2);
-                if (pages.Length > 2) pages[2].SetupData(tSetting.page3);
-                if (pages.Length > 3) pages[3].SetupData(tSetting.page4);
+                if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(tSetting.page1);
+                if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(tSetting.page2);
+                if (pages.Length > 2 && pages[2] != null) pages[2].SetupData(tSetting.page3);
+                if (pages.Length > 3 && pages[3] != null) pages[3].SetupData(tSetting.page4);
                 // Page 5 Camera는 데이터 없음
-                if (pages.Length > 5) pages[5].SetupData(tSetting.page6);
-                if (pages.Length > 6) pages[6].SetupData(tSetting.page7);
+                if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(tSetting.page6);
+                if (pages.Length > 6 && pages[6] != null) pages[6].SetupData(tSetting.page7);
             }
             else
             {
@@ -118,14 +112,14 @@ namespace My.Scripts.Core
                 MergeCommonData(sSetting, commonData);
                 SetCameraFileName(sSetting.page3);
                 ConfigureCameraPage(true);
-
-                if (pages.Length > 0) pages[0].SetupData(sSetting.page1);
-                if (pages.Length > 1) pages[1].SetupData(sSetting.page2);
-                if (pages.Length > 2) pages[2].SetupData(sSetting.page3);
-                if (pages.Length > 3) pages[3].SetupData(sSetting.page4);
-                if (pages.Length > 5) pages[5].SetupData(sSetting.page6);
+                if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(sSetting.page1);
+                if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(sSetting.page2);
+                if (pages.Length > 2 && pages[2] != null) pages[2].SetupData(sSetting.page3);
+                if (pages.Length > 3 && pages[3] != null) pages[3].SetupData(sSetting.page4);
+                if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(sSetting.page6);
             }
         }
+
 
         // [구현] 모든 단계 종료 시
         protected override void OnAllFinished()
