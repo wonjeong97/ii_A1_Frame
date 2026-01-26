@@ -46,6 +46,7 @@ namespace My.Scripts.Global
             public const string PlayQ13 = "JSON/PlayQ13";
             public const string PlayQ14 = "JSON/PlayQ14";
             public const string PlayQ15 = "JSON/PlayQ15";
+            public const string Ending = "JSON/Ending";
         }
     }
 }
