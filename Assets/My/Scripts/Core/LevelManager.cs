@@ -86,38 +86,44 @@ namespace My.Scripts.Core
             if (_isTutorialMode)
             {
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
-                if (tSetting != null)
+                if (tSetting == null)
                 {
-                    MergeCommonData(tSetting, commonData);
-                    SetCameraFileName(tSetting.page3);
-                    ConfigureCameraPage(false);
-
-                    // [핵심] 제네릭 덕분에 setupData 호출이 매우 간결해짐
-                    // 순서에 맞춰 데이터 주입 (null 체크는 GamePage 내부에서 안전하게 처리됨)
-                    if (pages.Length > 0) pages[0].SetupData(tSetting.page1);
-                    if (pages.Length > 1) pages[1].SetupData(tSetting.page2);
-                    if (pages.Length > 2) pages[2].SetupData(tSetting.page3);
-                    if (pages.Length > 3) pages[3].SetupData(tSetting.page4);
-                    // Page 5 Camera는 데이터 없음
-                    if (pages.Length > 5) pages[5].SetupData(tSetting.page6);
-                    if (pages.Length > 6) pages[6].SetupData(tSetting.page7);
+                    Debug.LogError($"[LevelManager] {path}.json 로드 실패");
+                    return;
                 }
+                
+                MergeCommonData(tSetting, commonData);
+                SetCameraFileName(tSetting.page3);
+                ConfigureCameraPage(false);
+
+                // [핵심] 제네릭 덕분에 setupData 호출이 매우 간결해짐
+                // 순서에 맞춰 데이터 주입 (null 체크는 GamePage 내부에서 안전하게 처리됨)
+                if (pages.Length > 0) pages[0].SetupData(tSetting.page1);
+                if (pages.Length > 1) pages[1].SetupData(tSetting.page2);
+                if (pages.Length > 2) pages[2].SetupData(tSetting.page3);
+                if (pages.Length > 3) pages[3].SetupData(tSetting.page4);
+                // Page 5 Camera는 데이터 없음
+                if (pages.Length > 5) pages[5].SetupData(tSetting.page6);
+                if (pages.Length > 6) pages[6].SetupData(tSetting.page7);
             }
             else
             {
                 var sSetting = JsonLoader.Load<StandardLevelSetting>(path);
-                if (sSetting != null)
+                if (sSetting == null)
                 {
-                    MergeCommonData(sSetting, commonData);
-                    SetCameraFileName(sSetting.page3);
-                    ConfigureCameraPage(true);
-
-                    if (pages.Length > 0) pages[0].SetupData(sSetting.page1);
-                    if (pages.Length > 1) pages[1].SetupData(sSetting.page2);
-                    if (pages.Length > 2) pages[2].SetupData(sSetting.page3);
-                    if (pages.Length > 3) pages[3].SetupData(sSetting.page4);
-                    if (pages.Length > 5) pages[5].SetupData(sSetting.page6);
+                    Debug.LogError($"[LevelManager] {path}.json 로드 실패");
+                    return;
                 }
+                
+                MergeCommonData(sSetting, commonData);
+                SetCameraFileName(sSetting.page3);
+                ConfigureCameraPage(true);
+
+                if (pages.Length > 0) pages[0].SetupData(sSetting.page1);
+                if (pages.Length > 1) pages[1].SetupData(sSetting.page2);
+                if (pages.Length > 2) pages[2].SetupData(sSetting.page3);
+                if (pages.Length > 3) pages[3].SetupData(sSetting.page4);
+                if (pages.Length > 5) pages[5].SetupData(sSetting.page6);
             }
         }
 
@@ -135,14 +141,18 @@ namespace My.Scripts.Core
         }
 
         // [오버라이드] LevelManager만의 특수한 전환 효과(Transition) 적용
-protected override IEnumerator TransitionRoutine(int targetIndex, int info)
+       protected override IEnumerator TransitionRoutine(int targetIndex, int info)
         {
             isTransitioning = true;
             GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
-            GamePage next = (targetIndex < pages.Length) ? pages[targetIndex] : null;
-
+            if (targetIndex < 0 || targetIndex >= pages.Length)
+            {
+                Debug.LogWarning($"[LevelManager] Invalid targetIndex: {targetIndex}");
+                isTransitioning = false;
+                yield break;
+            }
+            GamePage next = pages[targetIndex];
             bool handled = false;
-
             // 튜토리얼 및 일반 모드 특수 연출 체크
             if (_isTutorialMode)
             {
@@ -158,7 +168,6 @@ protected override IEnumerator TransitionRoutine(int targetIndex, int info)
                 else if ((currentPageIndex == 1 && targetIndex == 2) || (currentPageIndex == 2 && targetIndex == 3)) { yield return StartCoroutine(RevealTransition(current, next, info)); handled = true; }
                 else if ((currentPageIndex == 3 && targetIndex == 4) || (currentPageIndex == 4 && targetIndex == 5)) { yield return StartCoroutine(AmjeonTransition(current, next, info)); handled = true; }
             }
-
             // 기본 페이드 처리
             if (!handled)
             {
@@ -175,7 +184,6 @@ protected override IEnumerator TransitionRoutine(int targetIndex, int info)
                 {
                     next.OnEnter();
                     HandleTrigger(next, info);
-
                     // [핵심 수정] 첫 진입(Grid)인 경우 페이드 없이 즉시 Alpha 1로 설정
                     // 조건: 현재 페이지가 없음(-1) AND 다음 페이지가 Page_Grid임
                     if (currentPageIndex == -1 && next is Page_Grid)

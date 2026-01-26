@@ -33,14 +33,13 @@ namespace My.Scripts._01_Tutorial
                 Debug.LogError($"[TutorialManager] JSON Load Failed");
                 return;
             }
-
             // Generic SetupData 활용
-            if (pages.Length > 0) pages[0].SetupData(setting.page1);
-            if (pages.Length > 1) pages[1].SetupData(setting.page2);
-            if (pages.Length > 2) pages[2].SetupData(setting.page3);
-            if (pages.Length > 3) pages[3].SetupData(setting.page4);
-            if (pages.Length > 4) pages[4].SetupData(setting.page5);
-            if (pages.Length > 5) pages[5].SetupData(setting.page6);
+            if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(setting.page1);
+            if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(setting.page2);
+            if (pages.Length > 2 && pages[2] != null) pages[2].SetupData(setting.page3);
+            if (pages.Length > 3 && pages[3] != null) pages[3].SetupData(setting.page4);
+            if (pages.Length > 4 && pages[4] != null) pages[4].SetupData(setting.page5);
+            if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
         }
 
         // 튜토리얼 종료 시
@@ -51,6 +50,11 @@ namespace My.Scripts._01_Tutorial
                 if (GameManager.Instance != null)
                 {
                     GameManager.Instance.ChangeScene(GameConstants.Scene.PlayTutorial);
+                }
+                else
+                {
+                    Debug.LogWarning("GameManager Missing. Force loading.");
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
                 }
             }
             else
@@ -65,7 +69,13 @@ namespace My.Scripts._01_Tutorial
         {
             isTransitioning = true;
             GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
-            GamePage next = (targetIndex < pages.Length) ? pages[targetIndex] : null;
+            if (targetIndex < 0 || targetIndex >= pages.Length)
+            {
+                Debug.LogWarning($"[TutorialManager] Invalid targetIndex: {targetIndex}");
+                isTransitioning = false;
+                yield break;
+            }
+            GamePage next = pages[targetIndex];
 
             // 1. 현재 페이지 퇴장
             if (current != null)
