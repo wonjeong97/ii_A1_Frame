@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
@@ -278,5 +279,33 @@ public class TimeLapseRecorder : MonoBehaviour
             IsConversionSuccessful = false;
             Debug.LogError($"[TimeLapseRecorder] 변환 실패. 코드: {LastExitCode}");
         }
+    }
+
+    private void OnDestroy()
+    {
+        // 텍스처 정리
+        if (_tempTexture != null)
+        {
+            Destroy(_tempTexture);
+            _tempTexture = null;
+        }
+        
+        // FFmpeg 프로세스 정리
+        if (_ffmpegProcess != null && !_ffmpegProcess.HasExited)
+        {
+            try
+            {
+                _ffmpegProcess.Kill();
+                _ffmpegProcess.Dispose();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[TimeLapseRecorder] 프로세스 정리 실패: {e.Message}");
+            }
+            
+            _ffmpegProcess = null;
+        }
+        
+        if (Instance == this)  Instance = null;
     }
 }
