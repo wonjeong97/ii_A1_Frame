@@ -58,8 +58,10 @@ namespace My.Scripts._18_Ending.Pages
 
             yield return new WaitForSeconds(4.0f);
             
-            // 4. 완료 -> 타이틀로 이동 (Manager가 처리)
-            //CompleteStep();
+            yield return StartCoroutine(FadePageAlpha(1f, 0f, 1.0f));
+            
+            // 4. 완료
+            CompleteStep();
         }
 
         // [Helper] 텍스트 페이드
@@ -90,6 +92,20 @@ namespace My.Scripts._18_Ending.Pages
                 yield return null;
             }
             target.alpha = end;
+        }
+        
+        // 페이지 전체(CanvasGroup) 페이드
+        private IEnumerator FadePageAlpha(float start, float end, float duration)
+        {
+            float t = 0f;
+            SetAlpha(start);
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                SetAlpha(Mathf.Lerp(start, end, t / duration));
+                yield return null;
+            }
+            SetAlpha(end);
         }
 
         private void SetTextAlpha(Text t, float a)
