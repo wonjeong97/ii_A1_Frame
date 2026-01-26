@@ -139,37 +139,41 @@ namespace My.Scripts.Core
             if (_isTutorialMode)
             {
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
-                if (tSetting != null)
+                if (tSetting == null)
                 {
-                    MergeCommonData(tSetting, commonData);
-
-                    SetCameraFileName(tSetting.Page3);
-                    ConfigureCameraPage(false);
-
-                    SetupPageData(0, tSetting.Page1);
-                    SetupPageData(1, tSetting.Page2);
-                    SetupPageData(2, tSetting.Page3);
-                    SetupPageData(3, tSetting.Page4);
-                    SetupPageData(5, tSetting.Page6);
-                    SetupPageData(6, tSetting.page7);
+                    Debug.LogError($"[LevelManager] {path}.json 로드 실패");
+                    return;
                 }
+                
+                MergeCommonData(tSetting, commonData);
+                SetCameraFileName(tSetting.Page3);
+                ConfigureCameraPage(false);
+
+                SetupPageData(0, tSetting.Page1);
+                SetupPageData(1, tSetting.Page2);
+                SetupPageData(2, tSetting.Page3);
+                SetupPageData(3, tSetting.Page4);
+                SetupPageData(5, tSetting.Page6);
+                SetupPageData(6, tSetting.page7);
             }
             else
             {
                 var sSetting = JsonLoader.Load<StandardLevelSetting>(path);
-                if (sSetting != null)
+                if (sSetting == null)
                 {
-                    MergeCommonData(sSetting, commonData);
-
-                    SetCameraFileName(sSetting.Page3);
-                    ConfigureCameraPage(true);
-
-                    SetupPageData(0, sSetting.Page1);
-                    SetupPageData(1, sSetting.Page2);
-                    SetupPageData(2, sSetting.Page3);
-                    SetupPageData(3, sSetting.Page4);
-                    SetupPageData(5, sSetting.Page6);
+                    Debug.LogError($"[LevelManager] {path}.json 로드 실패");
+                    return;
                 }
+                
+                MergeCommonData(sSetting, commonData);
+                SetCameraFileName(sSetting.Page3);
+                ConfigureCameraPage(true);
+
+                SetupPageData(0, sSetting.Page1);
+                SetupPageData(1, sSetting.Page2);
+                SetupPageData(2, sSetting.Page3);
+                SetupPageData(3, sSetting.Page4);
+                SetupPageData(5, sSetting.Page6);
             }
         }
 

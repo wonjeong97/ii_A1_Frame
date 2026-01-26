@@ -149,6 +149,16 @@ namespace My.Scripts._18_Ending.Pages
             {
                 yield return new WaitForSeconds((float)duration);
             }
+            else
+            {
+                float playbackTimeout = 30f;
+                float playbackWait = 0f;
+                while (videoPlayer.isPlaying && playbackWait < playbackTimeout)
+                {
+                    yield return null;
+                    playbackWait += Time.deltaTime;
+                }
+            }
             
             // 재생 종료 확실히 대기
             float safetyWait = 0f;

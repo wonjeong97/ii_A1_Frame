@@ -94,7 +94,7 @@ namespace My.Scripts.Core.Pages
             _isInputBlocked = false;
             _currentIdleTime = 0f;
             
-            InitializeGame();
+            if (!InitializeGame()) return;
             
             // 시작 위치 설정 (중앙 부근)
             int startX = Mathf.Min(4, gridSize - 1);
@@ -103,9 +103,9 @@ namespace My.Scripts.Core.Pages
         }
 
         /// <summary> 게임 리소스 및 상태 초기화 </summary>
-        private void InitializeGame()
+        private bool InitializeGame()
         {
-            if (!imageBlack || !imageFocus) return;
+            if (!imageBlack || !imageFocus) return false;
             
             _blackRect = imageBlack.rectTransform;
             _cellWidth = _blackRect.rect.width / gridSize;
@@ -166,6 +166,7 @@ namespace My.Scripts.Core.Pages
             }
 
             _activeFades.Clear();
+            return true;
         }
 
         /// <summary> 프레임 업데이트 (입력 및 상태 처리) </summary>

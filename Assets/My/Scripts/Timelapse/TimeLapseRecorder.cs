@@ -117,7 +117,11 @@ public class TimeLapseRecorder : MonoBehaviour
         
         // 텍스처 초기화
         if (_tempTexture == null || _tempTexture.width != captureWidth || _tempTexture.height != captureHeight)
+        {
+            if (_tempTexture != null)
+                Destroy(_tempTexture);
             _tempTexture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
+        }
     }
 
     /// <summary> 캡처 중지 </summary>
@@ -260,6 +264,7 @@ public class TimeLapseRecorder : MonoBehaviour
 
         LastExitCode = process.ExitCode;
         IsProcessing = false;
+        process.Dispose();
         _ffmpegProcess = null;
 
         // 결과 확인
