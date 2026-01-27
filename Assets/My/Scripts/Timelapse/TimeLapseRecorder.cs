@@ -293,11 +293,14 @@ public class TimeLapseRecorder : MonoBehaviour
         }
         
         // FFmpeg 프로세스 정리
-        if (_ffmpegProcess != null && !_ffmpegProcess.HasExited)
+        if (_ffmpegProcess != null)
         {
             try
             {
-                _ffmpegProcess.Kill();
+                if (!_ffmpegProcess.HasExited)
+                {
+                    _ffmpegProcess.Kill();
+                }
                 _ffmpegProcess.Dispose();
             }
             catch (Exception e)
