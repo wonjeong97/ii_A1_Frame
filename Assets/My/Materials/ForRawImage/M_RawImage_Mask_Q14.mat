@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_RawImage_Mask_Q8
+  m_Name: M_RawImage_Mask_Q14
   m_Shader: {fileID: 4800000, guid: 1d1fa1a7758e7fc4485cb9b5e83fb733, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -28,7 +28,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskTex:
-        m_Texture: {fileID: 2800000, guid: 7ed4f7fd1e333634396feea6bdf5a7b6, type: 3}
+        m_Texture: {fileID: 2800000, guid: aa20aebf50f42444ab8382dc57221631, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
