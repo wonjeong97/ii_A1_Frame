@@ -7,20 +7,22 @@ using Wonjeong.Reporter;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
+/// <summary> 게임 전반적인 상태 및 씬 전환 관리 매니저 </summary>
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance;
+    public static GameManager Instance; // 싱글톤 인스턴스
 
-    [SerializeField] private Reporter reporter;
+    [SerializeField] private Reporter reporter; // 로그 리포터 참조
 
-    private float _currentInactivityTimer;
-    private bool _isTransitioning;
-    private float _inactivityLimit = 60f;
-    private float _fadeTime = 1.0f;
+    private float _currentInactivityTimer; // 현재 비활성 시간 타이머
+    private bool _isTransitioning; // 씬 전환 중 여부
+    private float _inactivityLimit = 60f; // 비활성 제한 시간
+    private float _fadeTime = 1.0f; // 페이드 시간
 
     // 플레이어 태그 정보 (0: 없음, 1: Player1, 2: Player2)
     public int firstTaggedPlayer = 0;
 
+    /// <summary> 싱글톤 초기화 </summary>
     private void Awake()
     {
         if (Instance == null)
@@ -40,6 +42,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary> 초기 설정 및 커서 숨김 </summary>
     private void Start()
     {
         Cursor.visible = false;
@@ -51,6 +54,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary> 설정 파일 로드 </summary>
     private void LoadSettings()
     {
         Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting); // 상수 사용
@@ -67,6 +71,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary> 입력 감지 및 비활성 체크 </summary>
     private void Update()
     {
         // D키: 리포터(로그) 제어
@@ -86,6 +91,7 @@ public class GameManager : MonoBehaviour
         HandleInactivity();
     }
 
+    /// <summary> 사용자 입력 부재 감지 </summary>
     private void HandleInactivity()
     {
         // 현재 씬이 이미 Title이라면 비활성 타이머를 돌리지 않음
@@ -110,6 +116,7 @@ public class GameManager : MonoBehaviour
         }
     }
     
+    /// <summary> 씬 전환 요청 </summary>
     public void ChangeScene(string sceneName)
     {
         if (_isTransitioning) return;
@@ -119,7 +126,7 @@ public class GameManager : MonoBehaviour
         StartCoroutine(ChangeSceneRoutine(sceneName));
     }
 
-    // 실제 페이드 및 씬 로드를 담당하는 코루틴
+    /// <summary> 페이드 효과를 포함한 씬 전환 코루틴 </summary>
     private IEnumerator ChangeSceneRoutine(string sceneName)
     {
         // 1. FadeManager 체크
@@ -148,6 +155,7 @@ public class GameManager : MonoBehaviour
         _isTransitioning = false;
     }
 
+    /// <summary> 타이틀 화면 복귀 </summary>
     public void ReturnToTitle()
     {
         if (_isTransitioning) return;
@@ -162,6 +170,7 @@ public class GameManager : MonoBehaviour
         ChangeScene(GameConstants.Scene.Title);
     }
 
+    /// <summary> 타이틀 복귀 코루틴 (별도 구현) </summary>
     private IEnumerator ReturnToTitleRoutine()
     {
         if (FadeManager.Instance == null)

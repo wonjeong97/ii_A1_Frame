@@ -13,13 +13,13 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting descriptionText;
     }
 
-    //  GamePage<TutorialPage1Data> 상속
+    /// <summary> 튜토리얼 1페이지 컨트롤러 (엔터 키 대기) </summary>
     public class TutorialPage1Controller : GamePage<TutorialPage1Data>
     {
         [Header("Page 1 UI")]
-        [SerializeField] private Text descriptionText;
+        [SerializeField] private Text descriptionText; // 설명 텍스트
 
-        //  SetupData 오버라이드
+        /// <summary> 데이터 설정 (텍스트 적용) </summary>
         protected override void SetupData(TutorialPage1Data data)
         {
             if (descriptionText) 
@@ -28,11 +28,13 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
+        /// <summary> 입력 감지 (Enter 키로 완료) </summary>
         private void Update()
         {
+            // Enter 키 입력 시
             if (Input.GetKeyDown(KeyCode.Return))
             {
-                CompleteStep();
+                CompleteStep(); // 단계 완료
             }
         }
     }

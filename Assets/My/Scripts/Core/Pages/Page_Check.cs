@@ -6,32 +6,31 @@ using Wonjeong.UI;
 
 namespace My.Scripts.Core.Pages
 {
-    public class Page_Check : GamePage
+    /// <summary> 플레이어 준비 확인 및 점등 연출 페이지 </summary>
+    public class Page_Check : GamePage<CheckPageData>
     {
-        [Header("UI References")] [SerializeField]
-        private Text nicknameA;
+        [Header("UI References")] 
+        [SerializeField] private Text nicknameA; // 플레이어 A 닉네임
+        [SerializeField] private Text nicknameB; // 플레이어 B 닉네임
 
-        [SerializeField] private Text nicknameB;
+        [Header("Check Images")] 
+        [SerializeField] private Image imgBackA; // 플레이어 A 배경 (Off)
+        [SerializeField] private Image imgLightA; // 플레이어 A 조명 (On)
+        [SerializeField] private Image imgBackB; // 플레이어 B 배경 (Off)
+        [SerializeField] private Image imgLightB; // 플레이어 B 조명 (On)
 
-        [Header("Check Images")] [SerializeField]
-        private Image imgBackA;
+        private bool isLightOnA; // A 점등 여부
+        private bool isLightOnB; // B 점등 여부
+        private bool _completionStarted; // 완료 시퀀스 시작 여부
 
-        [SerializeField] private Image imgLightA;
-        [SerializeField] private Image imgBackB;
-        [SerializeField] private Image imgLightB;
-
-        private bool isLightOnA, isLightOnB;
-        private bool _completionStarted;
-
-        public override void SetupData(object data)
+        /// <summary> 데이터 설정 (닉네임 적용) </summary>
+        protected override void SetupData(CheckPageData data)
         {
-            var pageData = data as CheckPageData;
-            if (pageData == null) return;
-
-            if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, pageData.nicknamePlayerA);
-            if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, pageData.nicknamePlayerB);
+            if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
+            if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
         }
 
+        /// <summary> 페이지 진입 (상태 초기화) </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -49,6 +48,7 @@ namespace My.Scripts.Core.Pages
             if (imgLightB) imgLightB.gameObject.SetActive(false);
         }
         
+        /// <summary> 입력 감지 (숫자키) </summary>
         private void Update()
         {
             if (_completionStarted) return;
@@ -70,7 +70,7 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        // 매니저에서 호출 (이전 페이지에서 누가 눌렀는지, 혹은 현재 페이지에서 누가 눌렀는지)
+        /// <summary> 플레이어 체크 활성화 (점등 및 완료 확인) </summary>
         public void ActivatePlayerCheck(bool isPlayerA)
         {
             if (isPlayerA)
@@ -89,6 +89,7 @@ namespace My.Scripts.Core.Pages
             CheckCompletion();
         }
 
+        /// <summary> 양쪽 완료 확인 </summary>
         private void CheckCompletion()
         {
             if (isLightOnA && isLightOnB && !_completionStarted)
@@ -98,12 +99,14 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator CompleteRoutine()
         {
             yield return new WaitForSeconds(1.0f); // 1초 대기 후 완료
             CompleteStep();
         }
 
+        /// <summary> 점등 연출 (Cross Fade) </summary>
         private IEnumerator LightOnRoutine(Image back, Image light)
         {
             if (!back || !light) yield break;
@@ -129,6 +132,7 @@ namespace My.Scripts.Core.Pages
             light.color = cl;
         }
 
+        /// <summary> 이미지 투명도 설정 </summary>
         private void SetImgAlpha(Image i, float a)
         {
             if (i)

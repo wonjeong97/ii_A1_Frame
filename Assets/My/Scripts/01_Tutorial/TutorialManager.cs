@@ -20,11 +20,10 @@ namespace My.Scripts._01_Tutorial
         public TutorialPage6Data page6;
     }
 
-    // BaseFlowManager 상속
+    /// <summary> 튜토리얼 진행 관리 매니저 </summary>
     public class TutorialManager : BaseFlowManager
     {
-        // pages 배열은 부모에 있음
-
+        /// <summary> 설정 로드 및 페이지 데이터 주입 </summary>
         protected override void LoadSettings()
         {
             var setting = JsonLoader.Load<TutorialSetting>(GameConstants.Path.Tutorial);
@@ -33,7 +32,8 @@ namespace My.Scripts._01_Tutorial
                 Debug.LogError($"[TutorialManager] JSON Load Failed");
                 return;
             }
-            // Generic SetupData 활용
+
+            // 각 페이지에 데이터 주입
             if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(setting.page1);
             if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(setting.page2);
             if (pages.Length > 2 && pages[2] != null) pages[2].SetupData(setting.page3);
@@ -42,7 +42,7 @@ namespace My.Scripts._01_Tutorial
             if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
         }
 
-        // 튜토리얼 종료 시
+        /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>
         protected override void OnAllFinished()
         {
             if (FadeManager.Instance != null)
@@ -64,11 +64,12 @@ namespace My.Scripts._01_Tutorial
             }
         }
 
-        // 튜토리얼은 TriggerInfo(플레이어1/2 입력 등) 전달이 중요함
+        /// <summary> 페이지 전환 연출 (정보 전달 포함) </summary>
         protected override IEnumerator TransitionRoutine(int targetIndex, int info)
         {
             isTransitioning = true;
             GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
+            
             if (targetIndex < 0 || targetIndex >= pages.Length)
             {
                 Debug.LogWarning($"[TutorialManager] Invalid targetIndex: {targetIndex}");
@@ -98,10 +99,12 @@ namespace My.Scripts._01_Tutorial
             isTransitioning = false;
         }
 
+        /// <summary> 페이지별 트리거 정보 전달 처리 </summary>
         private void HandleTriggerInfo(GamePage page, int triggerInfo)
         {
             if (triggerInfo == 0) return;
-            // TutorialPage3Controller 등에서 트리거 처리
+            
+            // TutorialPage3: 플레이어 체크 정보 전달
             if (page is TutorialPage3Controller p3)
             {
                 if (triggerInfo == 1) p3.ActivatePlayerCheck(true);
