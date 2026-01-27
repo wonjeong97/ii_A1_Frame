@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_TextureMask_Q6
-  m_Shader: {fileID: 4800000, guid: 9ee98fd4a7ff4314b8f33b0598c87e92, type: 3}
+  m_Name: M_RawImage_Mask_Q11
+  m_Shader: {fileID: 4800000, guid: 1d1fa1a7758e7fc4485cb9b5e83fb733, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
