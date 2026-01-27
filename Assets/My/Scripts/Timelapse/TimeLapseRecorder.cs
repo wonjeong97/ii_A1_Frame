@@ -150,7 +150,6 @@ public class TimeLapseRecorder : MonoBehaviour
     private IEnumerator CaptureFrameRoutine()
     {
         yield return new WaitForEndOfFrame();
-
         if (_webCam != null && _webCam.isPlaying)
         {
             // RT 생성 및 블릿
@@ -163,19 +162,19 @@ public class TimeLapseRecorder : MonoBehaviour
             _tempTexture.Apply();
             RenderTexture.active = null;
             RenderTexture.ReleaseTemporary(rt);
-
+            // 프레임 인덱스 예약
+            int frameIndex = System.Threading.Interlocked.Increment(ref _globalFrameIndex) - 1;
             // JPG 인코딩
             byte[] bytes = _tempTexture.EncodeToJPG(70); 
             
             // 파일명 생성
-            string fileName = $"img_{_globalFrameIndex:D5}.jpg"; 
+            string fileName = $"img_{frameIndex:D5}.jpg"; 
             string path = Path.Combine(_saveFolderPath, fileName);
             
             // 파일 저장
             try
             {
                 File.WriteAllBytes(path, bytes);
-                _globalFrameIndex++; // 성공 시 인덱스 증가
             }
             catch (System.Exception e)
             {
