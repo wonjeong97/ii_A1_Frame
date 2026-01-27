@@ -26,7 +26,7 @@ namespace My.Scripts.Utils
 
         [Header("Config")]
         public string saveFolderName = "Pictures";
-        public string outputFileName = "Final_Composite";
+        public string outputFileName = "Composite";
 
         [Header("Layout")]
         public List<CompositeSlot> slots;

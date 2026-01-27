@@ -398,6 +398,70 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296180029}
   m_CullTransparentMesh: 1
+--- !u!1 &355055028
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 355055030}
+  - component: {fileID: 355055029}
+  m_Layer: 0
+  m_Name: PhotoCompositor_3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &355055029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 355055028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 061cb3bfceb457b4bab3d59d886bdf97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseFrame: {fileID: 2800000, guid: b8074a6e6e71425468b3c1bc372f78d6, type: 3}
+  saveFolderName: Pictures
+  outputFileName: Composite_3
+  slots:
+  - fileSuffix: _Q11
+    position: {x: 0, y: 0}
+    scale: {x: 0.53, y: 0.53}
+  - fileSuffix: _Q12
+    position: {x: -1, y: -3}
+    scale: {x: 0.53, y: 0.53}
+  - fileSuffix: _Q13
+    position: {x: -6.3, y: 27.5}
+    scale: {x: 0.53, y: 0.53}
+  - fileSuffix: _Q14
+    position: {x: -85, y: 32}
+    scale: {x: 0.53, y: 0.53}
+  - fileSuffix: _Q15
+    position: {x: 15, y: 12}
+    scale: {x: 0.53, y: 0.53}
+  debugBaseName: "\uC544\uC601\uAE38\uB3D9"
+--- !u!4 &355055030
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 355055028}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 585.458, y: 528.0124, z: -5.7605953}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &524136132
 GameObject:
   m_ObjectHideFlags: 0
@@ -606,6 +670,70 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2056315581}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &735648580
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 735648582}
+  - component: {fileID: 735648581}
+  m_Layer: 0
+  m_Name: PhotoCompositor_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &735648581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 735648580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 061cb3bfceb457b4bab3d59d886bdf97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseFrame: {fileID: 2800000, guid: bc56b75a19471ec45bd86b997c6318f9, type: 3}
+  saveFolderName: Pictures
+  outputFileName: Composite_2
+  slots:
+  - fileSuffix: _Q6
+    position: {x: -69, y: -57.5}
+    scale: {x: 0.285, y: 0.285}
+  - fileSuffix: _Q7
+    position: {x: 618, y: -57.5}
+    scale: {x: 0.285, y: 0.285}
+  - fileSuffix: _Q8
+    position: {x: -69, y: -735}
+    scale: {x: 0.285, y: 0.285}
+  - fileSuffix: _Q9
+    position: {x: 618, y: -735}
+    scale: {x: 0.285, y: 0.285}
+  - fileSuffix: _Q10
+    position: {x: 276, y: -397}
+    scale: {x: 0.285, y: 0.285}
+  debugBaseName: "\uC544\uC601\uAE38\uB3D9"
+--- !u!4 &735648582
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 735648580}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 585.458, y: 528.0124, z: -5.7605953}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &759727495
 GameObject:
@@ -880,7 +1008,10 @@ MonoBehaviour:
   - {fileID: 2056315582}
   - {fileID: 181802048}
   - {fileID: 524136133}
-  photoCompositor: {fileID: 1452569736}
+  compositors:
+  - {fileID: 1452569736}
+  - {fileID: 735648581}
+  - {fileID: 355055029}
 --- !u!1 &1376975939
 GameObject:
   m_ObjectHideFlags: 0
@@ -1179,7 +1310,7 @@ GameObject:
   - component: {fileID: 1452569737}
   - component: {fileID: 1452569736}
   m_Layer: 0
-  m_Name: PhotoCompositor
+  m_Name: PhotoCompositor_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1199,7 +1330,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseFrame: {fileID: 2800000, guid: 634eece703ee7c54ba959a1c2aa51792, type: 3}
   saveFolderName: Pictures
-  outputFileName: Final_Composite
+  outputFileName: Composite_1
   slots:
   - fileSuffix: _Q1
     position: {x: -298.7, y: 132.5}
@@ -2019,3 +2150,5 @@ SceneRoots:
   - {fileID: 1847129587}
   - {fileID: 1053106311}
   - {fileID: 1452569737}
+  - {fileID: 735648582}
+  - {fileID: 355055030}
