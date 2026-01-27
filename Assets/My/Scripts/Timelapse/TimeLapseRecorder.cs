@@ -57,10 +57,11 @@ public class TimeLapseRecorder : MonoBehaviour
                     Directory.CreateDirectory(_saveFolderPath);
                 }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"[TimeLapseRecorder] 폴더 생성 실패. 비활성화.\n에러: {e.Message}");
-                this.enabled = false;
+                enabled = false;
+                if (Instance == this) Instance = null; // 실패 시 인스턴스 정리
                 return;
             }
             
@@ -94,7 +95,7 @@ public class TimeLapseRecorder : MonoBehaviour
                 }
                 Debug.Log("[TimeLapseRecorder] 데이터 초기화 완료");
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"[TimeLapseRecorder] 초기화 실패: {e.Message}");
             }
@@ -176,7 +177,7 @@ public class TimeLapseRecorder : MonoBehaviour
             {
                 File.WriteAllBytes(path, bytes);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError($"[TimeLapseRecorder] 저장 실패: {e.Message}");
             }
@@ -208,7 +209,7 @@ public class TimeLapseRecorder : MonoBehaviour
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             Debug.LogError($"[FFmpeg] 파일 삭제 실패: {e.Message}");
         }
@@ -228,8 +229,10 @@ public class TimeLapseRecorder : MonoBehaviour
         // 프로세스 시작
         try 
         {
+            IsProcessing = true;
+            IsConversionSuccessful = false;
+            LastExitCode = -1;
             _ffmpegProcess = Process.Start(startInfo);
-
             if (_ffmpegProcess != null)
             {
                 StartCoroutine(WaitForFFmpegRoutine(_ffmpegProcess));
@@ -241,7 +244,7 @@ public class TimeLapseRecorder : MonoBehaviour
                 IsConversionSuccessful = false;
             }
         }
-        catch (System.Exception e)
+        catch (Exception e)
         {
             Debug.LogError($"[TimeLapseRecorder] 실행 예외: {e.Message}");
             IsProcessing = false;
