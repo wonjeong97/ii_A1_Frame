@@ -20,21 +20,25 @@ namespace My.Scripts._18_Ending
     public class EndingManager : BaseFlowManager
     {   
         [Header("Compositor")]
-        [SerializeField] private PhotoCompositor photoCompositor;
+        [SerializeField] private PhotoCompositor[] compositors;
         
         protected override void Start()
         {
             base.Start(); // LoadSettings -> InitializePages -> StartFlow
 
             // 엔딩 씬 시작 시 백그라운드 합성 실행
-            if (photoCompositor != null)
-            {   
-                // TODO
-                // 주의: 사진 저장할 때 썼던 이름 규칙과 동일해야 함 (예: "PlayerAPlayerB")
-                // GameManager 등에 저장해둔 이름을 가져오는 것이 좋음
+          if (compositors != null && compositors.Length > 0)
+            {
+                // GameManager 등에서 가져온 플레이어 이름 조합
                 string combinedName = GetCurrentPlayerNames(); 
-                
-                photoCompositor.ProcessAndSave(combinedName);
+
+                foreach (var compositor in compositors)
+                {
+                    if (compositor != null)
+                    {
+                        compositor.ProcessAndSave(combinedName);
+                    }
+                }
             }
         }
         
