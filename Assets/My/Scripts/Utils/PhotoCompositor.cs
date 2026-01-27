@@ -57,8 +57,6 @@ namespace My.Scripts.Utils
 
             // 2. GL 매트릭스 설정 (좌측 상단 0,0 기준)
             GL.PushMatrix();
-            // LoadPixelMatrix(left, right, bottom, top)
-            // (0, width, height, 0) -> 0이 Top, height가 Bottom이 되므로 Y축이 아래로 증가함
             GL.LoadPixelMatrix(0, baseFrame.width, baseFrame.height, 0);
 
             // 3. 배경 그리기
@@ -78,10 +76,7 @@ namespace My.Scripts.Utils
                         // 크기 계산
                         float w = photoTex.width * slot.scale.x;
                         float h = photoTex.height * slot.scale.y;
-
-                        // [핵심] 위치 계산 (좌상단 피벗)
-                        // GL 좌표계가 이미 좌상단(0,0)이므로,
-                        // Rect의 시작점(x,y)가 곧 이미지의 좌상단 모서리(Pivot)가 됩니다.
+                        
                         Rect drawRect = new Rect(slot.position.x, -slot.position.y, w, h);
                         
                         Graphics.DrawTexture(drawRect, photoTex);
