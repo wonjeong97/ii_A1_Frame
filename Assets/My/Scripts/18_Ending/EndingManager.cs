@@ -2,6 +2,7 @@ using System;
 using My.Scripts._18_Ending.Pages;
 using My.Scripts.Core;
 using My.Scripts.Global;
+using My.Scripts.Utils;
 using UnityEngine;
 using Wonjeong.Utils; 
 
@@ -17,10 +18,39 @@ namespace My.Scripts._18_Ending
 
     /// <summary> 엔딩 씬 진행 관리 매니저 </summary>
     public class EndingManager : BaseFlowManager
-    {
+    {   
+        [Header("Compositor")]
+        [SerializeField] private PhotoCompositor photoCompositor;
+        
+        protected override void Start()
+        {
+            base.Start(); // LoadSettings -> InitializePages -> StartFlow
+
+            // 엔딩 씬 시작 시 백그라운드 합성 실행
+            if (photoCompositor != null)
+            {   
+                // TODO
+                // 주의: 사진 저장할 때 썼던 이름 규칙과 동일해야 함 (예: "PlayerAPlayerB")
+                // GameManager 등에 저장해둔 이름을 가져오는 것이 좋음
+                string combinedName = GetCurrentPlayerNames(); 
+                
+                photoCompositor.ProcessAndSave(combinedName);
+            }
+        }
+        
+        private string GetCurrentPlayerNames()
+        {
+            if (GameManager.Instance != null) 
+            {
+                // GameManager에 이름을 저장해두었다고 가정
+                // return GameManager.Instance.SavedNameString; 
+            }
+            return "아영길동"; 
+        }
+        
         /// <summary> 설정 로드 및 데이터 주입 </summary>
         protected override void LoadSettings()
-        {
+        {   
             var setting = JsonLoader.Load<EndingLevelSetting>("JSON/Ending");
             
             if (setting != null)
