@@ -269,6 +269,15 @@ namespace My.Scripts.Core
                 isTransitioning = false;
                 yield break;
             }
+            
+            // 4번째 페이지(안내 텍스트) 진입 시, 5번째 페이지(카메라) 미리 켜기, 무지개 화면 방지
+            if (targetIndex == 3)
+            {
+                if (pages.Length > 4 && pages[4] is Page_Camera camPage)
+                {
+                    camPage.PreloadCamera(); // 백그라운드 워밍업 시작
+                }
+            }
 
             GamePage next = pages[targetIndex];
             bool handled = false;
