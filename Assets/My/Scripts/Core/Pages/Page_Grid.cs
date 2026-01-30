@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using My.Scripts.Core.Data;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -371,7 +372,7 @@ namespace My.Scripts.Core.Pages
                         cg.alpha = 1f;
             }
 
-            yield return new WaitForSeconds(2.0f);
+            yield return CoroutineData.GetWaitForSeconds(2.0f);
 
             // 그리드 및 텍스트 페이드 아웃
             float t2 = 0f;

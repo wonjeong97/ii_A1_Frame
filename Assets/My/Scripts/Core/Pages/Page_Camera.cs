@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -28,7 +29,8 @@ namespace My.Scripts.Core.Pages
 
         private Material _currentMaskingMaterial;
         private bool _shouldSavePhoto;
-        private bool _isConfigured = false;
+        private bool _triggerEncodingOnCapture;
+        private bool _isConfigured;
 
         private WebCamTexture _webCamTexture;
         private Texture2D _capturedPhoto;
@@ -56,10 +58,11 @@ namespace My.Scripts.Core.Pages
             _photoFileName = fileName;
         }
 
-        public void Configure(bool shouldSave, Material maskMat = null)
+        public void Configure(bool shouldSave, Material maskMat = null, bool triggerEncoding = false)
         {
             _shouldSavePhoto = shouldSave;
             _currentMaskingMaterial = maskMat;
+            _triggerEncodingOnCapture = triggerEncoding;
             _isConfigured = true;
         }
 
@@ -118,7 +121,7 @@ namespace My.Scripts.Core.Pages
         private IEnumerator FadeInCameraRoutine()
         {
             // 미리 켜뒀으므로 대기 시간을 줄여도 되지만, 안정성을 위해 유지
-            yield return new WaitForSeconds(cameraFadeDelay);
+            yield return CoroutineData.GetWaitForSeconds(cameraFadeDelay);
 
             if (_webCamTexture != null)
             {
@@ -138,7 +141,7 @@ namespace My.Scripts.Core.Pages
 
         private IEnumerator CountdownRoutine()
         {
-            yield return new WaitForSeconds(1.0f + cameraFadeDelay);
+            yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
             if (TimeLapseRecorder.Instance != null && _webCamTexture != null)
             {
@@ -169,9 +172,15 @@ namespace My.Scripts.Core.Pages
 
             if (contentCanvasGroup) contentCanvasGroup.alpha = 0f;
 
-            yield return new WaitForSeconds(0.05f);
+            yield return CoroutineData.GetWaitForSeconds(0.05f);
 
             CapturePhoto();
+            
+            if (_triggerEncodingOnCapture && TimeLapseRecorder.Instance != null)
+            {
+                Debug.Log("[Page_Camera] Q15 감지: 촬영 즉시 인코딩 요청");
+                TimeLapseRecorder.Instance.ConvertToVideo();
+            }
 
             if (flashImage)
             {
@@ -186,7 +195,7 @@ namespace My.Scripts.Core.Pages
                 flashImage.gameObject.SetActive(false);
             }
 
-            yield return new WaitForSeconds(2.0f);
+            yield return CoroutineData.GetWaitForSeconds(2.0f);
             CompleteStep();
         }
 

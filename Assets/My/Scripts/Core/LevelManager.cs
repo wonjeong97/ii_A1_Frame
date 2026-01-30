@@ -335,7 +335,7 @@ namespace My.Scripts.Core
                 {
                     yield return StartCoroutine(FadePage(current, 1f, 0f));
                     current.OnExit();
-                    yield return new WaitForSeconds(0.5f);
+                    yield return CoroutineData.GetWaitForSeconds(0.5f);
                 }
 
                 if (next != null)
@@ -358,7 +358,14 @@ namespace My.Scripts.Core
         /// <summary> 카메라 페이지 설정 </summary>
         private void ConfigureCameraPage(bool save)
         {
-            if (pages.Length > 4 && pages[4] is Page_Camera camPage) camPage.Configure(save, cameraMaskMaterial);
+            if (pages.Length > 4 && pages[4] is Page_Camera camPage)
+            {
+                // 현재 레벨이 Q15인지 확인
+                bool isQ15 = string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase);
+                
+                // Q15라면 인코딩 트리거(true) 전달
+                camPage.Configure(save, cameraMaskMaterial, isQ15);
+            }
         }
 
         /// <summary> 카메라 파일명 설정 </summary>
@@ -393,13 +400,26 @@ namespace My.Scripts.Core
         {
             if (TimeLapseRecorder.Instance != null)
             {
-                TimeLapseRecorder.Instance.ConvertToVideo();
+                // 이미 처리 중(IsProcessing)이거나 완료되지 않았다면 실행
+                if (!TimeLapseRecorder.Instance.IsProcessing && !TimeLapseRecorder.Instance.IsConversionSuccessful)
+                {
+                    Debug.Log("[LevelManager] 인코딩 시작 (Page_Camera에서 시작되지 않음)");
+                    TimeLapseRecorder.Instance.ConvertToVideo();
+                }
+                else
+                {
+                    Debug.Log("[LevelManager] 인코딩이 이미 진행 중입니다. 완료를 대기합니다.");
+                }
+
                 yield return null;
+
                 float timeout = 60f, elapsed = 0f;
+                // 변환이 끝날 때까지 대기
                 while (TimeLapseRecorder.Instance.IsProcessing && elapsed < timeout)
                 {
-                    Debug.Log("[LevelManager] 영상 변환 중...");
-                    yield return new WaitForSeconds(0.5f);
+                    // 로그 과다 출력 방지를 위해 주석 처리하거나 간격을 둠
+                    // Debug.Log("[LevelManager] 영상 변환 중..."); 
+                    yield return CoroutineData.GetWaitForSeconds(0.5f);
                     elapsed += 0.5f;
                 }
             }
@@ -425,7 +445,7 @@ namespace My.Scripts.Core
         {
             if (globalBlackCanvasGroup != null)
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 0f, 1f, 0.5f));
-            yield return new WaitForSeconds(0.5f);
+            yield return CoroutineData.GetWaitForSeconds(0.5f);
             if (current) current.OnExit();
             if (next)
             {
@@ -470,7 +490,7 @@ namespace My.Scripts.Core
                 FadeManager.Instance.FadeOut(1f, () => d = true);
                 while (!d) yield return null;
             }
-            else yield return new WaitForSeconds(0.5f);
+            else yield return CoroutineData.GetWaitForSeconds(0.5f);
 
             if (current) current.OnExit();
             if (enableWhiteBg && globalWhiteBackground)
@@ -502,7 +522,7 @@ namespace My.Scripts.Core
                 current.OnExit();
             }
 
-            if (waitTime > 0f) yield return new WaitForSeconds(waitTime);
+            if (waitTime > 0f) yield return CoroutineData.GetWaitForSeconds(waitTime);
             if (next)
             {
                 next.OnEnter();
