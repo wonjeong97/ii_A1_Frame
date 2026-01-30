@@ -99,7 +99,8 @@ namespace My.Scripts._18_Ending.Pages
                 }
                 
                 // 변환 완료 후, Recorder가 생성한 최신 경로로 갱신
-                if (TimeLapseRecorder.Instance.IsConversionSuccessful)
+                if (TimeLapseRecorder.Instance.IsConversionSuccessful &&
+                    !string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastVideoPath))
                 {
                     filePath = TimeLapseRecorder.Instance.LastVideoPath;
                 }
