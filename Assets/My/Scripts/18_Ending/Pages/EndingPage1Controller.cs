@@ -193,7 +193,23 @@ namespace My.Scripts._18_Ending.Pages
             string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
             
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            return Path.Combine(rootPath, "Timelapse_Video", dateFolder, videoFileName);
+            string folder = Path.Combine(rootPath, "Timelapse_Video", dateFolder);
+            if (Directory.Exists(folder))
+            {
+                string latestPath = null;
+                DateTime latestTime = DateTime.MinValue;
+                foreach (string file in Directory.GetFiles(folder, "Timelapse_*.mp4"))
+                {
+                    DateTime t = File.GetLastWriteTimeUtc(file);
+                    if (t > latestTime)
+                    {
+                        latestTime = t;
+                        latestPath = file;
+                    }
+                }
+                if (!string.IsNullOrEmpty(latestPath)) return latestPath;
+            }
+            return Path.Combine(folder, videoFileName);
         }
 
         /// <summary> 텍스트 투명도 페이드 코루틴 </summary>
