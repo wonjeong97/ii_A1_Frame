@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -138,7 +139,7 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 조작 후 대기 및 다음 단계 전환 </summary>
         private IEnumerator ProcessStageSequence()
         {
-            yield return new WaitForSeconds(5.0f); // 5초간 자유 조작
+            yield return CoroutineData.GetWaitForSeconds(5.0f); // 5초간 자유 조작
 
             _isInputBlocked = true; // 입력 차단
             StartCoroutine(MoveFocusToCenter()); // 중앙 복귀
@@ -147,7 +148,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 // Stage 0 -> 1 전환
                 yield return StartCoroutine(TextChangeSequence(_dataA_Info));
-                yield return new WaitForSeconds(4.0f);
+                yield return CoroutineData.GetWaitForSeconds(4.0f);
                 yield return StartCoroutine(TextChangeSequence(_dataB_Start));
 
                 _currentStage = 1;
@@ -158,7 +159,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 // Stage 1 -> 완료
                 yield return StartCoroutine(TextChangeSequence(_dataB_Info));
-                yield return new WaitForSeconds(4.0f);
+                yield return CoroutineData.GetWaitForSeconds(4.0f);
                 CompleteStep(); // 단계 완료
             }
         }

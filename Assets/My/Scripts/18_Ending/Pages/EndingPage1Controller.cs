@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -85,7 +86,7 @@ namespace My.Scripts._18_Ending.Pages
                 {
                     didWaitForProcessing = true;
                     Debug.Log("[EndingPage1] FFmpeg 변환 중...");
-                    yield return new WaitForSeconds(0.5f);
+                    yield return CoroutineData.GetWaitForSeconds(0.5f);
                     processingWait += 0.5f;
                 }
                 
@@ -102,7 +103,7 @@ namespace My.Scripts._18_Ending.Pages
             float waitTime = 0f;
             while (!File.Exists(filePath) && waitTime < 5.0f)
             {
-                yield return new WaitForSeconds(0.2f);
+                yield return CoroutineData.GetWaitForSeconds(0.2f);
                 waitTime += 0.2f;
             }
 
@@ -147,7 +148,7 @@ namespace My.Scripts._18_Ending.Pages
             double duration = videoPlayer.length;
             if (duration > 0)
             {
-                yield return new WaitForSeconds((float)duration);
+                yield return CoroutineData.GetWaitForSeconds((float)duration);
             }
             else
             {

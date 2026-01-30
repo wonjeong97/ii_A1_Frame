@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 using System.Diagnostics;
+using Wonjeong.Utils;
 using Debug = UnityEngine.Debug;
 
 /// <summary> 타임랩스 녹화 및 영상 변환 관리자 </summary>
@@ -150,7 +151,7 @@ public class TimeLapseRecorder : MonoBehaviour
     /// <summary> 프레임 캡처 및 파일 저장 코루틴 </summary>
     private IEnumerator CaptureFrameRoutine()
     {
-        yield return new WaitForEndOfFrame();
+        yield return CoroutineData.WaitForEndOfFrame;
         if (_webCam != null && _webCam.isPlaying)
         {
             // RT 생성 및 블릿
@@ -193,6 +194,12 @@ public class TimeLapseRecorder : MonoBehaviour
     /// <summary> FFmpeg 영상 변환 실행 </summary>
     public void ConvertToVideo()
     {
+        if (IsProcessing)
+        {
+            Debug.LogWarning("[TimeLapseRecorder] 이미 변환 작업이 진행 중입니다. 요청 무시.");
+            return;
+        }
+        
         string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg.exe"); 
         
         if (!File.Exists(ffmpegPath))

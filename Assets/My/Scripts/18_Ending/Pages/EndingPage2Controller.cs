@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -56,7 +57,7 @@ namespace My.Scripts._18_Ending.Pages
             yield return StartCoroutine(FadeText(text2, 0f, 1f, 1.0f));
 
             // 대기
-            yield return new WaitForSeconds(4.0f);
+            yield return CoroutineData.GetWaitForSeconds(4.0f);
             
             // 4. 완료
             CompleteStep();

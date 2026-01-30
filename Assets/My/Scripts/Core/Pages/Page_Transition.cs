@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -89,7 +90,7 @@ namespace My.Scripts.Core.Pages
             else if (autoPass)
             {
                 // 자동 넘김 대기
-                yield return new WaitForSeconds(autoPassDelay);
+                yield return CoroutineData.GetWaitForSeconds(autoPassDelay);
             }
 
             // 3. 종료 처리

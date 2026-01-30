@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -39,7 +40,7 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 4초 대기 후 완료 처리 </summary>
         private IEnumerator EndSequence()
         {
-            yield return new WaitForSeconds(4.0f);
+            yield return CoroutineData.GetWaitForSeconds(4.0f);
             CompleteStep();
         }
     }

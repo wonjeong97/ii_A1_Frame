@@ -6,6 +6,7 @@ using My.Scripts.Core;
 using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -86,12 +87,12 @@ namespace My.Scripts._18_Ending.Pages
                 yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 1.0f));
 
                 // 6초 대기
-                yield return new WaitForSeconds(6.0f);
+                yield return CoroutineData.GetWaitForSeconds(6.0f);
             }
             else
             {
                 // [Case B] 일반 대기 (7초)
-                yield return new WaitForSeconds(7.0f);
+                yield return CoroutineData.GetWaitForSeconds(7.0f);
             }
 
             // 4. 완료

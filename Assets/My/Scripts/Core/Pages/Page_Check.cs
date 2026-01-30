@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -102,7 +103,7 @@ namespace My.Scripts.Core.Pages
         /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator CompleteRoutine()
         {
-            yield return new WaitForSeconds(1.0f); // 1초 대기 후 완료
+            yield return CoroutineData.GetWaitForSeconds(1.0f); // 1초 대기 후 완료
             CompleteStep();
         }
 
