@@ -233,18 +233,25 @@ namespace My.Scripts.Core.Pages
                 StopWebCam();
             }
         }
-
+    
+        /// <summary> 사진을 커스텀 폴더(Pictures/yyyy-MM-dd)에 저장 </summary>
         private void SavePhotoToCustomFolder(Texture2D photo)
         {
             if (!photo) return;
             try
             {
                 byte[] bytes = photo.EncodeToPNG();
+                
+                // 루트 경로 계산
                 string dataPath = Application.dataPath;
                 DirectoryInfo parentDir = Directory.GetParent(dataPath);
                 string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
 
-                string folder = Path.Combine(rootPath, "Pictures");
+                // 날짜별 폴더 분리 (Pictures/yyyy-MM-dd/)
+                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                string folder = Path.Combine(rootPath, "Pictures", dateFolder);
+                
+                // 폴더가 없으면 생성
                 if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
                 string path = Path.Combine(folder, $"{_photoFileName}.png");
