@@ -97,6 +97,12 @@ namespace My.Scripts._18_Ending.Pages
                     CompleteStep();
                     yield break; 
                 }
+                
+                // 변환 완료 후, Recorder가 생성한 최신 경로로 갱신
+                if (TimeLapseRecorder.Instance.IsConversionSuccessful)
+                {
+                    filePath = TimeLapseRecorder.Instance.LastVideoPath;
+                }
             }
 
             // 2-2. 파일 생성 대기 (최대 5초)
@@ -174,11 +180,20 @@ namespace My.Scripts._18_Ending.Pages
 
         /// <summary> 영상 파일 전체 경로 반환 </summary>
         private string GetVideoPath()
-        {
+        {   
+            // 1순위: TimeLapseRecorder가 방금 생성한 경로 사용
+            if (TimeLapseRecorder.Instance != null && !string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastVideoPath))
+            {
+                return TimeLapseRecorder.Instance.LastVideoPath;
+            }
+            
+            // 2순위: Fallback (Recorder가 없을 경우 오늘 날짜 폴더 추정)
             string dataPath = Application.dataPath;
             DirectoryInfo parentDir = Directory.GetParent(dataPath);
             string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
-            return Path.Combine(rootPath, videoFolderName, videoFileName);
+            
+            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            return Path.Combine(rootPath, "Timelapse_Video", dateFolder, videoFileName);
         }
 
         /// <summary> 텍스트 투명도 페이드 코루틴 </summary>
