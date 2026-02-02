@@ -21,7 +21,7 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting txtB_Info;
     }
 
-    /// <summary> 튜토리얼 5페이지 컨트롤러 (방향키 조작 및 단계별 진행) </summary>
+    /// <summary> 튜토리얼 6페이지 컨트롤러 </summary>
     public class TutorialPage6Controller : GamePage<TutorialPage6Data>
     {
         [Header("Page 6 UI")]

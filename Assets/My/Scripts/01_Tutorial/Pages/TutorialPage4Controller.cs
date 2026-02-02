@@ -16,7 +16,7 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting nicknamePlayerB;
     }
 
-    /// <summary> 튜토리얼 3페이지 컨트롤러 (플레이어 체크 및 점등 연출) </summary>
+    /// <summary> 튜토리얼 4페이지 컨트롤러 </summary>
     public class TutorialPage4Controller : GamePage<TutorialPage4Data>
     {
         [Header("Page 4 UI")]

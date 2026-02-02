@@ -12,7 +12,7 @@
   },
   "page2": {
     "descriptionText1": {
-      "name": "Text_우리는 마음조각 어쩌구",
+      "name": "Text_우리는 마음조각 5개를 받았습니다.",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
       "text": "'우리'는 마음조각\n<b>5개</b>를 받았습니다.",

@@ -15,7 +15,7 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting nicknamePlayerB;
     }
 
-    /// <summary> 튜토리얼 2페이지 컨트롤러 (플레이어 선택) </summary>
+    /// <summary> 튜토리얼 3페이지 컨트롤러</summary>
     public class TutorialPage3Controller : GamePage<TutorialPage3Data>
     {
         [Header("Page 3 UI")]

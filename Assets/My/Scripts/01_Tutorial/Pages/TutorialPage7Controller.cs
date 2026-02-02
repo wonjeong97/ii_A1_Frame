@@ -16,7 +16,7 @@ namespace My.Scripts._01_Tutorial.Pages
         public TextSetting descriptionText2;
     }
 
-    /// <summary> 튜토리얼 6페이지 컨트롤러 (종료 대기) </summary>
+    /// <summary> 튜토리얼 7페이지 컨트롤러 </summary>
     public class TutorialPage7Controller : GamePage<TutorialPage7Data>
     {
         [Header("Page 7 UI")]
