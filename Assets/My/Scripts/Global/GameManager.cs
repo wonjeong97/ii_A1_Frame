@@ -60,7 +60,7 @@ public class GameManager : MonoBehaviour
         Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting); // 상수 사용
         if (settings != null)
         {
-            _inactivityLimit = settings.inactivityTime;
+            //_inactivityLimit = settings.inactivityTime;
             _fadeTime = settings.fadeTime;
         }
         else

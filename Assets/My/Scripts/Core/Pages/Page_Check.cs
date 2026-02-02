@@ -13,6 +13,7 @@ namespace My.Scripts.Core.Pages
         [Header("UI References")] 
         [SerializeField] private Text nicknameA; // 플레이어 A 닉네임
         [SerializeField] private Text nicknameB; // 플레이어 B 닉네임
+        [SerializeField] private Text waitText;
 
         [Header("Check Images")] 
         [SerializeField] private Image imgBackA; // 플레이어 A 배경 (Off)
@@ -29,6 +30,7 @@ namespace My.Scripts.Core.Pages
         {
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
+            if (waitText) UIManager.Instance.SetText(waitText.gameObject, data.waitText);
         }
 
         /// <summary> 페이지 진입 (상태 초기화) </summary>

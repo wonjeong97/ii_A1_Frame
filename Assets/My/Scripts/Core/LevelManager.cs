@@ -222,6 +222,16 @@ namespace My.Scripts.Core
             {
                 specific.Page2.descriptionText = common.Page2.descriptionText;
                 specific.Page2.answerTexts = common.Page2.answerTexts;
+                
+                if (string.IsNullOrEmpty(specific.Page2.warningMessage)) 
+                {
+                    specific.Page2.warningMessage = common.Page2.warningMessage;
+                }
+                
+                if (string.IsNullOrEmpty(specific.Page2.resetMessage)) 
+                {
+                    specific.Page2.resetMessage = common.Page2.resetMessage;
+                }
             }
 
             if (specific.Page3 == null) specific.Page3 = new CheckPageData();
@@ -229,6 +239,7 @@ namespace My.Scripts.Core
             {
                 specific.Page3.nicknamePlayerA = common.Page3.nicknamePlayerA;
                 specific.Page3.nicknamePlayerB = common.Page3.nicknamePlayerB;
+                specific.Page3.waitText = common.Page3.waitText;
             }
 
             if (specific.Page4 == null) specific.Page4 = new TransitionPageData();

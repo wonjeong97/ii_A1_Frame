@@ -29,7 +29,9 @@
       "fontSize": 38,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "isBold": true
-    }
+    },
+    "warningMessage": "숨은 문항을\n모두 찾아주세요!",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
   "page2": {
     "descriptionText": {
@@ -87,27 +89,39 @@
         "fontSize": 35,
         "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
       }
-    ]
+    ],
+    "warningMessage": "답변해 주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
   "page3": {
     "nicknamePlayerA": {
       "name": "Text_PlayerA",
-      "position": {"x": 748.4, "y": -357.5},
+      "position": {"x": 748.4, "y": -330},
       "text": "아영님",
       "fontName": "font8",
       "fontSize": 55,
-      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 4
     },
     "nicknamePlayerB": {
       "name": "Text_PlayerB",
-      "position": {"x": 1198, "y": -357.21},
+      "position": {"x": 1198, "y": -330},
       "text": "길동님",
       "fontName": "font8",
       "fontSize": 55,
-      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 4
-    }
+    },
+    "waitText": {
+      "name": "Text_WaitForAnother",
+      "position": {"x": 960, "y": -875},
+      "text": "상대방의 답변을 기다리는 중입니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "warningMessage": "답변해 주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
   "page4":
   {
@@ -119,7 +133,9 @@
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
-    }
+    },
+    "warningMessage": "촬영 버튼을 눌러주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
   "page5": {},
   "page6":  {

@@ -13,6 +13,17 @@
   },
   "page2": {
     "descriptionText": {
+      "name": "Text_체험 후 마음조각 5개",      
+      "position": {"x": 960, "y": -832.6},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "체험 후 마음 조각 5개를 받을 수 있습니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    }
+  },
+  "page3": {
+    "descriptionText": {
       "name": "Text_\"각자의 자리에 서서 휠을 한 바퀴 돌려주세요.\"",
       "position": {"x": 960, "y": -833.66},
       "scale": {"x": 1, "y": 1, "z": 1},
@@ -41,7 +52,7 @@
       "alignment": 5, "comment": "middle right"
     }
   },
-  "page3": {
+  "page4": {
     "nicknamePlayerA": {
       "name": "Text_PlayerA",
       "position": {"x": 748.4, "y": -357.5},
@@ -61,7 +72,7 @@
       "alignment": 4
     }
   },
-  "page4": {
+  "page5": {
     "descriptionText": {
       "name": "Text_\"이 공간에서는 함께 카메라의 포커스를 맞춰...\"",
       "position": {"x": 960.9, "y": -266.08},
@@ -71,7 +82,7 @@
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     }
   },
-  "page5": {
+  "page6": {
     "txtA_Start": {
       "name": "Text_\"oo님, 휠을 돌려주세요.\"",
       "position": {"x": 960.9, "y": -266.08},
@@ -81,9 +92,9 @@
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     },
     "txtA_Info": {
-      "name": "Text_\"oo님은 위, 아래로만 움직일 수 있습니다.\"",
+      "name": "Text_\"oo님은 상하로만 움직일 수 있습니다.\"",
       "position": {"x": 960.9, "y": -266.08},
-      "text": "아영님은 위, 아래로만 움직일 수 있습니다.",
+      "text": "아영님은 상하로만 움직일 수 있습니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
@@ -97,15 +108,15 @@
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     },
     "txtB_Info": {
-      "name": "Text_\"ㅁㅁ님은 양옆으로만 움직일 수 있습니다.\"",
+      "name": "Text_\"ㅁㅁ님은 좌우로만 움직일 수 있습니다.\"",
       "position": {"x": 960.9, "y": -266.08},
-      "text": "길동님은 양옆으로만 움직일 수 있습니다.",
+      "text": "길동님은 좌우로만 움직일 수 있습니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     }
   },
-  "page6": {
+  "page7": {
     "descriptionText1": {
       "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
       "position": {"x": 960.9, "y": -300},

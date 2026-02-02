@@ -75,7 +75,7 @@ namespace My.Scripts._18_Ending.Pages
         private IEnumerator SequenceRoutine()
         {
             // 1. 페이지 전체 페이드 인
-            yield return StartCoroutine(FadePageAlpha(0f, 1f, 1.0f));
+            yield return CoroutineData.GetWaitForSeconds(1.0f);
 
             // 2. 텍스트 페이드 인
             yield return StartCoroutine(FadeText(descriptionText, 0f, 1f, 1.0f));
@@ -114,21 +114,6 @@ namespace My.Scripts._18_Ending.Pages
             }
 
             target.fillAmount = end;
-        }
-
-        /// <summary> 페이지 전체 투명도 페이드 코루틴 </summary>
-        private IEnumerator FadePageAlpha(float start, float end, float duration)
-        {
-            float t = 0f;
-            SetAlpha(start);
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                SetAlpha(Mathf.Lerp(start, end, t / duration));
-                yield return null;
-            }
-
-            SetAlpha(end);
         }
 
         /// <summary> 텍스트 투명도 페이드 코루틴 </summary>

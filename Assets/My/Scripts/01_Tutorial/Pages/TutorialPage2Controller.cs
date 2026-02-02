@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using Wonjeong.Utils; // CoroutineData 사용을 위해 추가
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -11,39 +13,48 @@ namespace My.Scripts._01_Tutorial.Pages
     public class TutorialPage2Data
     {
         public TextSetting descriptionText;
-        public TextSetting nicknamePlayerA;
-        public TextSetting nicknamePlayerB;
     }
 
-    /// <summary> 튜토리얼 2페이지 컨트롤러 (플레이어 선택) </summary>
+    /// <summary> 튜토리얼 2페이지 컨트롤러 </summary>
     public class TutorialPage2Controller : GamePage<TutorialPage2Data>
     {
         [Header("Page 2 UI")]
         [SerializeField] private Text descriptionText; // 설명 텍스트
-        [SerializeField] private Text nicknameA; // 플레이어 A 닉네임
-        [SerializeField] private Text nicknameB; // 플레이어 B 닉네임
 
-        /// <summary> 데이터 설정 (UI 텍스트 적용) </summary>
+        /// <summary> 데이터 설정 </summary>
         protected override void SetupData(TutorialPage2Data data)
         {
-            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
-            if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
+            if (descriptionText) 
+            {
+                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+            }
         }
 
-        /// <summary> 입력 감지 (숫자키 1, 2) </summary>
-        private void Update()
+        /// <summary> 페이지 진입 (바로 보여주고 대기 시작) </summary>
+        public override void OnEnter()
         {
-            // 1번 키 입력 (Player A 선택)
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            base.OnEnter(); // 기본 활성화
+
+            // 텍스트가 바로 보이도록 확실하게 알파값 1 설정
+            if (descriptionText)
             {
-                CompleteStep(1); 
+                Color c = descriptionText.color;
+                c.a = 1f;
+                descriptionText.color = c;
             }
-            // 2번 키 입력 (Player B 선택)
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                CompleteStep(2); 
-            }
+
+            // 3초 대기 코루틴 시작
+            StartCoroutine(WaitAndNextRoutine());
+        }
+
+        /// <summary> 3초 대기 후 다음 단계로 </summary>
+        private IEnumerator WaitAndNextRoutine()
+        {
+            // 3초 대기
+            yield return CoroutineData.GetWaitForSeconds(3.0f);
+
+            // 단계 완료
+            CompleteStep();
         }
     }
 }
