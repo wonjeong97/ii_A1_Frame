@@ -18,6 +18,7 @@ namespace My.Scripts._01_Tutorial
         public TutorialPage4Data page4;
         public TutorialPage5Data page5;
         public TutorialPage6Data page6;
+        public TutorialPage7Data page7;
     }
 
     /// <summary> 튜토리얼 진행 관리 매니저 </summary>
@@ -40,6 +41,7 @@ namespace My.Scripts._01_Tutorial
             if (pages.Length > 3 && pages[3] != null) pages[3].SetupData(setting.page4);
             if (pages.Length > 4 && pages[4] != null) pages[4].SetupData(setting.page5);
             if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
+            if (pages.Length > 6 && pages[6] != null) pages[6].SetupData(setting.page7);
         }
 
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>
@@ -92,7 +94,15 @@ namespace My.Scripts._01_Tutorial
                 HandleTriggerInfo(next, info); // 정보 전달
                 
                 // 3. 다음 페이지 등장
-                yield return StartCoroutine(FadePage(next, 0f, 1f));
+                // 1페이지는 전체 페이드 없이 즉시 노출
+                if (targetIndex == 0)
+                {
+                    next.SetAlpha(1f);
+                }
+                else
+                {
+                    yield return StartCoroutine(FadePage(next, 0f, 1f));
+                }
             }
 
             currentPageIndex = targetIndex;
@@ -105,7 +115,7 @@ namespace My.Scripts._01_Tutorial
             if (triggerInfo == 0) return;
             
             // TutorialPage3: 플레이어 체크 정보 전달
-            if (page is TutorialPage3Controller p3)
+            if (page is TutorialPage4Controller p3)
             {
                 if (triggerInfo == 1) p3.ActivatePlayerCheck(true);
                 else if (triggerInfo == 2) p3.ActivatePlayerCheck(false);

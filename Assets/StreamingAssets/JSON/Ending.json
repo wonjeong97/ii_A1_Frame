@@ -12,21 +12,21 @@
   },
   "page2": {
     "descriptionText1": {
-      "name": "Text_우리의 딱지",
+      "name": "Text_우리는 마음조각 어쩌구",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "우리의 딱지\n0개",
+      "text": "'우리'는 마음조각\n<b>5개</b>를 받았습니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     },
     "descriptionText2": {
-      "name": "Text_총 내가 모은 딱지",
+      "name": "Text_우리의 마음 조각",
       "position": {"x": 960, "y": -807},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "총 내가 모은 딱지 0개",
+      "text": "'우리'의 마음 조각 0/20",
       "fontName": "font4",
-      "fontSize": 55,
+      "fontSize": 40,
       "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     }
   },

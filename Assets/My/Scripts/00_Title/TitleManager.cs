@@ -55,19 +55,7 @@ namespace My.Scripts._00_Title
             if (_isTransitioning) return;
             _isTransitioning = true; // 중복 호출 방지
 
-            if (GameManager.Instance != null)
-            {
-                // 1. 태그한 플레이어 정보 저장
-                GameManager.Instance.firstTaggedPlayer = playerID;
-
-                // 2. 튜토리얼 씬으로 이동
-                GameManager.Instance.ChangeScene(GameConstants.Scene.Tutorial);
-            }
-            else
-            {
-                // 비상 시 (매니저 없을 경우)
-                SceneManager.LoadScene(GameConstants.Scene.Tutorial);
-            }
+            SceneManager.LoadScene(GameConstants.Scene.Tutorial);
         }
     }
 }

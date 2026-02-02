@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
@@ -25,6 +26,48 @@ namespace My.Scripts._01_Tutorial.Pages
             if (descriptionText) 
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+            }
+        }
+
+        // [추가] 진입 시 텍스트 페이드 인 연출
+        public override void OnEnter()
+        {
+            base.OnEnter(); // 기본 활성화 (Alpha 1)
+
+            // 텍스트만 투명하게 시작해서 페이드 인
+            if (descriptionText)
+            {
+                Color c = descriptionText.color;
+                c.a = 0f;
+                descriptionText.color = c;
+                StartCoroutine(FadeInTextRoutine());
+            }
+        }
+
+        private IEnumerator FadeInTextRoutine()
+        {
+            float duration = 1.0f; // 1초 동안 페이드
+            float timer = 0f;
+
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                float alpha = Mathf.Clamp01(timer / duration);
+
+                if (descriptionText)
+                {
+                    Color c = descriptionText.color;
+                    c.a = alpha;
+                    descriptionText.color = c;
+                }
+                yield return null;
+            }
+
+            if (descriptionText)
+            {
+                Color c = descriptionText.color;
+                c.a = 1f;
+                descriptionText.color = c;
             }
         }
 
