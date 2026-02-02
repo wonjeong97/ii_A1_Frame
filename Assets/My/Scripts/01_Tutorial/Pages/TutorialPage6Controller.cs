@@ -47,6 +47,9 @@ namespace My.Scripts._01_Tutorial.Pages
         private TextSetting _dataA_Info;
         private TextSetting _dataB_Start;
         private TextSetting _dataB_Info;
+        
+        // 실행 중인 시퀀스 코루틴 추적용 변수
+        private Coroutine _stageSequenceRoutine;
 
         /// <summary> 데이터 설정 (텍스트 데이터 캐싱) </summary>
         protected override void SetupData(TutorialPage6Data data)
@@ -75,6 +78,7 @@ namespace My.Scripts._01_Tutorial.Pages
             _hasStarted = false;
             _isInputBlocked = false;
             _currentStage = 0; 
+            _stageSequenceRoutine = null; // 코루틴 참조 초기화
             
             if (imageFocus) imageFocus.rectTransform.anchoredPosition = _initialPos;
             
@@ -115,7 +119,8 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
-                    StartCoroutine(ProcessStageSequence());
+                    // [변경] 코루틴 참조 저장
+                    _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
                 // 이동 처리 (범위 제한 포함)
@@ -154,6 +159,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 _currentStage = 1;
                 _hasStarted = false;
                 _isInputBlocked = false; // 입력 재개
+                _stageSequenceRoutine = null; // 시퀀스 종료 후 참조 해제
             }
             else
             {
@@ -161,6 +167,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 yield return StartCoroutine(TextChangeSequence(_dataB_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
                 CompleteStep(); // 단계 완료
+                _stageSequenceRoutine = null;
             }
         }
 
@@ -215,6 +222,22 @@ namespace My.Scripts._01_Tutorial.Pages
             Color c = descriptionText.color;
             c.a = alpha;
             descriptionText.color = c;
+        }
+
+        /// <summary> 페이지 퇴장 (코루틴 정리) </summary>
+        public override void OnExit()
+        {
+            // 실행 중인 시퀀스 코루틴 명시적 정지
+            if (_stageSequenceRoutine != null)
+            {
+                StopCoroutine(_stageSequenceRoutine);
+                _stageSequenceRoutine = null;
+            }
+            
+            // 모든 코루틴 정지
+            StopAllCoroutines();
+            
+            base.OnExit();
         }
     }
 }

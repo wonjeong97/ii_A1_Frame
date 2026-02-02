@@ -22,6 +22,8 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("Page 7 UI")]
         [SerializeField] private Text text1; // 설명 텍스트 1
         [SerializeField] private Text text2; // 설명 텍스트 2
+        
+        private Coroutine _endSequenceRoutine;
 
         /// <summary> 데이터 설정 (텍스트 적용) </summary>
         protected override void SetupData(TutorialPage7Data data)
@@ -34,7 +36,13 @@ namespace My.Scripts._01_Tutorial.Pages
         public override void OnEnter()
         {
             base.OnEnter();
-            StartCoroutine(EndSequence());
+
+            // 재진입 시 중복 실행 방지
+            if (_endSequenceRoutine != null)
+            {
+                StopCoroutine(_endSequenceRoutine);
+            }
+            _endSequenceRoutine = StartCoroutine(EndSequence());
         }
 
         /// <summary> 4초 대기 후 완료 처리 </summary>
@@ -42,6 +50,18 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             yield return CoroutineData.GetWaitForSeconds(4.0f);
             CompleteStep();
+            _endSequenceRoutine = null; // 완료 후 참조 해제
+        }
+
+        // 페이지 퇴장 시 실행 중인 코루틴 정리
+        public override void OnExit()
+        {
+            if (_endSequenceRoutine != null)
+            {
+                StopCoroutine(_endSequenceRoutine);
+                _endSequenceRoutine = null;
+            }
+            base.OnExit();
         }
     }
 }
