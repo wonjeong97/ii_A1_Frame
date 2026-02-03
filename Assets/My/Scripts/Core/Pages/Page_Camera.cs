@@ -143,7 +143,7 @@ namespace My.Scripts.Core.Pages
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
-            if (TimeLapseRecorder.Instance != null && _webCamTexture != null)
+            if (_shouldSavePhoto && TimeLapseRecorder.Instance != null && _webCamTexture != null)
             {
                 TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
             }
@@ -152,7 +152,7 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
 
-            if (TimeLapseRecorder.Instance != null)
+            if (_shouldSavePhoto && TimeLapseRecorder.Instance != null)
             {
                 TimeLapseRecorder.Instance.StopCapture();
             }

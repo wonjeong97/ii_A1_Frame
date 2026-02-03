@@ -800,6 +800,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae02f5aa3783a2648add041449238877, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 0}
+  popupText: {fileID: 0}
+  warningDuration: 3
+  resetPopupDuration: 3
   useButtonAnim: 0
   autoPass: 1
   autoPassDelay: 4
@@ -872,6 +876,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae02f5aa3783a2648add041449238877, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 1049158358}
+  popupText: {fileID: 1643776009}
+  warningDuration: 3
+  resetPopupDuration: 3
   useButtonAnim: 1
   autoPass: 0
   autoPassDelay: 4
@@ -1989,6 +1997,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae02f5aa3783a2648add041449238877, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 0}
+  popupText: {fileID: 0}
+  warningDuration: 3
+  resetPopupDuration: 3
   useButtonAnim: 0
   autoPass: 1
   autoPassDelay: 4
@@ -4582,6 +4594,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 082661002c9893d448b229b15d59b549, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 1049158358}
+  popupText: {fileID: 1643776009}
+  warningDuration: 3
+  resetPopupDuration: 3
   textMain: {fileID: 963247212}
   textSub: {fileID: 1190809194}
   questionTexts:
@@ -4600,10 +4616,6 @@ MonoBehaviour:
   - {fileID: 399382575}
   textCanvasGroups:
   - {fileID: 1258447303}
-  popupCanvasGroup: {fileID: 1049158358}
-  popupText: {fileID: 1643776009}
-  warningDuration: 3
-  resetPopupDuration: 3
   questionSpots:
   - {x: 2, y: 1}
   - {x: 2, y: 2}
@@ -6332,6 +6344,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 820efc645c29ceb44a9aab9be42241e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 1049158358}
+  popupText: {fileID: 1643776009}
+  warningDuration: 3
+  resetPopupDuration: 3
   nicknameA: {fileID: 33729254}
   nicknameB: {fileID: 1276154424}
   waitText: {fileID: 522780983}
@@ -6926,6 +6942,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58f03a7dd0dd65a498a97dbecfda1491, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  popupCanvasGroup: {fileID: 1049158358}
+  popupText: {fileID: 1643776009}
+  warningDuration: 3
+  resetPopupDuration: 3
   descriptionText: {fileID: 1822048617}
   questionText: {fileID: 2088689581}
   answerTexts:
@@ -6937,10 +6957,6 @@ MonoBehaviour:
   descriptionGroup: {fileID: 1822048619}
   questionGroup: {fileID: 630808331}
   answerGroup: {fileID: 2146153953}
-  warningDuration: 3
-  resetPopupDuration: 3
-  popupCanvasGroup: {fileID: 1049158358}
-  popupText: {fileID: 1643776009}
 --- !u!1 &1901595394
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,77 +1,29 @@
 using System.Collections;
+using My.Scripts.Core.Data;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core.Data;
-using My.Scripts.Global;
-using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
-    /// <summary> 질문 및 답변 선택 페이지 컨트롤러 </summary>
-    public class Page_QnA : GamePage<QnAPageData>
+    /// <summary>  질문 및 답변 선택 페이지 컨트롤러 </summary>
+    public class Page_QnA : PopupGamePage<QnAPageData>
     {
         [Header("UI References")] 
-        [SerializeField] private Text descriptionText;
-        [SerializeField] private Text questionText;
-        [SerializeField] private Text[] answerTexts;
+        [SerializeField] private Text descriptionText; // 설명 텍스트
+        [SerializeField] private Text questionText; // 질문 텍스트
+        [SerializeField] private Text[] answerTexts; // 답변 텍스트 배열
 
         [Header("Canvas Groups")] 
-        [SerializeField] private CanvasGroup descriptionGroup;
-        [SerializeField] private CanvasGroup questionGroup;
-        [SerializeField] private CanvasGroup answerGroup;
+        [SerializeField] private CanvasGroup descriptionGroup; // 설명 그룹
+        [SerializeField] private CanvasGroup questionGroup; // 질문 그룹
+        [SerializeField] private CanvasGroup answerGroup; // 답변 그룹
 
-        [Header("Popup Settings")]
-        [Tooltip("1차 경고 표시 시간 (초)")]
-        [SerializeField] private float warningDuration = 3f; 
-        
-        [Tooltip("2차 초기화 안내 표시 시간 (초)")]
-        [SerializeField] private float resetPopupDuration = 3f;
+        private Coroutine _sequenceRoutine; // 등장 연출 코루틴
+        private bool _isCompleted; // 단계 완료 여부
+        private bool _isInputEnabled; // 입력 허용 여부
 
-        [Header("Single Popup")]
-        [SerializeField] private CanvasGroup popupCanvasGroup; // 통합 팝업 그룹
-        [SerializeField] private Text popupText; // 팝업 내부 텍스트
-        
-        
-        private string msgWarning;
-        private string msgReset;
-
-        private Coroutine _sequenceRoutine; 
-        private Coroutine _resetSequenceRoutine; 
-
-        private bool _isCompleted; 
-        private bool _isInputEnabled; 
-        
-        private float _currentIdleTime = 0f;
-        private bool _isResetSequenceActive = false; 
-        
-        private float inactivityThreshold = 20f; 
-        private float countdownDuration = 10f;   
-
-        /// <summary> 시작 시 설정 파일(Settings.json)을 로드하여 시간 값을 초기화. </summary>
-        private void Start()
-        {
-            var settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-            if (settings != null)
-            {
-                inactivityThreshold = settings.warningTime;
-
-                // 전체 리셋 시간에서 경고 시작 시간과 팝업 지속 시간을 뺀 나머지를 카운트다운으로 설정
-                float calculatedDuration = settings.resetTime - settings.warningTime - warningDuration;
-                
-                if (calculatedDuration > 0)
-                {
-                    countdownDuration = calculatedDuration;
-                }
-                else
-                {
-                    Debug.LogWarning("[Page_QnA] 카운트다운 시간이 0 이하입니다.");
-                }
-            }
-        }
-
-        /// <summary> 데이터 매니저로부터 받은 페이지 데이터(텍스트 등)를 UI에 적용. </summary>
+        /// <summary>  데이터 설정: 텍스트 UI 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(QnAPageData data)
         {
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
@@ -91,27 +43,21 @@ namespace My.Scripts.Core.Pages
                 }
             }
             
-            if (!string.IsNullOrEmpty(data.warningMessage)) 
-            {
-                msgWarning = data.warningMessage;
-            }
-            
-            if (!string.IsNullOrEmpty(data.resetMessage)) 
-            {
-                msgReset = data.resetMessage;
-            }
+            // 팝업 메시지 설정 (부모 메서드 호출)
+            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary> 페이지 진입 시 호출되어 상태를 초기화하고 등장 연출을 시작. </summary>
+        /// <summary> 페이지 진입: 상태 초기화 및 등장 연출 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             _isCompleted = false;
             _isInputEnabled = false;
             
-            StopResetSequence();
-            _currentIdleTime = 0f;
+            // 팝업 즉시 끄기 및 타이머 초기화
+            ResetIdleState(true);
 
+            // 그룹 투명도 초기화
             SetGroupAlpha(questionGroup, 0f);
             SetGroupAlpha(answerGroup, 0f);
             SetGroupAlpha(descriptionGroup, 0f);
@@ -120,29 +66,18 @@ namespace My.Scripts.Core.Pages
             _sequenceRoutine = StartCoroutine(ShowSequence());
         }
 
-        /// <summary> 페이지 퇴장 시 호출되어 실행 중인 시퀀스를 정리. </summary>
-        public override void OnExit()
-        {
-            base.OnExit();
-            StopResetSequence();
-        }
-
-        /// <summary> 매 프레임 입력을 감지하고 비활성 시간을 누적 체크. </summary>
+        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
             if (_isCompleted) return;
 
-            // 1. 입력 감지 (키보드 또는 터치)
+            // 1. 입력 감지
             if (Input.anyKey || Input.touchCount > 0)
             {
-                // 리셋 시퀀스가 진행 중이거나 대기 시간이 쌓였다면 초기화
-                if (_isResetSequenceActive || _currentIdleTime > 0f)
-                {
-                    StopResetSequence();
-                    Debug.Log("[Page_QnA] 입력 감지: 리셋 시퀀스 중단");
-                }
+                // 입력 시 부드럽게 리셋 취소
+                ResetIdleState(false);
                 
-                // 정답 선택 처리
+                // 정답 선택 로직
                 if (_isInputEnabled)
                 {
                     HandleSelectionInput();
@@ -150,21 +85,13 @@ namespace My.Scripts.Core.Pages
             }
             else
             {
-                // 2. 비활성 시간 누적
-                if (_isInputEnabled && !_isResetSequenceActive)
-                {
-                    _currentIdleTime += Time.deltaTime;
-                    
-                    // 임계치 도달 시 리셋 시퀀스 시작
-                    if (_currentIdleTime >= inactivityThreshold)
-                    {
-                        StartResetSequence();
-                    }
-                }
+                // 2. 비활성 시간 누적 (부모 메서드)
+                // 입력이 허용되지 않은 상태(_isInputEnabled == false)라면 타이머를 차단함
+                UpdateInactivity(!_isInputEnabled);
             }
         }
 
-        /// <summary> 플레이어의 키 입력(숫자키)에 따라 답변을 선택 처리. </summary>
+        /// <summary>  플레이어의 키 입력(숫자키)에 따라 답변을 선택 처리 </summary>
         private void HandleSelectionInput()
         {
             // Player A (1~5)
@@ -186,95 +113,22 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 비활성 리셋 시퀀스 코루틴을 시작. </summary>
-        private void StartResetSequence()
-        {
-            if (_isResetSequenceActive) return;
-            _isResetSequenceActive = true;
-            _resetSequenceRoutine = StartCoroutine(ResetProcessRoutine());
-        }
-
-        /// <summary> 리셋 시퀀스를 중단하고 팝업을 닫음. </summary>
-        private void StopResetSequence()
-        {
-            _isResetSequenceActive = false;
-            _currentIdleTime = 0f;
-            
-            if (_resetSequenceRoutine != null) StopCoroutine(_resetSequenceRoutine);
-            
-            // 팝업 즉시 숨김
-            if (popupCanvasGroup)
-            {
-                popupCanvasGroup.alpha = 0f;
-                popupCanvasGroup.gameObject.SetActive(false);
-            }
-        }
-
-        /// <summary> 
-        /// 단계별 리셋 로직을 수행하는 코루틴. 
-        /// <para>과정: 1차 경고(유지) -> 카운트다운 -> 2차 안내(텍스트 변경) -> 초기화</para>
-        /// </summary>
-        private IEnumerator ResetProcessRoutine()
-        {
-            Debug.Log("[Page_QnA] 리셋 시퀀스 진입");
-
-            // [단계 1] 1차 경고: 텍스트 설정 및 표시 (3초 대기, 팝업 유지)
-            ShowPopup(msgWarning);
-            yield return CoroutineData.GetWaitForSeconds(warningDuration); 
-            
-            // [단계 2] 카운트다운 (팝업이 켜진 상태로 진행)
-            Debug.Log("[Page_QnA] 카운트다운 시작");
-            float timer = countdownDuration;
-            while (timer > 0f)
-            {
-                // [TODO] 째깍 소리 재생 (예: SoundManager.Play("Tick"))
-                timer -= 1.0f;
-                yield return CoroutineData.GetWaitForSeconds(1.0f);
-            }
-
-            // [단계 3] 2차 초기화 안내: 팝업 내용은 변경하고 창은 유지
-            ShowPopup(msgReset);
-            yield return CoroutineData.GetWaitForSeconds(resetPopupDuration);
-
-            // [단계 4] 최종 리셋 (타이틀 씬 이동)
-            Debug.Log("[Page_QnA] 타이틀로 초기화");
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.ReturnToTitle();
-            }
-            else
-            {
-                UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scene.Title);
-            }
-        }
-
-        /// <summary> 팝업의 텍스트를 설정하고 활성화(페이드 인). </summary>
-        private void ShowPopup(string message)
-        {
-            if (!popupCanvasGroup) return;
-            
-            if (popupText) popupText.text = message;
-            
-            // 이미 켜져 있다면 텍스트만 바뀌고 Alpha는 유지됨
-            popupCanvasGroup.gameObject.SetActive(true);
-            StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 1f, 0.5f));
-        }
-
-        /// <summary> 페이지 진입 시 UI 요소들을 순차적으로 페이드 인. </summary>
+        /// <summary>  페이지 진입 시 UI 요소들을 순차적으로 페이드 인 </summary>
         private IEnumerator ShowSequence()
         {
             // 페이지 전체 페이드 완료 대기
             if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
 
-            yield return StartCoroutine(FadeGroup(questionGroup, 0f, 1f, 1.0f));
-            yield return StartCoroutine(FadeGroup(answerGroup, 0f, 1f, 1.0f));
-            yield return StartCoroutine(FadeGroup(descriptionGroup, 0f, 1f, 1.0f));
+            // 순차 등장 (FadeContent 사용)
+            yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 1.0f));
+            yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 1.0f));
+            yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 1.0f));
 
             _isInputEnabled = true;
         }
 
-        /// <summary> CanvasGroup의 투명도를 조절하는 유틸리티 코루틴. </summary>
-        private IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration)
+        /// <summary> 콘텐츠 CanvasGroup의 투명도를 조절하는 유틸리티 코루틴 </summary>
+        private IEnumerator FadeContent(CanvasGroup cg, float start, float end, float duration)
         {
             if (!cg) yield break;
             if (end > 0f) cg.gameObject.SetActive(true);
@@ -292,7 +146,7 @@ namespace My.Scripts.Core.Pages
             if (end <= 0f) cg.gameObject.SetActive(false);
         }
 
-        /// <summary> CanvasGroup의 투명도를 즉시 설정. </summary>
+        /// <summary>  CanvasGroup의 투명도를 즉시 설정 </summary>
         private void SetGroupAlpha(CanvasGroup cg, float alpha)
         {
             if (cg)

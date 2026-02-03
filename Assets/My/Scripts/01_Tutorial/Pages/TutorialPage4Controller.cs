@@ -2,147 +2,95 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core; 
-using My.Scripts.Global; // GameManager 접근용
+using My.Scripts.Core.Pages;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
-using UnityEngine.SceneManagement;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
+    /// <summary> 튜토리얼 4페이지 데이터 클래스 </summary>
     [Serializable]
     public class TutorialPage4Data
     {
-        public TextSetting nicknamePlayerA;
-        public TextSetting nicknamePlayerB;
+        public TextSetting nicknamePlayerA; // 플레이어 A 닉네임 데이터
+        public TextSetting nicknamePlayerB; // 플레이어 B 닉네임 데이터
         
-        public string warningMessage; 
-        public string resetMessage;   
+        public string warningMessage; // 1차 경고 메시지
+        public string resetMessage;   // 2차 초기화 메시지
     }
 
-    /// <summary> 튜토리얼 4페이지 컨트롤러 (플레이어 점등 체크 + 리셋 팝업) </summary>
-    public class TutorialPage4Controller : GamePage<TutorialPage4Data>
+    /// <summary> 튜토리얼 4페이지 컨트롤러 </summary>
+    public class TutorialPage4Controller : PopupGamePage<TutorialPage4Data>
     {
         [Header("Page 4 UI")]
-        [SerializeField] private Text nicknameA; 
-        [SerializeField] private Text nicknameB; 
-        [SerializeField] private Image imgBackA; 
-        [SerializeField] private Image imgLightA; 
-        [SerializeField] private Image imgBackB; 
-        [SerializeField] private Image imgLightB; 
+        [SerializeField] private Text nicknameA; // 플레이어 A 닉네임 UI
+        [SerializeField] private Text nicknameB; // 플레이어 B 닉네임 UI
+        [SerializeField] private Image imgBackA; // 플레이어 A 배경 이미지 (Off)
+        [SerializeField] private Image imgLightA; // 플레이어 A 조명 이미지 (On)
+        [SerializeField] private Image imgBackB; // 플레이어 B 배경 이미지 (Off)
+        [SerializeField] private Image imgLightB; // 플레이어 B 조명 이미지 (On)
 
-        [Header("Popup References")]
-        [SerializeField] private CanvasGroup popupCanvasGroup; // Popup_Root
-        [SerializeField] private Text popupText; // 팝업 텍스트
+        private bool isLightOnA; // 플레이어 A 점등 여부
+        private bool isLightOnB; // 플레이어 B 점등 여부
+        private bool _completionStarted; // 완료 시퀀스 진행 여부
 
-        [Header("Popup Settings")]
-        [SerializeField] private float warningDuration = 3f; 
-        [SerializeField] private float resetPopupDuration = 3f;
-
-        // 내부 로직 변수
-        private string _msgWarning;
-        private string _msgReset;
-        
-        private float _inactivityThreshold = 20f; 
-        private float _countdownDuration = 10f;   
-        
-        private float _currentIdleTime = 0f;
-        private bool _isResetSequenceActive = false;
-        private Coroutine _resetSequenceRoutine;
-
-        private bool isLightOnA; 
-        private bool isLightOnB; 
-        private bool _completionStarted; 
-
-        private void Start()
-        {
-            // Settings.json 로드
-            var settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-            if (settings != null)
-            {
-                _inactivityThreshold = settings.warningTime;
-                
-                float calculatedDuration = settings.resetTime - settings.warningTime - warningDuration;
-                if (calculatedDuration > 0) _countdownDuration = calculatedDuration;
-            }
-        }
-
-        /// <summary> 데이터 설정 (닉네임 및 메시지 적용) </summary>
+        /// <summary>  데이터 설정: 닉네임 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage4Data data)
         {
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
 
-            // 메시지 적용
-            if (!string.IsNullOrEmpty(data.warningMessage)) _msgWarning = data.warningMessage;
-            if (!string.IsNullOrEmpty(data.resetMessage)) _msgReset = data.resetMessage;
+            // 팝업 메시지 설정
+            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
+        /// <summary> 페이지 진입: 상태 초기화 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             
-            // 상태 리셋
+            // 로직 상태 리셋
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
             
-            StopResetSequence();
-            _currentIdleTime = 0f;
+            // 팝업 즉시 끄기 및 타이머 초기화
+            ResetIdleState(true); 
             
-            // 이미지 초기화
+            // 이미지 초기화 (Back 보임, Light 숨김)
             SetImageAlpha(imgBackA, 1f);
             SetImageAlpha(imgLightA, 0f);
             SetImageAlpha(imgBackB, 1f);
             SetImageAlpha(imgLightB, 0f);
         }
 
-        public override void OnExit()
-        {
-            base.OnExit();
-            StopResetSequence();
-        }
-
+        /// <summary> 매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
-            if (_completionStarted) return; // 완료 시퀀스 중이면 무시
+            if (_completionStarted) return; // 완료 시퀀스 중이면 로직 중단
 
             // 1. 입력 감지
             if (Input.anyKey || Input.touchCount > 0)
             {
-                // 리셋 중단
-                if (_isResetSequenceActive || _currentIdleTime > 0f)
-                {
-                    StopResetSequence();
-                }
+                ResetIdleState(false); // 부드럽게 리셋 취소
 
-                // 테스트용 키 입력 (기존 로직)
+                // 테스트용 키 입력 (1, 2번 키)
                 if (Input.GetKeyDown(KeyCode.Alpha1)) ActivatePlayerCheck(true);
                 if (Input.GetKeyDown(KeyCode.Alpha2)) ActivatePlayerCheck(false);
             }
             else
             {
-                // 2. 비활성 시간 누적 (완료되지 않았을 때만)
-                if (!_isResetSequenceActive)
-                {
-                    _currentIdleTime += Time.deltaTime;
-                    if (_currentIdleTime >= _inactivityThreshold)
-                    {
-                        StartResetSequence();
-                    }
-                }
+                // 2. 비활성 시간 누적
+                UpdateInactivity();
             }
         }
 
-        /// <summary> 플레이어 체크 활성화 (외부 호출 가능) </summary>
+        /// <summary> 플레이어 체크 활성화 (점등 연출). </summary>
         public void ActivatePlayerCheck(bool isPlayerA)
         {
-            // 외부(Manager 등)에서 호출될 경우를 대비해 여기서도 리셋 중단 처리
-            if (_isResetSequenceActive || _currentIdleTime > 0f)
-            {
-                StopResetSequence();
-            }
+            // 외부 호출 시에도 리셋 로직 취소 (활동 감지)
+            ResetIdleState(false);
 
             if (isPlayerA)
             {
@@ -157,6 +105,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 StartCoroutine(TransitionCheckImage(imgBackB, imgLightB));
             }
             
+            // 양쪽 모두 켜졌는지 확인
             if (isLightOnA && isLightOnB)
             {
                 if (!_completionStarted)
@@ -167,85 +116,14 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        // --- 리셋 로직 (Page 1, 3와 동일) ---
-
-        private void StartResetSequence()
-        {
-            if (_isResetSequenceActive) return;
-            _isResetSequenceActive = true;
-            _resetSequenceRoutine = StartCoroutine(ResetProcessRoutine());
-        }
-
-        private void StopResetSequence()
-        {
-            _isResetSequenceActive = false;
-            _currentIdleTime = 0f;
-            
-            if (_resetSequenceRoutine != null) StopCoroutine(_resetSequenceRoutine);
-            
-            if (popupCanvasGroup)
-            {
-                popupCanvasGroup.alpha = 0f;
-                popupCanvasGroup.gameObject.SetActive(false);
-            }
-        }
-
-        private IEnumerator ResetProcessRoutine()
-        {
-            Debug.Log("[TutorialPage4] 리셋 시퀀스 시작");
-
-            // [1단계] 경고
-            ShowPopup(_msgWarning);
-            yield return CoroutineData.GetWaitForSeconds(warningDuration); 
-
-            // [2단계] 카운트다운
-            float timer = _countdownDuration;
-            while (timer > 0f)
-            {
-                timer -= 1.0f;
-                yield return CoroutineData.GetWaitForSeconds(1.0f);
-            }
-
-            // [3단계] 초기화 안내
-            ShowPopup(_msgReset);
-            yield return CoroutineData.GetWaitForSeconds(resetPopupDuration);
-
-            // [4단계] 리셋
-            if (GameManager.Instance != null) GameManager.Instance.ReturnToTitle();
-            else SceneManager.LoadScene(GameConstants.Scene.Title);
-        }
-
-        private void ShowPopup(string message)
-        {
-            if (!popupCanvasGroup) return;
-
-            if (popupText) popupText.text = message;
-            
-            popupCanvasGroup.gameObject.SetActive(true);
-            StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 1f, 0.5f));
-        }
-
-        private IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration)
-        {
-            float t = 0f;
-            cg.alpha = start;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                cg.alpha = Mathf.Lerp(start, end, t / duration);
-                yield return null;
-            }
-            cg.alpha = end;
-        }
-
-        // --- 기존 연출 로직 ---
-
+        /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator WaitAndComplete()
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f);
             CompleteStep(); 
         }
 
+        /// <summary> 이미지 교차 페이드(Cross Fade) 연출 </summary>
         private IEnumerator TransitionCheckImage(Image backImage, Image lightImage)
         {
             if (backImage == null || lightImage == null) yield break;
@@ -265,6 +143,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 timer += Time.deltaTime;
                 float progress = timer / duration;
                 
+                // Back은 투명해지고, Light는 불투명해짐
                 backColor.a = Mathf.Lerp(1f, 0f, progress);
                 backImage.color = backColor;
                 lightColor.a = Mathf.Lerp(0f, 1f, progress);
@@ -273,12 +152,14 @@ namespace My.Scripts._01_Tutorial.Pages
                 yield return null;
             }
             
+            // 최종값 보정
             backColor.a = 0f;
             backImage.color = backColor;
             lightColor.a = 1f;
             lightImage.color = lightColor;
         }
 
+        /// <summary>  이미지 투명도 즉시 설정 </summary>
         private void SetImageAlpha(Image img, float alpha)
         {
             if (img == null) return;

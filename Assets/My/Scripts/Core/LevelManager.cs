@@ -248,12 +248,32 @@ namespace My.Scripts.Core
                 specific.Page3.nicknamePlayerA = common.Page3.nicknamePlayerA;
                 specific.Page3.nicknamePlayerB = common.Page3.nicknamePlayerB;
                 specific.Page3.waitText = common.Page3.waitText;
+                
+                if (string.IsNullOrEmpty(specific.Page3.warningMessage)) 
+                {
+                    specific.Page3.warningMessage = common.Page3.warningMessage;
+                }
+                
+                if (string.IsNullOrEmpty(specific.Page2.resetMessage)) 
+                {
+                    specific.Page3.resetMessage = common.Page3.resetMessage;
+                }
             }
 
             if (specific.Page4 == null) specific.Page4 = new TransitionPageData();
             if (common.Page4 != null)
             {
                 specific.Page4.descriptionText = common.Page4.descriptionText;
+                
+                if (string.IsNullOrEmpty(specific.Page4.warningMessage)) 
+                {
+                    specific.Page4.warningMessage = common.Page4.warningMessage;
+                }
+                
+                if (string.IsNullOrEmpty(specific.Page4.resetMessage)) 
+                {
+                    specific.Page4.resetMessage = common.Page4.resetMessage;
+                }
             }
 
             if (specific.Page6 == null) specific.Page6 = new TransitionPageData();

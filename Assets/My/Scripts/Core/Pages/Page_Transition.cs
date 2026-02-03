@@ -8,10 +8,10 @@ using Wonjeong.Utils;
 namespace My.Scripts.Core.Pages
 {
     /// <summary> 전환 및 안내 텍스트 페이지 컨트롤러 </summary>
-    public class Page_Transition : GamePage<TransitionPageData>
+    public class Page_Transition : PopupGamePage<TransitionPageData>
     {
         [Header("Mode Settings")]
-        [SerializeField] private bool useButtonAnim; // 버튼 연출 사용 여부
+        [SerializeField] private bool useButtonAnim; // 버튼 연출 사용 여부 (Page 4)
         [SerializeField] private bool autoPass = true; // 자동 넘김 여부
         [SerializeField] private float autoPassDelay = 4.0f; // 자동 넘김 대기 시간
         
@@ -23,7 +23,7 @@ namespace My.Scripts.Core.Pages
         [SerializeField] private CanvasGroup contentGroup; // 콘텐츠 그룹
 
         [Header("Button Mode UI")] 
-        [SerializeField] private RectTransform buttonRect; // 버튼 UI
+        [SerializeField] private RectTransform buttonRect; // 버튼 UI (Page 4)
 
         [Header("Intro Mode UI (Optional)")]
         [SerializeField] private Text playerAName; // 플레이어 A 이름
@@ -33,7 +33,8 @@ namespace My.Scripts.Core.Pages
         private bool _isCompleted; // 완료 여부
         private float _enterTime; // 진입 시간
 
-        /// <summary> 데이터 설정 (텍스트 적용) </summary>
+        
+        /// <summary> 데이터 설정: 텍스트 및 팝업 메시지 적용 </summary>
         protected override void SetupData(TransitionPageData data)
         {
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
@@ -41,14 +42,20 @@ namespace My.Scripts.Core.Pages
             // 플레이어 이름 데이터 적용 (옵션)
             if (playerAName) UIManager.Instance.SetText(playerAName.gameObject, data.playerAName);
             if (playerBName) UIManager.Instance.SetText(playerBName.gameObject, data.playerBName);
+
+            // 팝업 메시지 설정 (부모 메서드)
+            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary> 페이지 진입 (초기화 및 시퀀스 시작) </summary>
+        /// <summary>  페이지 진입: 상태 초기화 및 연출 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             _isCompleted = false;
             _enterTime = Time.time;
+
+            // 팝업 타이머 초기화
+            ResetIdleState(true);
 
             // UI 초기화
             if (contentGroup) contentGroup.alpha = 0f;
@@ -58,23 +65,33 @@ namespace My.Scripts.Core.Pages
             StartCoroutine(SequenceRoutine());
         }
 
-        /// <summary> 입력 감지 (강제 스킵) </summary>
+        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
             if (_isCompleted) return;
-            if (Time.time - _enterTime < 1f) return;
+            if (Time.time - _enterTime < 1f) return; // 진입 직후 오입력 방지
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // 스페이스바 입력 시 강제 완료
-            if (Input.GetKeyDown(KeyCode.Space))
+            // 1. 입력 감지 (Space 키 또는 기타 입력)
+            if (Input.anyKey || Input.touchCount > 0)
             {
-                _isCompleted = true;
-                CompleteStep();
+                // 입력 시 리셋 타이머 초기화 (부드럽게)
+                ResetIdleState(false);
+
+                // Space 키 입력 시 다음 단계로 진행 (Page 4 버튼 기능)
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    _isCompleted = true;
+                    CompleteStep();
+                }
             }
-#endif
+            else
+            {
+                // 2. 비활성 시간 누적 (부모 메서드)
+                UpdateInactivity();
+            }
         }
 
-        /// <summary> 연출 시퀀스 (등장 -> 대기/애니메이션 -> 퇴장) </summary>
+        /// <summary>  연출 시퀀스 (등장 -> 대기/애니메이션 -> 퇴장) </summary>
         private IEnumerator SequenceRoutine()
         {
             // 1. 콘텐츠 등장
@@ -84,7 +101,7 @@ namespace My.Scripts.Core.Pages
             // 2. 모드별 동작
             if (useButtonAnim && buttonRect)
             {
-                // 버튼 애니메이션 재생
+                // 버튼 애니메이션 재생 (입력 대기 상태)
                 yield return StartCoroutine(ButtonAnim());
             }
             else if (autoPass)
@@ -93,7 +110,7 @@ namespace My.Scripts.Core.Pages
                 yield return CoroutineData.GetWaitForSeconds(autoPassDelay);
             }
 
-            // 3. 종료 처리
+            // 3. 종료 처리 (자동 넘김인 경우)
             if (!_isCompleted && autoPass) 
             {
                 // 유지 옵션이 꺼져있을 때만 페이드 아웃
@@ -126,29 +143,40 @@ namespace My.Scripts.Core.Pages
             cg.alpha = end;
         }
 
-        /// <summary> 버튼 스케일 애니메이션 </summary>
+        /// <summary> 버튼 스케일 애니메이션 (2회 재생 -> 1초 대기 -> 반복) </summary>
         private IEnumerator ButtonAnim()
         {
-            for (int i = 0; i < 2; i++)
+            // _isCompleted가 될 때까지 전체 시퀀스 무한 반복
+            while (!_isCompleted)
             {
-                if (_isCompleted) yield break;
-                
-                // 줄어듬
-                float t = 0;
-                while (t < 0.5f)
+                // 2회 반복 재생
+                for (int i = 0; i < 2; i++)
                 {
-                    t += Time.deltaTime;
-                    buttonRect.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.9f, Mathf.SmoothStep(0, 1, t / 0.5f));
-                    yield return null;
+                    if (_isCompleted) yield break;
+                    
+                    float t = 0;
+                    while (t < 0.5f)
+                    {
+                        if (_isCompleted) yield break;
+                        t += Time.deltaTime;
+                        buttonRect.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.9f, Mathf.SmoothStep(0, 1, t / 0.5f));
+                        yield return null;
+                    }
+                    
+                    t = 0;
+                    while (t < 0.5f)
+                    {
+                        if (_isCompleted) yield break;
+                        t += Time.deltaTime;
+                        buttonRect.localScale = Vector3.Lerp(Vector3.one * 0.9f, Vector3.one, Mathf.SmoothStep(0, 1, t / 0.5f));
+                        yield return null;
+                    }
                 }
 
-                // 커짐
-                t = 0;
-                while (t < 0.5f)
+                // 2회 재생 후 1초 대기
+                if (!_isCompleted)
                 {
-                    t += Time.deltaTime;
-                    buttonRect.localScale = Vector3.Lerp(Vector3.one * 0.9f, Vector3.one, Mathf.SmoothStep(0, 1, t / 0.5f));
-                    yield return null;
+                    yield return CoroutineData.GetWaitForSeconds(1.0f);
                 }
             }
         }
