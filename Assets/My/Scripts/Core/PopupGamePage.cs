@@ -50,8 +50,8 @@ namespace My.Scripts.Core.Pages
         /// <summary> 데이터 셋업 시 메시지 설정 (자식 클래스 SetupData에서 호출) </summary>
         protected void SetupPopupMessage(string warn, string reset)
         {
-            if (!string.IsNullOrEmpty(warn)) msgWarning = warn;
-            if (!string.IsNullOrEmpty(reset)) msgReset = reset;
+            msgWarning = string.IsNullOrEmpty(warn) ? string.Empty : warn;
+            msgReset = string.IsNullOrEmpty(reset) ? string.Empty : reset;
         }
 
         /// <summary> 비활성 시간 누적 및 체크 (Update에서 호출) </summary>

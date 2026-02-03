@@ -254,7 +254,7 @@ namespace My.Scripts.Core
                     specific.Page3.warningMessage = common.Page3.warningMessage;
                 }
                 
-                if (string.IsNullOrEmpty(specific.Page2.resetMessage)) 
+                if (string.IsNullOrEmpty(specific.Page3.resetMessage)) 
                 {
                     specific.Page3.resetMessage = common.Page3.resetMessage;
                 }
