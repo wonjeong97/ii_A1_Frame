@@ -215,6 +215,14 @@ namespace My.Scripts.Core
                 specific.Page1.descriptionText1 = common.Page1.descriptionText1;
                 specific.Page1.descriptionText2 = common.Page1.descriptionText2;
                 specific.Page1.descriptionText3 = common.Page1.descriptionText3;
+                if (string.IsNullOrEmpty(specific.Page1.warningMessage)) 
+                {
+                    specific.Page1.warningMessage = common.Page1.warningMessage;
+                }
+                if (string.IsNullOrEmpty(specific.Page1.resetMessage)) 
+                {
+                    specific.Page1.resetMessage = common.Page1.resetMessage;
+                }
             }
 
             if (specific.Page2 == null) specific.Page2 = new QnAPageData();
