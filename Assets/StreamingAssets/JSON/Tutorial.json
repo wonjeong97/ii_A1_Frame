@@ -9,7 +9,9 @@
       "fontSize": 55,
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
       "isBold": true
-    }
+    },
+    "warningMessage": "태그 해주세요",
+    "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
   },
   "page2": {
     "descriptionText": {
@@ -50,7 +52,9 @@
       "fontSize": 60,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 5, "comment": "middle right"
-    }
+    },
+    "warningMessage": "휠을 돌려주세요.",
+    "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
   },
   "page4": {
     "nicknamePlayerA": {
@@ -59,7 +63,7 @@
       "text": "아영님",
       "fontName": "font8",
       "fontSize": 55,
-      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 4
     },
     "nicknamePlayerB": {
@@ -68,9 +72,11 @@
       "text": "길동님",
       "fontName": "font8",
       "fontSize": 55,
-      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 4
-    }
+    },
+    "warningMessage": "휠을 돌려주세요.",
+    "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
   },
   "page5": {
     "descriptionText": {

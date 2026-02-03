@@ -2,30 +2,36 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core;
+using My.Scripts.Core.Pages;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
+    /// <summary>
+    /// 튜토리얼 6페이지 데이터 클래스
+    /// </summary>
     [Serializable]
     public class TutorialPage6Data
     {
         [Header("Player A")]
-        public TextSetting txtA_Start;
-        public TextSetting txtA_Info;
+        public TextSetting txtA_Start; // A 시작 텍스트
+        public TextSetting txtA_Info;  // A 정보 텍스트
 
         [Header("Player B")]
-        public TextSetting txtB_Start;
-        public TextSetting txtB_Info;
+        public TextSetting txtB_Start; // B 시작 텍스트
+        public TextSetting txtB_Info;  // B 정보 텍스트
+        
+        public string warningMessage; // 1차 경고 메시지
+        public string resetMessage;   // 2차 초기화 메시지
     }
 
     /// <summary> 튜토리얼 6페이지 컨트롤러 </summary>
-    public class TutorialPage6Controller : GamePage<TutorialPage6Data>
+    public class TutorialPage6Controller : PopupGamePage<TutorialPage6Data>
     {
         [Header("Page 6 UI")]
-        [SerializeField] private Text descriptionText; // 설명 텍스트
+        [SerializeField] private Text descriptionText; // 설명 텍스트 UI
         [SerializeField] private Image imageFocus; // 조작 대상 이미지
 
         [Header("Settings")]
@@ -35,34 +41,39 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private float minY = -200f; // Y축 최소 범위
         [SerializeField] private float maxY = 250f; // Y축 최대 범위
         
-        [SerializeField] private float fadeDuration = 0.5f; // 페이드 시간
-        [SerializeField] private float centerMoveTime = 0.5f; // 중앙 복귀 시간
+        [SerializeField] private float fadeDuration = 0.5f; // 텍스트 페이드 시간
+        [SerializeField] private float centerMoveTime = 0.5f; // 중앙 복귀 연출 시간
 
+        // 내부 로직 변수
         private Vector2 _initialPos; // 초기 위치 저장
         private bool _isInitialized; // 초기화 여부
         private bool _hasStarted; // 조작 시작 여부
-        private bool _isInputBlocked; // 입력 차단 여부
+        private bool _isInputBlocked; // 입력 차단 여부 (연출 중)
         private int _currentStage; // 현재 단계 (0: A, 1: B)
 
         private TextSetting _dataA_Info;
         private TextSetting _dataB_Start;
         private TextSetting _dataB_Info;
         
-        // 실행 중인 시퀀스 코루틴 추적용 변수
-        private Coroutine _stageSequenceRoutine;
+        private Coroutine _stageSequenceRoutine; // 시퀀스 코루틴
 
-        /// <summary> 데이터 설정 (텍스트 데이터 캐싱) </summary>
+        /// <summary> 데이터 설정: 텍스트 데이터 캐싱 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage6Data data)
         {
+            // 첫 텍스트 적용
             if (descriptionText) 
                 UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
             
+            // 이후 사용될 텍스트 데이터 캐싱
             _dataA_Info = data.txtA_Info;
             _dataB_Start = data.txtB_Start;
             _dataB_Info = data.txtB_Info;
+
+            // 팝업 메시지 설정
+            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary> 페이지 진입 (상태 초기화) </summary>
+        /// <summary>  페이지 진입: 상태 및 위치 초기화 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -78,22 +89,55 @@ namespace My.Scripts._01_Tutorial.Pages
             _hasStarted = false;
             _isInputBlocked = false;
             _currentStage = 0; 
-            _stageSequenceRoutine = null; // 코루틴 참조 초기화
+            _stageSequenceRoutine = null; 
             
+            // 팝업 즉시 끄기 및 타이머 초기화
+            ResetIdleState(true);
+            
+            // UI 초기화
             if (imageFocus) imageFocus.rectTransform.anchoredPosition = _initialPos;
-            
             SetAlpha(1f);
             SetTextAlpha(1f);
         }
 
-        /// <summary> 입력 및 상태 갱신 </summary>
-        private void Update()
+        // OnExit은 부모 클래스에서 리셋 처리를 하므로, 고유 로직만 추가 처리
+        public override void OnExit()
         {
-            if (_isInputBlocked) return;
-            HandleInputByStage();
+            // 실행 중인 시퀀스 코루틴 정지
+            if (_stageSequenceRoutine != null)
+            {
+                StopCoroutine(_stageSequenceRoutine);
+                _stageSequenceRoutine = null;
+            }
+            StopAllCoroutines();
+
+            base.OnExit(); // 부모의 StopResetSequence 호출
         }
 
-        /// <summary> 단계별 입력 처리 (A: 상하, B: 좌우) </summary>
+        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
+        private void Update()
+        {
+            // 1. 입력 감지
+            if (Input.anyKey || Input.touchCount > 0)
+            {
+                // 리셋 취소 (부드럽게)
+                ResetIdleState(false);
+
+                // 연출 중이 아닐 때만 조작 허용
+                if (!_isInputBlocked)
+                {
+                    HandleInputByStage();
+                }
+            }
+            else
+            {
+                // 2. 비활성 시간 누적 (부모 메서드)
+                // 연출 중(_isInputBlocked)일 때는 시간을 누적하지 않음
+                UpdateInactivity(_isInputBlocked);
+            }
+        }
+
+        /// <summary>  단계별(A/B) 입력 처리 및 이동 로직 </summary>
         private void HandleInputByStage()
         {
             if (imageFocus == null) return;
@@ -119,7 +163,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
-                    // [변경] 코루틴 참조 저장
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
@@ -141,37 +184,37 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 조작 후 대기 및 다음 단계 전환 </summary>
+        /// <summary> 조작 후 대기 및 다음 단계 자동 전환 </summary>
         private IEnumerator ProcessStageSequence()
         {
             yield return CoroutineData.GetWaitForSeconds(5.0f); // 5초간 자유 조작
 
-            _isInputBlocked = true; // 입력 차단
-            StartCoroutine(MoveFocusToCenter()); // 중앙 복귀
+            _isInputBlocked = true; // 입력 차단 (이때부터 비활성 타이머도 멈춤)
+            StartCoroutine(MoveFocusToCenter()); // 중앙 복귀 연출
 
             if (_currentStage == 0)
             {
-                // Stage 0 -> 1 전환
+                // Stage A -> B 전환
                 yield return StartCoroutine(TextChangeSequence(_dataA_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
                 yield return StartCoroutine(TextChangeSequence(_dataB_Start));
 
                 _currentStage = 1;
                 _hasStarted = false;
-                _isInputBlocked = false; // 입력 재개
-                _stageSequenceRoutine = null; // 시퀀스 종료 후 참조 해제
+                _isInputBlocked = false; // 입력 재개 (비활성 타이머 다시 작동)
+                _stageSequenceRoutine = null;
             }
             else
             {
-                // Stage 1 -> 완료
+                // Stage B -> 완료
                 yield return StartCoroutine(TextChangeSequence(_dataB_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
-                CompleteStep(); // 단계 완료
+                CompleteStep(); 
                 _stageSequenceRoutine = null;
             }
         }
 
-        /// <summary> 이미지를 중앙으로 복귀 </summary>
+        /// <summary>  이미지를 중앙으로 부드럽게 복귀시킴 </summary>
         private IEnumerator MoveFocusToCenter()
         {
             if (imageFocus == null) yield break;
@@ -188,18 +231,18 @@ namespace My.Scripts._01_Tutorial.Pages
             imageFocus.rectTransform.anchoredPosition = _initialPos;
         }
 
-        /// <summary> 텍스트 교체 연출 (페이드) </summary>
+        /// <summary>  텍스트 교체 연출 (페이드 아웃 -> 교체 -> 페이드 인) </summary>
         private IEnumerator TextChangeSequence(TextSetting newTextData)
         {
-            yield return StartCoroutine(FadeTextRoutine(1f, 0f)); // 페이드 아웃
+            yield return StartCoroutine(FadeTextRoutine(1f, 0f));
             if (newTextData != null && descriptionText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, newTextData);
             }
-            yield return StartCoroutine(FadeTextRoutine(0f, 1f)); // 페이드 인
+            yield return StartCoroutine(FadeTextRoutine(0f, 1f));
         }
 
-        /// <summary> 텍스트 투명도 조절 코루틴 </summary>
+        /// <summary>  텍스트 알파값 조절 코루틴 </summary>
         private IEnumerator FadeTextRoutine(float startAlpha, float endAlpha)
         {
             if (descriptionText == null) yield break;
@@ -215,29 +258,13 @@ namespace My.Scripts._01_Tutorial.Pages
             SetTextAlpha(endAlpha);
         }
 
-        /// <summary> 텍스트 투명도 설정 </summary>
+        /// <summary>  텍스트 알파값 즉시 설정 </summary>
         private void SetTextAlpha(float alpha)
         {
             if (descriptionText == null) return;
             Color c = descriptionText.color;
             c.a = alpha;
             descriptionText.color = c;
-        }
-
-        /// <summary> 페이지 퇴장 (코루틴 정리) </summary>
-        public override void OnExit()
-        {
-            // 실행 중인 시퀀스 코루틴 명시적 정지
-            if (_stageSequenceRoutine != null)
-            {
-                StopCoroutine(_stageSequenceRoutine);
-                _stageSequenceRoutine = null;
-            }
-            
-            // 모든 코루틴 정지
-            StopAllCoroutines();
-            
-            base.OnExit();
         }
     }
 }
