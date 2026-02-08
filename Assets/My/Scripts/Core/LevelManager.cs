@@ -3,6 +3,7 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
+using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
