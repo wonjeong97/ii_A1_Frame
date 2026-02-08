@@ -52,4 +52,13 @@ namespace My.Scripts.Core.Data
     /// <summary> [Page 5] 카메라용 데이터 (빈 클래스) </summary>
     [Serializable]
     public class CameraPageData { }
+    
+    /// <summary> [Page 8] 튜토리얼 카운트다운 페이지 데이터 </summary>
+    [Serializable]
+    public class TutorialPage8Data
+    {
+        public TextSetting introText; // "STEP.1\n숨은 질문 찾기"
+        public TextSetting countdownText; // 카운트 다운 숫자 폰트 설정용
+        public TextSetting startText; // "시작!"
+    }
 }

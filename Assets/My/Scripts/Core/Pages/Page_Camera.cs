@@ -8,24 +8,26 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
+    /// <summary>
+    /// 웹캠 화면을 표시하고 사진 촬영, 카운트다운, 플래시 연출을 담당하는 페이지 컨트롤러입니다.
+    /// 촬영된 사진은 로컬 스토리지에 저장되며, 타임랩스 레코더와 연동하여 리얼타임 녹화도 제어합니다.
+    /// </summary>
     public class Page_Camera : GamePage
     {
-        [Header("UI References")] [SerializeField]
-        private RawImage cameraDisplay;
-
+        [Header("UI References")] 
+        [SerializeField] private RawImage cameraDisplay;
         [SerializeField] private Text countdownText;
 
-        [Header("Effects")] [SerializeField] private Image flashImage;
+        [Header("Effects")] 
+        [SerializeField] private Image flashImage;
         [SerializeField] private CanvasGroup contentCanvasGroup;
 
-        [Header("Default Settings")] [SerializeField]
-        private Material defaultMaskingMaterial;
-
+        [Header("Default Settings")] 
+        [SerializeField] private Material defaultMaskingMaterial;
         [SerializeField] private bool defaultSavePhoto = true;
 
-        [Header("Transition")] [SerializeField]
-        private float cameraFadeDelay = 0.5f;
-
+        [Header("Transition")] 
+        [SerializeField] private float cameraFadeDelay = 0.5f;
         [SerializeField] private float cameraFadeDuration = 0.5f;
 
         private Material _currentMaskingMaterial;
@@ -36,6 +38,9 @@ namespace My.Scripts.Core.Pages
         private WebCamTexture _webCamTexture;
         private Texture2D _capturedPhoto;
         private string _photoFileName = "Default_Photo";
+        
+        // 현재 레벨 ID (리얼타임 녹화 시 레벨별 분기 처리를 위해 필요)
+        private string _levelID; 
 
         private const int PhotoWidth = 1920;
         private const int PhotoHeight = 1080;
@@ -43,6 +48,8 @@ namespace My.Scripts.Core.Pages
         protected override void Awake()
         {
             base.Awake();
+            
+            // 외부 설정이 들어오지 않았을 경우를 대비한 기본값 초기화
             if (!_isConfigured)
             {
                 _currentMaskingMaterial = defaultMaskingMaterial;
@@ -52,6 +59,7 @@ namespace My.Scripts.Core.Pages
 
         public override void SetupData(object data)
         {
+            // 이 페이지는 정적 데이터(텍스트 등)보다는 런타임 설정(Configure 함수)을 주로 사용함
         }
 
         public void SetPhotoFilename(string fileName)
@@ -59,6 +67,21 @@ namespace My.Scripts.Core.Pages
             _photoFileName = fileName;
         }
 
+        /// <summary>
+        /// 현재 플레이 중인 레벨 ID를 설정합니다. (LevelManager 연동)
+        /// 타임랩스 레코더가 이 ID를 보고 리얼타임 녹화 여부를 결정합니다.
+        /// </summary>
+        public void SetLevelID(string id)
+        {
+            _levelID = id;
+        }
+
+        /// <summary>
+        /// 카메라 페이지의 동작 모드를 설정합니다.
+        /// </summary>
+        /// <param name="shouldSave">사진 저장 여부</param>
+        /// <param name="maskMat">적용할 마스킹 재질 (없으면 null)</param>
+        /// <param name="triggerEncoding">촬영 후 즉시 영상 변환을 시도할지 여부</param>
         public void Configure(bool shouldSave, Material maskMat = null, bool triggerEncoding = false)
         {
             _shouldSavePhoto = shouldSave;
@@ -67,13 +90,14 @@ namespace My.Scripts.Core.Pages
             _isConfigured = true;
         }
 
-        // [추가] 외부에서 미리 카메라를 켜는 함수
+        /// <summary>
+        /// 페이지 진입 전 웹캠을 미리 초기화합니다.
+        /// 웹캠 구동 시 발생하는 초기 딜레이(검은 화면)를 사용자에게 보여주지 않기 위함입니다.
+        /// </summary>
         public void PreloadCamera()
         {
-            Debug.Log("[Page_Camera] 카메라 미리 켜기 (Preload)...");
             StartWebCam();
-            // 미리 켜더라도 화면에는 안 보이게 투명 처리 (OnEnter에서 페이드 인)
-            SetRawImageAlpha(cameraDisplay, 0f);
+            SetRawImageAlpha(cameraDisplay, 0f); // 로딩 중에는 화면을 숨김
         }
 
         public override void OnEnter()
@@ -81,6 +105,7 @@ namespace My.Scripts.Core.Pages
             base.OnEnter();
             SetAlpha(1f);
 
+            // 초기 상태: 카메라는 투명하게 시작하여 서서히 페이드 인
             SetRawImageAlpha(cameraDisplay, 0f);
 
             if (countdownText)
@@ -98,7 +123,7 @@ namespace My.Scripts.Core.Pages
             if (contentCanvasGroup) contentCanvasGroup.alpha = 1f;
 
             CleanupPhoto();
-            StartWebCam(); // 이미 Preload 되었다면 내부에서 무시됨
+            StartWebCam(); // Preload가 안 되었을 경우를 대비한 안전장치
 
             StartCoroutine(FadeInCameraRoutine());
             StartCoroutine(CountdownRoutine());
@@ -108,6 +133,8 @@ namespace My.Scripts.Core.Pages
         {
             StopAllCoroutines();
             base.OnExit();
+            
+            // 페이지를 나갈 때 카메라는 꺼두어야 성능 부하를 줄일 수 있음
             StopWebCam();
             CleanupPhoto();
         }
@@ -119,11 +146,15 @@ namespace My.Scripts.Core.Pages
             CleanupPhoto();
         }
 
+        /// <summary>
+        /// 카메라 화면을 부드럽게 페이드 인 합니다.
+        /// 웹캠 텍스처가 실제로 준비될 때까지 기다린 후 연출을 시작합니다.
+        /// </summary>
         private IEnumerator FadeInCameraRoutine()
         {
-            // 미리 켜뒀으므로 대기 시간을 줄여도 되지만, 안정성을 위해 유지
             yield return CoroutineData.GetWaitForSeconds(cameraFadeDelay);
 
+            // 웹캠 초기화 대기 (너비가 16 이하인 경우 초기화 덜 된 것으로 간주)
             if (_webCamTexture != null)
             {
                 while (_webCamTexture.width <= 16) yield return null;
@@ -140,12 +171,17 @@ namespace My.Scripts.Core.Pages
             SetRawImageAlpha(cameraDisplay, 1f);
         }
 
+        /// <summary>
+        /// 3, 2, 1 카운트다운을 진행하고 촬영 시점을 잡습니다.
+        /// </summary>
         private IEnumerator CountdownRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
+            // 카운트다운 시작과 동시에 타임랩스/리얼타임 녹화 시작
             if (_shouldSavePhoto && TimeLapseRecorder.Instance != null && _webCamTexture != null)
             {
+                TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
                 TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
             }
 
@@ -153,6 +189,7 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
 
+            // 촬영 직전 녹화 종료 (촬영 찰나의 멈춤 방지 및 프레임 확보 완료)
             if (_shouldSavePhoto && TimeLapseRecorder.Instance != null)
             {
                 TimeLapseRecorder.Instance.StopCapture();
@@ -161,28 +198,36 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(FlashAndCaptureRoutine());
         }
 
+        /// <summary>
+        /// 플래시(하얀 화면) 연출과 함께 실제 사진을 캡처합니다.
+        /// </summary>
         private IEnumerator FlashAndCaptureRoutine()
         {
             float maxAlpha = 0.8f;
 
+            // 플래시 켜기
             if (flashImage)
             {
                 flashImage.gameObject.SetActive(true);
                 SetImageAlpha(flashImage, maxAlpha);
             }
 
+            // 콘텐츠 숨김 (사진만 남기고 UI 등은 가림)
             if (contentCanvasGroup) contentCanvasGroup.alpha = 0f;
 
-            yield return CoroutineData.GetWaitForSeconds(0.05f);
+            yield return CoroutineData.GetWaitForSeconds(0.05f); // 플래시 타이밍 미세 조정
 
+            // 실제 캡처 수행
             CapturePhoto();
             
+            // Q15 등 마지막 단계에서 즉시 인코딩이 필요한 경우 트리거
             if (_triggerEncodingOnCapture && TimeLapseRecorder.Instance != null)
             {
-                Debug.Log("[Page_Camera] Q15 감지: 촬영 즉시 인코딩 요청");
-                TimeLapseRecorder.Instance.ConvertToVideo();
+                // 현재는 LevelManager에서 일괄 처리하므로 주석 처리됨. 필요시 활성화.
+                // TimeLapseRecorder.Instance.ConvertToVideo(); 
             }
 
+            // 플래시 페이드 아웃
             if (flashImage)
             {
                 float t = 0f;
@@ -196,22 +241,31 @@ namespace My.Scripts.Core.Pages
                 flashImage.gameObject.SetActive(false);
             }
 
+            // 결과 확인 시간
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             CompleteStep();
         }
 
+        /// <summary>
+        /// 웹캠의 현재 프레임을 캡처하여 Texture2D로 변환합니다.
+        /// 마스킹 재질이 있다면 쉐이더를 적용하여 저장합니다.
+        /// </summary>
         private void CapturePhoto()
         {
             if (_webCamTexture != null && _webCamTexture.isPlaying)
             {
                 RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
 
+                // GPU 상에서 텍스처 복사 (마스킹 적용)
                 Material maskToUse = _currentMaskingMaterial;
                 if (maskToUse != null) Graphics.Blit(_webCamTexture, rt, maskToUse);
                 else Graphics.Blit(_webCamTexture, rt);
 
+                // # TODO: 매번 텍스처를 새로 생성(new)하고 있음. 
+                // 빈번한 촬영이 일어난다면 멤버 변수 재사용을 통해 GC 할당을 줄이는 최적화 필요.
                 _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
 
+                // RenderTexture -> Texture2D 데이터 전송 (ReadPixels는 메인 스레드 블로킹 유발하므로 주의)
                 RenderTexture prev = RenderTexture.active;
                 RenderTexture.active = rt;
                 _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);
@@ -220,6 +274,7 @@ namespace My.Scripts.Core.Pages
                 RenderTexture.active = prev;
                 RenderTexture.ReleaseTemporary(rt);
 
+                // 촬영된 결과물을 화면에 고정 표시
                 if (cameraDisplay) cameraDisplay.texture = _capturedPhoto;
 
                 if (_shouldSavePhoto)
@@ -231,11 +286,14 @@ namespace My.Scripts.Core.Pages
                     Debug.Log($"[Page_Camera] 저장 건너뜀 (shouldSavePhoto: false)");
                 }
 
+                // 촬영 후 카메라는 정지 (정지 이미지를 보여주기 위해)
                 StopWebCam();
             }
         }
     
-        /// <summary> 사진을 커스텀 폴더(Pictures/yyyy-MM-dd)에 저장 </summary>
+        /// <summary>
+        /// 캡처된 텍스처를 PNG 파일로 로컬 경로에 저장합니다.
+        /// </summary>
         private void SavePhotoToCustomFolder(Texture2D photo)
         {
             if (!photo) return;
@@ -243,16 +301,14 @@ namespace My.Scripts.Core.Pages
             {
                 byte[] bytes = photo.EncodeToPNG();
                 
-                // 루트 경로 계산
                 string dataPath = Application.dataPath;
                 DirectoryInfo parentDir = Directory.GetParent(dataPath);
                 string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
 
-                // 날짜별 폴더 분리 (Pictures/yyyy-MM-dd/)
+                // 날짜별 폴더 관리
                 string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                 string folder = Path.Combine(rootPath, "Pictures", dateFolder);
                 
-                // 폴더가 없으면 생성
                 if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
                 string path = Path.Combine(folder, $"{_photoFileName}.png");
@@ -274,6 +330,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 숫자 텍스트를 페이드 아웃 효과와 함께 표시합니다.
+        /// </summary>
         private IEnumerator ShowAndFadeNumber(string n)
         {
             if (countdownText)
@@ -320,12 +379,14 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 사용 가능한 웹캠 디바이스를 찾아 카메라를 실행합니다.
+        /// "USB Video" 이름을 가진 장치를 우선적으로 선택합니다.
+        /// </summary>
         private void StartWebCam()
         {
-            // [수정] 이미 켜져 있으면 중복 실행 방지
             if (_webCamTexture != null && _webCamTexture.isPlaying)
             {
-                Debug.Log("[Page_Camera] 카메라가 이미 실행 중입니다.");
                 return;
             }
 
@@ -334,6 +395,7 @@ namespace My.Scripts.Core.Pages
                 WebCamDevice[] devices = WebCamTexture.devices;
                 string selectedDeviceName = "";
 
+                // 특정 외부 카메라("USB Video") 우선 검색
                 for (int i = 0; i < devices.Length; i++)
                 {
                     if (devices[i].name == "USB Video")
@@ -343,6 +405,7 @@ namespace My.Scripts.Core.Pages
                     }
                 }
 
+                // 없으면 첫 번째 장치 사용
                 if (string.IsNullOrEmpty(selectedDeviceName) && devices.Length > 0)
                 {
                     selectedDeviceName = devices[0].name;

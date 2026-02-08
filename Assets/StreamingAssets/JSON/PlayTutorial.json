@@ -86,6 +86,19 @@
       "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
     }
   },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_Camera_Guide_Tutorial",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "두 분 모두 답변을 완료할 때마다 사진 한 장을 찍습니다.\n뒤에 있는 촬영 버튼을 눌러주세요",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.976, "g": 0.952, "b": 0.909, "a": 1}      
+    },
+    "warningMessage": "촬영 버튼을 눌러주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
+  },
   "page7": {
     "descriptionText": {
       "name": "Text_각자 자신의 자리에 서주세요.",
@@ -115,6 +128,35 @@
       "fontSize": 60,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
       "alignment": 5
+    }
+  },
+  "page8": {
+    "introText": {
+      "name": "Text_Step1",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "STEP.1\n숨은 질문 찾기",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "countdownText": {
+      "name": "Text_Countdown",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "",
+      "fontName": "font8",
+      "fontSize": 192,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "startText": {
+      "name": "Text_Start",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "시작!",
+      "fontName": "font8",
+      "fontSize": 113,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
     }
   }
 }
