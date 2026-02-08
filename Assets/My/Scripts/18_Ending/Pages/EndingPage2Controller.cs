@@ -112,7 +112,7 @@ namespace My.Scripts._18_Ending.Pages
 
             // 4. 타이머 진행 (30초 고정)
             // 영상의 실제 길이가 프레임 드랍 등으로 인해 30초보다 짧거나 길더라도, 
-            // UI는 정확히 30.00초에 맞춰 진행되도록 별도의 타이머를 사용합니다.
+            // UI는 정확히 30초(00:30)에 맞춰 진행되도록 별도의 타이머를 사용합니다.
             float currentTimer = 0f;
             while (currentTimer < FixedDuration)
             {
@@ -121,16 +121,23 @@ namespace My.Scripts._18_Ending.Pages
 
                 if (descriptionText)
                 {
-                    // 예시: 1.5초 -> "1:50", 29.9초 -> "29:90" (초:밀리초 포맷)
-                    descriptionText.text = $"{(int)displayTime}:{(int)((displayTime % 1) * 100):00}";
+                    // [수정] mm:ss 포맷으로 변경 (예: 00:00 ~ 00:30)
+                    int minutes = Mathf.FloorToInt(displayTime / 60f);
+                    int seconds = Mathf.FloorToInt(displayTime % 60f);
+                    descriptionText.text = $"{minutes:00}:{seconds:00}";
                 }
                 yield return null;
             }
             
-            // 30초 종료 확정
-            if (descriptionText) descriptionText.text = "30:00";
+            // 30초 종료 확정 (mm:ss 포맷 유지)
+            if (descriptionText) 
+            {
+                int finalMinutes = Mathf.FloorToInt(FixedDuration / 60f);
+                int finalSeconds = Mathf.FloorToInt(FixedDuration % 60f);
+                descriptionText.text = $"{finalMinutes:00}:{finalSeconds:00}";
+            }
             
-            // Stop()을 호출하면 렌더 텍스처가 검은색이나 투명으로 초기화될 수 있으므로,
+            // [중요] Stop()을 호출하면 렌더 텍스처가 검은색이나 투명으로 초기화될 수 있으므로,
             // 마지막 프레임을 화면에 남겨두기 위해 Pause()를 사용합니다.
             if (videoPlayer.isPlaying) videoPlayer.Pause();
 

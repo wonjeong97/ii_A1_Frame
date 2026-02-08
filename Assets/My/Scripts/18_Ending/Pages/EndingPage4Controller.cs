@@ -56,6 +56,7 @@ namespace My.Scripts._18_Ending.Pages
             Debug.Log($"[EndingPage4Controller] OnEnter: {Time.time}");
             
             // 연출 시작 전 화면을 투명하게 초기화하여 자연스러운 페이드 인을 준비합니다.
+            // (실제 페이드 인은 BaseFlowManager의 TransitionRoutine에서 수행됩니다)
             SetAlpha(0f);
 
             if (redLineImage)
@@ -90,22 +91,8 @@ namespace My.Scripts._18_Ending.Pages
             CompleteStep();
         }
 
-        /// <summary>
-        /// 페이지 전체의 투명도를 조절하는 코루틴입니다.
-        /// </summary>
-        private IEnumerator FadePageAlpha(float s, float e, float d)
-        {
-            float t = 0f;
-            SetAlpha(s);
-            while (t < d)
-            {
-                t += Time.deltaTime;
-                SetAlpha(Mathf.Lerp(s, e, t / d));
-                yield return null;
-            }
-
-            SetAlpha(e);
-        }
+        // [삭제됨] FadePageAlpha 메서드는 BaseFlowManager의 TransitionRoutine과 기능이 중복되고
+        // 호출되지 않으므로 제거되었습니다.
 
         /// <summary>
         /// 이미지의 FillAmount를 조절하여 게이지가 차오르는 듯한 연출을 수행합니다. (붉은 실 연출용)

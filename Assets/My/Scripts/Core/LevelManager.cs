@@ -178,9 +178,15 @@ namespace My.Scripts.Core
             if (specific.Page1 == null) specific.Page1 = new GridPageData();
             if (common.Page1 != null)
             {
-                if (specific.Page1.descriptionText1 != null) specific.Page1.descriptionText1 = common.Page1.descriptionText1;
-                if (specific.Page1.descriptionText2 != null) specific.Page1.descriptionText2 = common.Page1.descriptionText2;
-                if (specific.Page1.descriptionText3 != null) specific.Page1.descriptionText3 = common.Page1.descriptionText3;
+                // 값이 없거나(null) 비어있을 때만 공통 데이터를 사용하도록 변경.
+                if (specific.Page1.descriptionText1 == null || string.IsNullOrEmpty(specific.Page1.descriptionText1.text)) 
+                    specific.Page1.descriptionText1 = common.Page1.descriptionText1;
+                
+                if (specific.Page1.descriptionText2 == null || string.IsNullOrEmpty(specific.Page1.descriptionText2.text)) 
+                    specific.Page1.descriptionText2 = common.Page1.descriptionText2;
+                
+                if (specific.Page1.descriptionText3 == null || string.IsNullOrEmpty(specific.Page1.descriptionText3.text)) 
+                    specific.Page1.descriptionText3 = common.Page1.descriptionText3;
                 
                 if (string.IsNullOrEmpty(specific.Page1.warningMessage)) specific.Page1.warningMessage = common.Page1.warningMessage;
                 if (string.IsNullOrEmpty(specific.Page1.resetMessage)) specific.Page1.resetMessage = common.Page1.resetMessage;

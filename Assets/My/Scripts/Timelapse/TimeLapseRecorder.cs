@@ -260,11 +260,19 @@ namespace My.Scripts.Timelapse
             {
                 if (_saveQueue.TryDequeue(out var task))
                 {
-                    try { File.WriteAllBytes(task.path, task.data); } catch { }
+                    try 
+                    { 
+                        File.WriteAllBytes(task.path, task.data); 
+                    } 
+                    catch (Exception e) 
+                    {
+                        Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패 ({task.path}): {e.Message}");
+                    }
                 }
                 else
                 {
-                    await UniTask.Delay(1, cancellationToken: _cts.Token);
+                    // 빈 큐 대기 시 CPU 스핀 방지를 위한 딜레이
+                    await UniTask.Delay(50, cancellationToken: _cts.Token);
                 }
             }
         }
@@ -330,17 +338,32 @@ namespace My.Scripts.Timelapse
             ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, "Test_Realtime", fps).Forget();
         }
 
-       private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix, float fps)
+      private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix, float fps)
         {
             try
             {
                 // 1. 저장 대기
                 await UniTask.WaitUntil(() => _saveQueue.IsEmpty);
 
-                if (string.IsNullOrEmpty(sourceFolder)) UpdatePaths();
+                // 경로가 비어있다면 재설정 후 로컬 변수(sourceFolder/outputFolder)도 갱신
+                if (string.IsNullOrEmpty(sourceFolder) || string.IsNullOrEmpty(outputFolder))
+                {
+                    UpdatePaths();
+                    
+                    // 파일 접두사를 보고 어떤 경로를 사용할지 판단
+                    if (filePrefix.Contains("Realtime"))
+                    {
+                        sourceFolder = _realtimeSourcePath;
+                        outputFolder = _realtimeVideoPath;
+                    }
+                    else
+                    {
+                        sourceFolder = _sourceImageFolderPath;
+                        outputFolder = _outputVideoFolderPath;
+                    }
+                }
 
-                // [수정] 중요! 소스 파일이 존재하는지 먼저 확인
-                // (이전 로직이 원본 영상을 지워버리는 참사를 방지)
+                // 갱신된 sourceFolder를 사용하여 디렉토리 체크
                 bool hasSourceFiles = false;
                 if (Directory.Exists(sourceFolder))
                 {
@@ -351,13 +374,12 @@ namespace My.Scripts.Timelapse
                 string outputFileName = $"{filePrefix}.mp4";
                 string outputPath = Path.Combine(outputFolder, outputFileName);
 
-                // 소스 파일이 없는 경우 처리
                 if (!hasSourceFiles)
                 {
                     // 소스는 없지만 이미 만들어진 영상이 있다면 성공으로 간주
                     if (File.Exists(outputPath))
                     {
-                        Debug.LogWarning($"[TimeLapseRecorder] 소스 파일은 없지만 영상이 이미 존재하여 성공 처리함: {outputFileName}");
+                        Debug.LogWarning($"[TimeLapseRecorder] 소스 파일이 없지만 영상이 존재하여 성공 처리함: {outputFileName}");
                         IsConversionSuccessful = true;
                         LastVideoPath = outputPath;
                         if (filePrefix.Contains("Realtime")) LastRealtimeVideoPath = outputPath;
@@ -367,11 +389,10 @@ namespace My.Scripts.Timelapse
                         Debug.LogError($"[TimeLapseRecorder] 변환 실패: 소스 이미지가 없습니다. ({sourceFolder})");
                         IsConversionSuccessful = false;
                     }
-                    // 여기서 작업 종료 (파일 삭제 로직 실행 안 함)
-                    return; 
+                    return; // 여기서 종료
                 }
 
-                // 2. 정상 진행: (소스가 있으므로) 기존 파일 삭제 후 새로 변환 시작
+                // 2. 정상 진행: 기존 파일 삭제 후 변환 시작
                 IsConversionSuccessful = false;
                 LastExitCode = -1;
 

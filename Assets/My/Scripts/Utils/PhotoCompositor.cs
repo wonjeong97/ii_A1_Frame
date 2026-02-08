@@ -48,7 +48,7 @@ namespace My.Scripts.Utils
                 return;
             }
 
-            // 1. 경로 설정 (날짜 폴더 포함)
+            // 1. 경로 설정 (날짜 폴더 포함) - 한 번만 계산하여 로드/저장에 동일하게 사용
             string rootPath = GetRootPath();
             if (!Directory.Exists(rootPath))
             {
@@ -108,11 +108,12 @@ namespace My.Scripts.Utils
             RenderTexture.active = prevActive;
             RenderTexture.ReleaseTemporary(rt);
 
-            // 7. 저장 (해당 날짜 폴더에 저장)
-            SaveToFile(resultTex, $"{baseName}_{outputFileName}.png");
+            // 7. 저장 (동일한 rootPath 사용)
+            // [수정] rootPath를 인자로 전달하여 경로 불일치 방지
+            SaveToFile(resultTex, $"{baseName}_{outputFileName}.png", rootPath);
             Destroy(resultTex);
-            
-            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, outputFileName)}");
+
+            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{baseName}_{outputFileName}.png")}");
         }
 
         private Texture2D LoadTextureFromFile(string path)
@@ -127,12 +128,13 @@ namespace My.Scripts.Utils
             catch { return null; }
         }
 
-        private void SaveToFile(Texture2D tex, string fileName)
+        // rootPath를 인자로 받도록 시그니처 변경 및 내부 GetRootPath 호출 제거
+        private void SaveToFile(Texture2D tex, string fileName, string rootPath)
         {
-            string folder = GetRootPath();
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            // 폴더가 없으면 생성
+            if (!Directory.Exists(rootPath)) Directory.CreateDirectory(rootPath);
 
-            string path = Path.Combine(folder, fileName);
+            string path = Path.Combine(rootPath, fileName);
             byte[] bytes = tex.EncodeToPNG();
             File.WriteAllBytes(path, bytes);
         }
@@ -144,7 +146,7 @@ namespace My.Scripts.Utils
             DirectoryInfo parentDir = Directory.GetParent(dataPath);
             string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
             
-            // [수정] 날짜 폴더 추가 (예: Pictures/2026-02-06)
+            // 날짜 폴더 추가 (예: Pictures/2026-02-06)
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
             
             return Path.Combine(rootPath, saveFolderName, dateFolder);
