@@ -2,6 +2,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Data;
+using My.Scripts.Global;
+using My.Scripts.Timelapse;
+using UnityEngine.SceneManagement;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -61,7 +64,15 @@ namespace My.Scripts.Core.Pages
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
             if (buttonRect) buttonRect.localScale = Vector3.one;
-
+            
+            if (gameObject.name == "Page6" && SceneManager.GetActiveScene().name == GameConstants.Scene.PlayQ15)
+            {
+                if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsProcessing)
+                {
+                    Debug.Log($"[{gameObject.name}] OnEnter: 리얼타임 영상 변환 시작");
+                    TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
+                }
+            }
             StartCoroutine(SequenceRoutine());
         }
 
@@ -69,7 +80,7 @@ namespace My.Scripts.Core.Pages
         private void Update()
         {
             if (_isCompleted) return;
-            if (Time.time - _enterTime < 1f) return; // 진입 직후 오입력 방지
+            if (Time.time - _enterTime < 1.5f) return; // 진입 직후 오입력 방지
 
             // 1. 입력 감지 (Space 키 또는 기타 입력)
             if (Input.anyKey || Input.touchCount > 0)
@@ -142,14 +153,57 @@ namespace My.Scripts.Core.Pages
 
             cg.alpha = end;
         }
-
-        /// <summary> 버튼 스케일 애니메이션 (2회 재생 -> 1초 대기 -> 반복) </summary>
+        
+       /// <summary> 버튼 연출 애니메이션 </summary>
         private IEnumerator ButtonAnim()
         {
+            // 알파값 조절을 위해 Image 컴포넌트 가져오기
+            Image btnImage = buttonRect  ? buttonRect.GetComponent<Image>() : null;
+
             // _isCompleted가 될 때까지 전체 시퀀스 무한 반복
             while (!_isCompleted)
             {
+                // [신규] 깜빡임 애니메이션 (투명도 조절)
                 // 2회 반복 재생
+                for (int i = 0; i < 2; i++)
+                {
+                    if (_isCompleted) yield break;
+
+                    // Fade Out (1 -> 0.3)
+                    float t = 0;
+                    while (t < 0.5f)
+                    {
+                        if (_isCompleted) yield break;
+                        t += Time.deltaTime;
+                        
+                        if (btnImage)
+                        {
+                            Color c = btnImage.color;
+                            c.a = Mathf.Lerp(1f, 0.3f, t / 0.5f);
+                            btnImage.color = c;
+                        }
+                        yield return null;
+                    }
+
+                    // Fade In (0.3 -> 1)
+                    t = 0;
+                    while (t < 0.5f)
+                    {
+                        if (_isCompleted) yield break;
+                        t += Time.deltaTime;
+                        
+                        if (btnImage)
+                        {
+                            Color c = btnImage.color;
+                            c.a = Mathf.Lerp(0.3f, 1f, t / 0.5f);
+                            btnImage.color = c;
+                        }
+                        yield return null;
+                    }
+                }
+
+                // [기존] 스케일 애니메이션 (주석 처리됨)
+                /*
                 for (int i = 0; i < 2; i++)
                 {
                     if (_isCompleted) yield break;
@@ -172,6 +226,7 @@ namespace My.Scripts.Core.Pages
                         yield return null;
                     }
                 }
+                */
 
                 // 2회 재생 후 1초 대기
                 if (!_isCompleted)

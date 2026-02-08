@@ -1,4 +1,5 @@
 using My.Scripts.Global;
+using My.Scripts.Timelapse; // TimeLapseRecorder 사용을 위해 추가
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Wonjeong.Data;
@@ -15,6 +16,13 @@ namespace My.Scripts._00_Title
         private void Start()
         {
             LoadSettings();
+            
+            // 타이틀 진입 시 혹시 남아있을 수 있는 이전 촬영 데이터(소스 이미지) 정리
+            if (TimeLapseRecorder.Instance != null)
+            {
+                Debug.Log("[TitleManager] 이전 세션 데이터 정리 (ClearRecordingData)");
+                TimeLapseRecorder.Instance.ClearRecordingData();
+            }
         }
         
         /// <summary> JSON 설정 파일 로드 </summary>

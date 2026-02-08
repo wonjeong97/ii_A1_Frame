@@ -1,9 +1,8 @@
 using System;
 using System.Collections;
+using My.Scripts.Core;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core;
-using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -13,134 +12,103 @@ namespace My.Scripts._18_Ending.Pages
     [Serializable]
     public class EndingPage3Data
     {
-        public TextSetting descriptionText; // 기본 텍스트
-        public TextSetting allFinishedText; // 모든 체험 완료 텍스트
+        public TextSetting descriptionText1; // "'우리'는 마음조각 5개를 받았습니다."
+        public TextSetting descriptionText2; // "'우리'의 마음 조각 0/20"
     }
 
-    /// <summary> 엔딩 3페이지 컨트롤러 (조건부 RedLine 연출) </summary>
+    /// <summary> 
+    /// 엔딩 3페이지 컨트롤러입니다.
+    /// 플레이어들이 모은 '마음 조각'의 결과를 확인하는 페이지로, 텍스트와 이미지를 순차적으로 보여주는 연출을 담당합니다.
+    /// </summary>
     public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
-        [Header("UI References")] 
-        [SerializeField] private Text descriptionText; // 설명 텍스트
-        [SerializeField] private Image redLineImage; // RedLine 이미지
+        [Header("UI References")]
+        [SerializeField] private Text text1; 
+        [SerializeField] private Text text2; 
+        [SerializeField] private CanvasGroup imageCanvasGroup;
 
-        private bool _isAllFinished = false; // 모든 체험 완료 여부
-
-        /// <summary> 데이터 설정 (텍스트 및 완료 여부 결정) </summary>
         protected override void SetupData(EndingPage3Data data)
         {
-            // 50% 확률 로직 (임시)
-            int randomValue = UnityEngine.Random.Range(0, 2);
-            TextSetting textToUse = data.descriptionText;
-
-            if (randomValue == 1 && data.allFinishedText != null)
-            {
-                textToUse = data.allFinishedText;
-                _isAllFinished = true; // Case A: 모든 체험 완료
-                Debug.Log("[EndingPage3] Random(50%): 모든 체험 완료 메시지 선택");
-            }
-            else
-            {
-                textToUse = data.descriptionText;
-                _isAllFinished = false; // Case B: 단일 체험 완료
-                Debug.Log("[EndingPage3] Random(50%): 현재 체험 완료 메시지 선택");
-            }
-
-            if (descriptionText)
-            {
-                UIManager.Instance.SetText(descriptionText.gameObject, textToUse);
-            }
+            if (text1) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
+            if (text2) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
         }
 
-        /// <summary> 페이지 진입 (초기화 및 시퀀스 시작) </summary>
         public override void OnEnter()
         {
-            gameObject.SetActive(true);
-
-            // 초기화: 투명하게 시작
-            SetAlpha(0f);
-            SetTextAlpha(descriptionText, 0f);
-
-            // RedLine 초기화
-            if (redLineImage)
-            {
-                redLineImage.type = Image.Type.Filled; // Fill 타입 강제
-                redLineImage.fillAmount = 0f; // 0에서 시작
-            }
+            base.OnEnter();
+            
+            // 연출 시작 전 모든 요소를 숨겨두어 깜빡임 없이 자연스럽게 등장하도록 초기화합니다.
+            SetTextAlpha(text1, 0f);
+            SetTextAlpha(text2, 0f);
+            if (imageCanvasGroup) imageCanvasGroup.alpha = 0f;
 
             StartCoroutine(SequenceRoutine());
         }
 
-        /// <summary> 연출 시퀀스 (페이드 -> 텍스트 -> RedLine -> 완료) </summary>
+        /// <summary>
+        /// 결과 확인 시퀀스를 제어합니다. (텍스트1 -> 이미지 -> 텍스트2 -> 대기 -> 완료)
+        /// 순차적인 등장을 통해 사용자의 시선을 유도합니다.
+        /// </summary>
         private IEnumerator SequenceRoutine()
         {
-            // 1. 페이지 전체 페이드 인
-            yield return CoroutineData.GetWaitForSeconds(1.0f);
+            // 1. 첫 번째 안내 문구 등장
+            yield return StartCoroutine(FadeText(text1, 0f, 1f, 1.0f));
+            
+            // 2. 결과 이미지(마음 조각) 등장
+            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1.0f));
+            
+            // 3. 상세 수치 텍스트 등장
+            yield return StartCoroutine(FadeText(text2, 0f, 1f, 1.0f));
 
-            // 2. 텍스트 페이드 인
-            yield return StartCoroutine(FadeText(descriptionText, 0f, 1f, 1.0f));
-
-            // 3. 조건부 연출 분기
-            if (_isAllFinished && redLineImage != null)
-            {
-                // [Case A] RedLine 채우기 (1초)
-                yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 1.0f));
-
-                // 6초 대기
-                yield return CoroutineData.GetWaitForSeconds(6.0f);
-            }
-            else
-            {
-                // [Case B] 일반 대기 (7초)
-                yield return CoroutineData.GetWaitForSeconds(7.0f);
-            }
-
-            // 4. 완료
+            // 결과를 충분히 확인할 시간을 제공한 뒤 다음으로 넘어갑니다.
+            yield return CoroutineData.GetWaitForSeconds(4.0f);
             CompleteStep();
         }
 
-        /// <summary> 이미지 채우기 연출 코루틴 </summary>
-        private IEnumerator FillImageRoutine(Image target, float start, float end, float duration)
+        /// <summary>
+        /// 텍스트의 투명도를 부드럽게 변경합니다.
+        /// </summary>
+        private IEnumerator FadeText(Text t, float s, float e, float d)
         {
-            if (!target) yield break;
-
-            float t = 0f;
-            target.fillAmount = start;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                target.fillAmount = Mathf.Lerp(start, end, t / duration);
-                yield return null;
+            if (!t) yield break;
+            float time = 0f;
+            SetTextAlpha(t, s);
+            
+            while(time < d) 
+            { 
+                time += Time.deltaTime; 
+                SetTextAlpha(t, Mathf.Lerp(s, e, time/d)); 
+                yield return null; 
             }
-
-            target.fillAmount = end;
+            SetTextAlpha(t, e);
         }
 
-        /// <summary> 텍스트 투명도 페이드 코루틴 </summary>
-        private IEnumerator FadeText(Text target, float start, float end, float duration)
+        /// <summary>
+        /// 캔버스 그룹의 투명도를 부드럽게 변경합니다. (이미지 등 그룹 단위 제어용)
+        /// </summary>
+        private IEnumerator FadeCanvasGroup(CanvasGroup cg, float s, float e, float d)
         {
-            if (!target) yield break;
-            float t = 0f;
-            SetTextAlpha(target, start);
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                SetTextAlpha(target, Mathf.Lerp(start, end, t / duration));
-                yield return null;
+            if (!cg) yield break;
+            float time = 0f;
+            cg.alpha = s;
+            
+            while(time < d) 
+            { 
+                time += Time.deltaTime; 
+                cg.alpha = Mathf.Lerp(s, e, time/d); 
+                yield return null; 
             }
-
-            SetTextAlpha(target, end);
+            cg.alpha = e;
         }
 
-        /// <summary> 텍스트 알파값 즉시 설정 </summary>
-        private void SetTextAlpha(Text t, float a)
-        {
-            if (t)
-            {
-                Color c = t.color;
-                c.a = a;
-                t.color = c;
-            }
+        private void SetTextAlpha(Text t, float a) 
+        { 
+            if(t) 
+            { 
+                Color c = t.color; 
+                c.a = a; 
+                t.color = c; 
+            } 
         }
     }
 }

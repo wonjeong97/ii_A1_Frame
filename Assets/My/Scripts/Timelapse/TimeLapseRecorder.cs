@@ -1,354 +1,437 @@
 using System;
-using System.Collections;
-using System.IO;
-using UnityEngine;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Text.RegularExpressions;
+using UnityEngine;
+using UnityEngine.Rendering; 
+using Cysharp.Threading.Tasks; 
 using Wonjeong.Utils;
 using Debug = UnityEngine.Debug;
 
-/// <summary> 
-/// 타임랩스 녹화 및 영상 변환 관리자 
-/// <para>기능: 웹캠 프레임 캡처, 날짜별 폴더 관리, FFmpeg 인코딩, 원본 이미지 정리</para>
-/// </summary>
-public class TimeLapseRecorder : MonoBehaviour
+namespace My.Scripts.Timelapse
 {
-    public static TimeLapseRecorder Instance;
-
-    [Header("Capture Settings")]
-    public float captureFPS = 15f;      // 초당 캡처 프레임 수
-    public int captureWidth = 1280;     // 캡처 해상도 너비
-    public int captureHeight = 720;     // 캡처 해상도 높이
-
-    private WebCamTexture _webCam;      // 웹캠 텍스처 참조
-    private bool _isRecording;          // 녹화 진행 여부
-    
-    // --- 경로 관리 변수 ---
-    private string _rootPath;               // 프로젝트 루트 경로 (Assets 상위)
-    private string _currentDateFolder;      // 현재 날짜 폴더명 (yyyy-MM-dd)
-    private string _sourceImageFolderPath;  // 캡처된 이미지 저장 경로 (Timelapse_Source/Date)
-    private string _outputVideoFolderPath;  // 완성된 영상 저장 경로 (Timelapse_Video/Date)
-    
-    private int _globalFrameIndex;      // 프레임 번호 (파일명 생성용)
-    private float _timer;               // 캡처 주기 타이머
-    private float _captureInterval;     // 캡처 간격 (1/FPS)
-    private Texture2D _tempTexture;     // 캡처용 임시 텍스처
-    private Process _ffmpegProcess;     // FFmpeg 외부 프로세스
-
-    // --- 상태 확인 프로퍼티 ---
-    public bool IsConverting => IsProcessing;       // 변환 중 여부 (외부용)
-    public bool IsProcessing { get; private set; }  // 현재 작업 진행 중 여부
-    public bool IsConversionSuccessful { get; private set; } // 변환 성공 여부
-    public int LastExitCode { get; private set; }   // FFmpeg 종료 코드
-    
-    /// <summary> 마지막으로 생성된 비디오 파일의 전체 경로 </summary>
-    public string LastVideoPath { get; private set; }
-
-    private void Awake()
+    public class TimeLapseRecorder : MonoBehaviour
     {
-        if (Instance == null)
+        public static TimeLapseRecorder Instance;
+
+        [Header("Capture Settings")]
+        public int realtimeCaptureFPS = 30; 
+        public int timelapseCaptureFPS = 15; 
+        
+        [Header("Output Settings")]
+        public float timelapseDuration = 20f; 
+        public float realtimeDuration = 30f;  
+        
+        public int captureWidth = 1280;     
+        public int captureHeight = 720;     
+
+        private WebCamTexture _webCam;      
+        private bool _isRecording;          
+        
+        private string _rootPath;               
+        private string _currentDateFolder;      
+        
+        private string _sourceImageFolderPath;  
+        private string _outputVideoFolderPath;  
+        private string _realtimeSourcePath;
+        private string _realtimeVideoPath;
+        
+        private int _globalFrameIndex;      
+        private int _realtimeFrameIndex;    
+        
+        private float _timer;               
+        private float _baseInterval; 
+        
+        private Texture2D _encodeTexture; 
+        private RenderTexture _captureRT;
+        
+        private string _currentLevelID; 
+
+        private struct SaveTaskData
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            
-            // 데이터 경로 설정 (Assets 폴더 상위 경로)
-            string dataPath = Application.dataPath;
-            DirectoryInfo parentDir = Directory.GetParent(dataPath);
-            _rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
-            
-            // 캡처 간격 계산
-            if (captureFPS > 0)  _captureInterval = 1f / captureFPS;
-            else
+            public string path;
+            public byte[] data;
+        }
+        private readonly ConcurrentQueue<SaveTaskData> _saveQueue = new ConcurrentQueue<SaveTaskData>();
+        private CancellationTokenSource _cts;
+
+        private float _realtimeRecordingStartTime;
+        private float _realtimeTotalDuration;
+        private bool _isRealtimeRecordingActive;
+        
+        private float _timelapseTimer = 0f;
+
+        public bool IsConverting => IsProcessing;       
+        public bool IsProcessing { get; private set; }  
+        public bool IsConversionSuccessful { get; private set; } 
+        public int LastExitCode { get; private set; }   
+        
+        public string LastVideoPath { get; private set; } 
+        public string LastRealtimeVideoPath { get; private set; }
+
+        private void Awake()
+        {
+            if (Instance == null)
             {
-                captureFPS = 15f;
-                _captureInterval = 1f / captureFPS;
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+                
+                string dataPath = Application.dataPath;
+                DirectoryInfo parentDir = Directory.GetParent(dataPath);
+                _rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
+                
+                _baseInterval = 1f / Mathf.Max(realtimeCaptureFPS, timelapseCaptureFPS);
+            }
+            else Destroy(gameObject);
+        }
+
+        private void Start()
+        {
+            StartDiskWriteLoop().Forget();
+        }
+
+        public void SetCurrentLevel(string levelID)
+        {
+            _currentLevelID = levelID;
+            bool isTarget = IsRealtimeTargetLevel(levelID);
+            
+            if (isTarget && !_isRealtimeRecordingActive)
+            {
+                _isRealtimeRecordingActive = true;
+                _realtimeRecordingStartTime = Time.time;
+                Debug.Log($"[TimeLapse] 리얼타임 녹화 시간 측정 시작 (Level: {levelID})");
             }
         }
-        else Destroy(gameObject);
-    }
 
-    /// <summary> 
-    /// 녹화 시작 시 호출되어 저장 경로를 갱신하고 폴더를 생성합니다.
-    /// <para>구조: Root/Timelapse_Source(or Video)/yyyy-MM-dd/</para>
-    /// </summary>
-    private void UpdatePaths()
-    {
-        // 1. 날짜 기준 폴더명 갱신
-        _currentDateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+        private void UpdatePaths()
+        {
+            _currentDateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            _sourceImageFolderPath = Path.Combine(_rootPath, "Timelapse", "Timelapse_Source", _currentDateFolder);
+            _outputVideoFolderPath = Path.Combine(_rootPath, "Timelapse", "Timelapse_Video", _currentDateFolder);
+            _realtimeSourcePath = Path.Combine(_rootPath, "Timelapse", "Realtime_Source", _currentDateFolder);
+            _realtimeVideoPath = Path.Combine(_rootPath, "Timelapse", "Realtime_Video", _currentDateFolder);
 
-        // 2. 소스 이미지 폴더 경로 설정
-        _sourceImageFolderPath = Path.Combine(_rootPath, "Timelapse_Source", _currentDateFolder);
+            CreateDirectorySafe(_sourceImageFolderPath);
+            CreateDirectorySafe(_outputVideoFolderPath);
+            CreateDirectorySafe(_realtimeSourcePath);
+            CreateDirectorySafe(_realtimeVideoPath);
+        }
+
+        private void CreateDirectorySafe(string path)
+        {
+            try { if (!Directory.Exists(path)) Directory.CreateDirectory(path); }
+            catch (Exception e) { Debug.LogError($"[TimeLapse] 폴더 생성 실패 ({path}): {e.Message}"); }
+        }
         
-        // 3. 결과 영상 폴더 경로 설정
-        _outputVideoFolderPath = Path.Combine(_rootPath, "Timelapse_Video", _currentDateFolder);
-
-        // 4. 실제 폴더 생성
-        try
+        private void ClearFolder(string path)
         {
-            if (!Directory.Exists(_sourceImageFolderPath)) Directory.CreateDirectory(_sourceImageFolderPath);
-            if (!Directory.Exists(_outputVideoFolderPath)) Directory.CreateDirectory(_outputVideoFolderPath);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[TimeLapseRecorder] 폴더 생성 실패: {e.Message}");
-        }
-    }
-
-    /// <summary> 이전 녹화 데이터를 초기화합니다. (메모리 및 변수 리셋) </summary>
-    public void ClearRecordingData()
-    {
-        _globalFrameIndex = 0;
-        IsProcessing = false;
-        IsConversionSuccessful = false;
-        LastVideoPath = string.Empty;
-
-        // 주의: 현재 날짜의 '소스 이미지' 폴더 내용만 비웁니다. (영상은 유지)
-        if (!string.IsNullOrEmpty(_sourceImageFolderPath) && Directory.Exists(_sourceImageFolderPath))
-        {
-            try
+            if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
             {
-                string[] files = Directory.GetFiles(_sourceImageFolderPath);
-                foreach (string file in files) File.Delete(file);
-                Debug.Log("[TimeLapseRecorder] 소스 이미지 데이터 초기화 완료");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[TimeLapseRecorder] 초기화 실패: {e.Message}");
+                try { foreach (string file in Directory.GetFiles(path)) File.Delete(file); } 
+                catch (Exception e) { Debug.LogWarning($"[TimeLapse] 폴더 정리 중 오류 ({path}): {e.Message}"); }
             }
         }
-    }
 
-    /// <summary> 웹캠 캡처를 시작합니다. </summary>
-    public void StartCapture(WebCamTexture cam)
-    {
-        if (!this.enabled) return;
-
-        // 캡처 시작 시점에 날짜 및 경로 갱신
-        UpdatePaths();
-
-        _webCam = cam;
-        _isRecording = true;
-        _timer = 0f;
-
-        if (captureFPS > 0) _captureInterval = 1f / captureFPS;
-        
-        // 텍스처 메모리 할당
-        if (_tempTexture == null || _tempTexture.width != captureWidth || _tempTexture.height != captureHeight)
+        public void ClearRecordingData()
         {
-            if (_tempTexture != null) Destroy(_tempTexture);
-            _tempTexture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGB24, false);
-        }
-    }
-
-    /// <summary> 캡처를 중단합니다. </summary>
-    public void StopCapture()
-    {
-        _isRecording = false;
-        _webCam = null;
-    }
-
-    private void Update()
-    {
-        if (!_isRecording || _webCam == null || !_webCam.isPlaying) return;
-
-        _timer += Time.deltaTime;
-
-        if (_timer >= _captureInterval)
-        {
-            _timer -= _captureInterval;
-            StartCoroutine(CaptureFrameRoutine());
-        }
-    }
-
-    /// <summary> 프레임 캡처 및 JPG 저장 코루틴 </summary>
-    private IEnumerator CaptureFrameRoutine()
-    {
-        // 최적화된 WaitForEndOfFrame 사용
-        yield return CoroutineData.WaitForEndOfFrame;
-        
-        if (_webCam != null && _webCam.isPlaying)
-        {
-            // 1. RenderTexture 생성 및 블릿
-            RenderTexture rt = RenderTexture.GetTemporary(captureWidth, captureHeight);
-            Graphics.Blit(_webCam, rt);
-            
-            // 2. 텍스처 읽기
-            RenderTexture.active = rt;
-            _tempTexture.ReadPixels(new Rect(0, 0, captureWidth, captureHeight), 0, 0);
-            _tempTexture.Apply();
-            RenderTexture.active = null;
-            RenderTexture.ReleaseTemporary(rt);
-
-            // 3. 인덱스 증가 및 JPG 인코딩
-            int frameIndex = System.Threading.Interlocked.Increment(ref _globalFrameIndex) - 1;
-            byte[] bytes = _tempTexture.EncodeToJPG(70); 
-            
-            // 4. 소스 이미지 폴더에 저장 (img_00001.jpg 형식)
-            string fileName = $"img_{frameIndex:D5}.jpg"; 
-            string path = Path.Combine(_sourceImageFolderPath, fileName);
-            
-            try
-            {
-                File.WriteAllBytes(path, bytes);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[TimeLapseRecorder] 저장 실패: {e.Message}");
-            }
-        }
-    }
-
-    /// <summary> 저장 폴더 열기 (디버깅용) </summary>
-    public void OpenFolder()
-    {
-        string target = Directory.Exists(_outputVideoFolderPath) ? _outputVideoFolderPath : _rootPath;
-        Application.OpenURL($"file://{target}");
-    }
-    
-    /// <summary> 수집된 이미지를 FFmpeg를 사용하여 영상으로 변환합니다. </summary>
-    public void ConvertToVideo()
-    {
-        if (IsProcessing) return;
-
-        // 경로 재확인 (혹시 캡처 없이 바로 변환 시도 시 대비)
-        if (string.IsNullOrEmpty(_sourceImageFolderPath)) UpdatePaths();
-
-        string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg.exe"); 
-        
-        if (!File.Exists(ffmpegPath))
-        {
-            Debug.LogError($"[FFmpeg] 실행 파일 없음: {ffmpegPath}");
-            return;
-        }
-        
-        // 입력 패턴: 소스 폴더의 img_XXXXX.jpg
-        string inputPattern = Path.Combine(_sourceImageFolderPath, "img_%05d.jpg");
-        
-        // 출력 파일: 비디오 폴더의 Timelapse_시간.mp4
-        string outputFileName = $"Timelapse_{DateTime.Now:HHmmss}.mp4";
-        string outputPath = Path.Combine(_outputVideoFolderPath, outputFileName);
-        
-        // 결과 경로 저장 (EndingPage에서 재생하기 위해 사용)
-        LastVideoPath = outputPath;
-
-        // 기존 파일 존재 시 삭제
-        try
-        {
-            if (File.Exists(outputPath)) File.Delete(outputPath);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[FFmpeg] 기존 파일 삭제 실패: {e.Message}");
-        }
-
-        Debug.Log($"[FFmpeg] 변환 시작\nInput: {inputPattern}\nOutput: {outputPath}");
-        
-        // FFmpeg 명령어 구성
-        string args = $"-framerate 30 -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
-        
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = ffmpegPath,
-            Arguments = args,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        try 
-        {
-            IsProcessing = true;
+            _globalFrameIndex = 0;
+            _realtimeFrameIndex = 0;
+            IsProcessing = false;
             IsConversionSuccessful = false;
-            LastExitCode = -1;
-            _ffmpegProcess = Process.Start(startInfo);
+            LastVideoPath = string.Empty;
+            LastRealtimeVideoPath = string.Empty;
+            _realtimeTotalDuration = 0f;
+            _isRealtimeRecordingActive = false;
             
-            if (_ffmpegProcess != null)
+            while (_saveQueue.TryDequeue(out _)) { }
+            
+            ClearFolder(_sourceImageFolderPath);
+            ClearFolder(_realtimeSourcePath);
+        }
+
+        public void StartCapture(WebCamTexture cam)
+        {
+            if (!enabled) return;
+            UpdatePaths();
+
+            _webCam = cam;
+            _isRecording = true;
+            _timer = 0f;
+            _timelapseTimer = 0f;
+            
+            _baseInterval = 1f / Mathf.Max(realtimeCaptureFPS, timelapseCaptureFPS);
+
+            if (_captureRT != null) _captureRT.Release();
+            _captureRT = new RenderTexture(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32);
+            
+            if (_encodeTexture != null) Destroy(_encodeTexture);
+            _encodeTexture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGBA32, false);
+
+            CaptureLoopRoutine().Forget();
+        }
+
+        public void StopCapture()
+        {
+            _isRecording = false;
+            _webCam = null; 
+            
+            if (_isRealtimeRecordingActive)
             {
-                StartCoroutine(WaitForFFmpegRoutine(_ffmpegProcess));
+                float duration = Time.time - _realtimeRecordingStartTime;
+                _realtimeTotalDuration += duration;
+                _isRealtimeRecordingActive = false;
+                Debug.Log($"[TimeLapse] 리얼타임 녹화 종료. 추가: {duration:F2}s, 누적: {_realtimeTotalDuration:F2}s");
             }
-            else
+        }
+
+        private async UniTaskVoid CaptureLoopRoutine()
+        {
+            float timelapseInterval = 1f / timelapseCaptureFPS; 
+
+            while (_isRecording && _webCam != null && _webCam.isPlaying)
+            {
+                _timer += Time.deltaTime;
+                _timelapseTimer += Time.deltaTime;
+
+                if (_timer >= _baseInterval)
+                {
+                    _timer -= _baseInterval;
+
+                    bool saveToRealtime = IsRealtimeTargetLevel(_currentLevelID);
+                    bool saveToTimelapse = _timelapseTimer >= timelapseInterval;
+
+                    if (!saveToRealtime && !saveToTimelapse)
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        continue;
+                    }
+
+                    if (saveToTimelapse) _timelapseTimer = 0f;
+
+                    await UniTask.WaitForEndOfFrame(this);
+
+                    if (_webCam == null || !_webCam.isPlaying) break;
+
+                    Graphics.Blit(_webCam, _captureRT);
+                    var request = AsyncGPUReadback.Request(_captureRT);
+                    await request.ToUniTask();
+
+                    if (request.hasError) continue;
+
+                    if (_encodeTexture != null)
+                    {
+                        _encodeTexture.LoadRawTextureData(request.GetData<byte>());
+                        _encodeTexture.Apply();
+
+                        byte[] bytes = _encodeTexture.EncodeToJPG(70);
+
+                        if (saveToTimelapse)
+                        {
+                            int globalIndex = Interlocked.Increment(ref _globalFrameIndex) - 1;
+                            EnqueueSave(bytes, _sourceImageFolderPath, globalIndex);
+                        }
+
+                        if (saveToRealtime)
+                        {
+                            int realtimeIndex = Interlocked.Increment(ref _realtimeFrameIndex) - 1;
+                            EnqueueSave(bytes, _realtimeSourcePath, realtimeIndex);
+                        }
+                    }
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update);
+            }
+        }
+
+        private void EnqueueSave(byte[] data, string folder, int index)
+        {
+            string path = Path.Combine(folder, $"img_{index:D5}.jpg");
+            _saveQueue.Enqueue(new SaveTaskData { path = path, data = data });
+        }
+
+        private async UniTaskVoid StartDiskWriteLoop()
+        {
+            _cts = new CancellationTokenSource();
+            await UniTask.SwitchToThreadPool(); 
+
+            while (!_cts.IsCancellationRequested)
+            {
+                if (_saveQueue.TryDequeue(out var task))
+                {
+                    try { File.WriteAllBytes(task.path, task.data); } catch { }
+                }
+                else
+                {
+                    await UniTask.Delay(1, cancellationToken: _cts.Token);
+                }
+            }
+        }
+
+        private bool IsRealtimeTargetLevel(string levelID)
+        {
+            if (string.IsNullOrEmpty(levelID)) return false;
+            string numPart = Regex.Replace(levelID, "[^0-9]", ""); 
+            if (int.TryParse(numPart, out int num))
+            {
+                if ((num >= 1 && num <= 5) || (num >= 11 && num <= 15)) return true;
+            }
+            return false;
+        }
+
+        // --- 변환 로직 (수정됨) ---
+
+        public void ConvertToVideo()
+        {
+            if (IsProcessing) 
+            {
+                Debug.LogWarning("[TimeLapse] 이미 다른 변환 작업 중입니다.");
+                return;
+            }
+
+            // [수정] 호출 즉시 Lock을 걸어서 LevelManager가 대기하도록 함
+            IsProcessing = true;
+
+            float fps = 30f;
+            if (_globalFrameIndex > 0 && timelapseDuration > 0)
+            {
+                fps = (float)_globalFrameIndex / timelapseDuration;
+            }
+            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2})");
+            
+            ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, "Test_Timelapse", fps).Forget();
+        }
+
+        public void ConvertToRealtimeVideo()
+        {
+            if (IsProcessing) 
+            {
+                Debug.LogWarning("[TimeLapse] 이미 다른 변환 작업 중입니다.");
+                return;
+            }
+
+            if (_realtimeFrameIndex <= 0)
+            {
+                Debug.LogWarning($"[Realtime] 데이터 부족으로 변환 취소. (Frame: {_realtimeFrameIndex})");
+                return;
+            }
+
+            // [수정] 호출 즉시 Lock! (매우 중요)
+            IsProcessing = true;
+
+            float fps = 30f;
+            if (_realtimeFrameIndex > 0 && realtimeDuration > 0)
+            {
+                fps = (float)_realtimeFrameIndex / realtimeDuration;
+            }
+            Debug.Log($"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2})");
+
+            ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, "Test_Realtime", fps).Forget();
+        }
+
+       private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix, float fps)
+        {
+            try
+            {
+                // 1. 저장 대기
+                await UniTask.WaitUntil(() => _saveQueue.IsEmpty);
+
+                if (string.IsNullOrEmpty(sourceFolder)) UpdatePaths();
+
+                // [수정] 중요! 소스 파일이 존재하는지 먼저 확인
+                // (이전 로직이 원본 영상을 지워버리는 참사를 방지)
+                bool hasSourceFiles = false;
+                if (Directory.Exists(sourceFolder))
+                {
+                    var files = Directory.GetFiles(sourceFolder, "img_*.jpg");
+                    if (files.Length > 0) hasSourceFiles = true;
+                }
+
+                string outputFileName = $"{filePrefix}.mp4";
+                string outputPath = Path.Combine(outputFolder, outputFileName);
+
+                // 소스 파일이 없는 경우 처리
+                if (!hasSourceFiles)
+                {
+                    // 소스는 없지만 이미 만들어진 영상이 있다면 성공으로 간주
+                    if (File.Exists(outputPath))
+                    {
+                        Debug.LogWarning($"[TimeLapseRecorder] 소스 파일은 없지만 영상이 이미 존재하여 성공 처리함: {outputFileName}");
+                        IsConversionSuccessful = true;
+                        LastVideoPath = outputPath;
+                        if (filePrefix.Contains("Realtime")) LastRealtimeVideoPath = outputPath;
+                    }
+                    else
+                    {
+                        Debug.LogError($"[TimeLapseRecorder] 변환 실패: 소스 이미지가 없습니다. ({sourceFolder})");
+                        IsConversionSuccessful = false;
+                    }
+                    // 여기서 작업 종료 (파일 삭제 로직 실행 안 함)
+                    return; 
+                }
+
+                // 2. 정상 진행: (소스가 있으므로) 기존 파일 삭제 후 새로 변환 시작
+                IsConversionSuccessful = false;
+                LastExitCode = -1;
+
+                string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg.exe");
+                string inputPattern = Path.Combine(sourceFolder, "img_%05d.jpg");
+
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+
+                if (fps < 1.0f) fps = 10f;
+
+                string args = $"-framerate {fps:F2} -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
+                
+                await UniTask.SwitchToThreadPool();
+
+                using (Process process = new Process())
+                {
+                    process.StartInfo.FileName = ffmpegPath;
+                    process.StartInfo.Arguments = args;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.Start();
+                    process.WaitForExit(); 
+                    LastExitCode = process.ExitCode;
+                }
+
+                await UniTask.SwitchToMainThread();
+
+                if (LastExitCode == 0)
+                {
+                    IsConversionSuccessful = true;
+                    LastVideoPath = outputPath;
+                    if (filePrefix.Contains("Realtime")) LastRealtimeVideoPath = outputPath;
+                    
+                    Debug.Log($"[TimeLapseRecorder] 변환 성공: {outputPath}");
+                    ClearFolder(sourceFolder);
+                }
+                else
+                {
+                    Debug.LogError($"[TimeLapseRecorder] 변환 실패. ExitCode: {LastExitCode}");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[TimeLapseRecorder] 예외 발생: {e.Message}");
+            }
+            finally
             {
                 IsProcessing = false;
             }
         }
-        catch (Exception e)
-        {
-            Debug.LogError($"[TimeLapseRecorder] 실행 예외: {e.Message}");
-            IsProcessing = false;
-        }
-    }
 
-    /// <summary> FFmpeg 프로세스 완료 대기 코루틴 </summary>
-    private IEnumerator WaitForFFmpegRoutine(Process process)
-    {
-        IsProcessing = true;
-        IsConversionSuccessful = false;
-        LastExitCode = -1;
-
-        // 프로세스 종료 대기
-        while (!process.HasExited)
+        private void OnDestroy()
         {
-            yield return null;
-        }
-
-        LastExitCode = process.ExitCode;
-        IsProcessing = false;
-        process.Dispose();
-        _ffmpegProcess = null;
-
-        if (LastExitCode == 0)
-        {
-            IsConversionSuccessful = true;
-            Debug.Log($"[TimeLapseRecorder] 변환 성공: {LastVideoPath}");
-            
-            // [중요] 변환 성공 시 원본 소스 이미지 정리 (용량 확보)
-            CleanupSourceImages();
-        }
-        else
-        {
-            IsConversionSuccessful = false;
-            Debug.LogError($"[TimeLapseRecorder] 변환 실패. 코드: {LastExitCode}");
-        }
-    }
-
-    /// <summary> 소스 이미지 폴더의 모든 파일을 삭제합니다. </summary>
-    private void CleanupSourceImages()
-    {
-        if (Directory.Exists(_sourceImageFolderPath))
-        {
-            try
+            if (_cts != null)
             {
-                DirectoryInfo di = new DirectoryInfo(_sourceImageFolderPath);
-                foreach (FileInfo file in di.GetFiles())
-                {
-                    file.Delete();
-                }
-                Debug.Log("[TimeLapseRecorder] 소스 이미지 정리 완료 (Cleanup)");
+                _cts.Cancel();
+                _cts.Dispose();
             }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[TimeLapseRecorder] 소스 정리 중 오류: {e.Message}");
-            }
+            if (_captureRT != null) _captureRT.Release();
+            if (_encodeTexture != null) Destroy(_encodeTexture);
         }
-    }
-
-    private void OnDestroy()
-    {
-        if (_tempTexture != null)
-        {
-            Destroy(_tempTexture);
-            _tempTexture = null;
-        }
-        
-        if (_ffmpegProcess != null)
-        {
-            try
-            {
-                if (!_ffmpegProcess.HasExited) _ffmpegProcess.Kill();
-                _ffmpegProcess.Dispose();
-            }
-            catch { }
-            _ffmpegProcess = null;
-        }
-        
-        if (Instance == this)  Instance = null;
     }
 }
