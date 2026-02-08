@@ -71,7 +71,7 @@ namespace My.Scripts.Timelapse
         
         private float _timelapseTimer = 0f;
 
-        // [수정] 타임랩스와 리얼타임 변환 상태를 분리하여 상호 데드락 방지
+        // 타임랩스와 리얼타임 변환 상태를 분리하여 상호 데드락 방지
         public bool IsTimelapseProcessing { get; private set; }
         public bool IsRealtimeProcessing { get; private set; }
         
@@ -218,7 +218,7 @@ namespace My.Scripts.Timelapse
         /// </summary>
         private async UniTaskVoid CaptureLoopRoutine()
         {
-            // [수정] 비동기 중 StartCapture 재호출로 리소스가 교체될 경우를 대비해 로컬 변수에 참조 캡처
+            // 비동기 중 StartCapture 재호출로 리소스가 교체될 경우를 대비해 로컬 변수에 참조 캡처
             var captureRT = _captureRT;
             var encodeTexture = _encodeTexture;
 
@@ -321,7 +321,7 @@ namespace My.Scripts.Timelapse
                     }
                     else
                     {
-                        // [수정] 빈 큐 대기 시 CPU 스핀 방지를 위해 50ms 대기
+                        // 빈 큐 대기 시 CPU 스핀 방지를 위해 50ms 대기
                         await UniTask.Delay(50, cancellationToken: _cts.Token);
                     }
                 }
@@ -348,7 +348,7 @@ namespace My.Scripts.Timelapse
 
         public void ConvertToVideo()
         {
-            // [수정] 타임랩스 전용 플래그 체크
+            // 타임랩스 전용 플래그 체크
             if (IsTimelapseProcessing) 
             {
                 Debug.LogWarning("[TimeLapse] 이미 타임랩스 변환 작업 중입니다.");
@@ -365,13 +365,13 @@ namespace My.Scripts.Timelapse
             }
             Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2})");
             
-            // [수정] isRealtime = false 전달
+            // isRealtime = false 전달
             ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, "Test_Timelapse", fps, false).Forget();
         }
 
         public void ConvertToRealtimeVideo()
         {
-            // [수정] 리얼타임 전용 플래그 체크
+            // 리얼타임 전용 플래그 체크
             if (IsRealtimeProcessing) 
             {
                 Debug.LogWarning("[TimeLapse] 이미 리얼타임 변환 작업 중입니다.");
@@ -394,7 +394,7 @@ namespace My.Scripts.Timelapse
             }
             Debug.Log($"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2})");
 
-            // [수정] isRealtime = true 전달
+            // isRealtime = true 전달
             ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, "Test_Realtime", fps, true).Forget();
         }
 
@@ -413,7 +413,7 @@ namespace My.Scripts.Timelapse
                 // 1. 디스크 쓰기가 모두 끝날 때까지 대기
                 await UniTask.WaitUntil(() => _saveQueue.IsEmpty);
 
-                // [수정] 경로가 비어있다면 재설정 및 로컬 변수 갱신 (NullReference 방지)
+                // 경로가 비어있다면 재설정 및 로컬 변수 갱신 (NullReference 방지)
                 if (string.IsNullOrEmpty(sourceFolder) || string.IsNullOrEmpty(outputFolder))
                 {
                     UpdatePaths();
@@ -469,7 +469,7 @@ namespace My.Scripts.Timelapse
 
                 if (fps < 1.0f) fps = 10f;
                 
-                // [수정] FPS 포맷팅 시 로케일 이슈(쉼표) 방지를 위해 InvariantCulture 사용
+                // FPS 포맷팅 시 로케일 이슈(쉼표) 방지를 위해 InvariantCulture 사용
                 string fpsStr = fps.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                 string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
                 
@@ -528,7 +528,7 @@ namespace My.Scripts.Timelapse
             }
             finally
             {
-                // [수정] 작업이 끝났으므로 해당 플래그 해제 (독립적 관리)
+                // 작업이 끝났으므로 해당 플래그 해제 (독립적 관리)
                 if (isRealtime) IsRealtimeProcessing = false;
                 else IsTimelapseProcessing = false;
             }
@@ -540,7 +540,7 @@ namespace My.Scripts.Timelapse
             {
                 _cts.Cancel();
                 
-                // [수정] 백그라운드 태스크가 종료될 때까지 대기 (ObjectDisposedException 방지)
+                // 백그라운드 태스크가 종료될 때까지 대기 (ObjectDisposedException 방지)
                 // OnDestroy는 동기 메서드이므로, 짧은 시간 동안 폴링하며 완료를 기다립니다.
                 long timeoutTicks = DateTime.Now.Ticks + 1000 * 10000; // 최대 1초 대기
                 while (!_diskWriteTask.GetAwaiter().IsCompleted && DateTime.Now.Ticks < timeoutTicks)
