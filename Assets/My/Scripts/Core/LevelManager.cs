@@ -419,7 +419,8 @@ namespace My.Scripts.Core
                     yield break;
                 }
 
-                if (!TimeLapseRecorder.Instance.IsProcessing)
+                // [수정] 리얼타임 전용 플래그 확인
+                if (!TimeLapseRecorder.Instance.IsRealtimeProcessing)
                 {
                     Debug.Log("[LevelManager] 리얼타임(1배속) 영상 인코딩 시작");
                     TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
@@ -427,10 +428,18 @@ namespace My.Scripts.Core
 
                 // 변환 완료 대기 (최대 60초 타임아웃)
                 float timeout = 60f, elapsed = 0f;
-                while (TimeLapseRecorder.Instance.IsProcessing && elapsed < timeout)
+                // [수정] 리얼타임 전용 플래그 대기
+                while (TimeLapseRecorder.Instance.IsRealtimeProcessing && elapsed < timeout)
                 {
                     yield return CoroutineData.GetWaitForSeconds(0.5f);
                     elapsed += 0.5f;
+                }
+
+                // [수정] 타임아웃 발생 시 리얼타임 플래그 강제 초기화 (Deadlock 방지)
+                if (TimeLapseRecorder.Instance.IsRealtimeProcessing)
+                {
+                    Debug.LogWarning("[LevelManager] 리얼타임 변환 타임아웃. 플래그를 강제 리셋합니다.");
+                    TimeLapseRecorder.Instance.ResetRealtimeProcessing();
                 }
             }
 
