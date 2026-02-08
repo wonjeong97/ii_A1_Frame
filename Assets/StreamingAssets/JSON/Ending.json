@@ -34,6 +34,7 @@
     "descriptionText1": {
       "name": "Text_Piece",
       "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
       "text": "'우리'는 마음조각\n<b>5개</b>를 받았습니다.",
       "fontName": "font4",
       "fontSize": 55,
@@ -42,6 +43,7 @@
     "descriptionText2": {
       "name": "Text_Count",
       "position": {"x": 960, "y": -807},
+      "scale": {"x": 1, "y": 1, "z": 1},
       "text": "'우리'의 마음 조각 0/20",
       "fontName": "font4",
       "fontSize": 40,
@@ -52,6 +54,7 @@
     "descriptionText": {
       "name": "Text_End",
       "position": {"x": 960, "y": -867},
+      "scale": {"x": 1, "y": 1, "z": 1},
       "text": "체험이 완료되었습니다.\n카드에 표시된 블록으로 이동해 주세요.",
       "fontName": "font4",
       "fontSize": 55,
@@ -60,6 +63,7 @@
     "allFinishedText": {
       "name": "Text_AllEnd",
       "position": {"x": 960, "y": -867},
+      "scale": {"x": 1, "y": 1, "z": 1},
       "text": "모든 체험이 완료되었습니다.\n결과 출력 공간으로 이동해 주세요.",
       "fontName": "font4",
       "fontSize": 55,

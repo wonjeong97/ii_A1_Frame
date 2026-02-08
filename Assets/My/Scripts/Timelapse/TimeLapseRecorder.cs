@@ -48,6 +48,7 @@ namespace My.Scripts.Timelapse
         private RenderTexture _captureRT;
         
         private string _currentLevelID; 
+        private UniTask _diskWriteTask;
 
         private struct SaveTaskData
         {
@@ -89,7 +90,7 @@ namespace My.Scripts.Timelapse
 
         private void Start()
         {
-            StartDiskWriteLoop().Forget();
+            _diskWriteTask = StartDiskWriteLoop();
         }
 
         public void SetCurrentLevel(string levelID)
@@ -186,12 +187,19 @@ namespace My.Scripts.Timelapse
             }
         }
 
-        private async UniTaskVoid CaptureLoopRoutine()
+      private async UniTaskVoid CaptureLoopRoutine()
         {
+            // 비동기 중 리소스 교체 방지를 위해 로컬 변수에 참조 캡처
+            var captureRT = _captureRT;
+            var encodeTexture = _encodeTexture;
+
             float timelapseInterval = 1f / timelapseCaptureFPS; 
 
             while (_isRecording && _webCam != null && _webCam.isPlaying)
             {
+                // 리소스가 변경되었으면(StartCapture 재호출 등) 루프 종료
+                if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
+
                 _timer += Time.deltaTime;
                 _timelapseTimer += Time.deltaTime;
 
@@ -212,20 +220,26 @@ namespace My.Scripts.Timelapse
 
                     await UniTask.WaitForEndOfFrame(this);
 
+                    // 대기 후 유효성 재확인
+                    if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
                     if (_webCam == null || !_webCam.isPlaying) break;
 
-                    Graphics.Blit(_webCam, _captureRT);
-                    var request = AsyncGPUReadback.Request(_captureRT);
+                    // 캡처된 로컬 변수 사용
+                    Graphics.Blit(_webCam, captureRT);
+                    var request = AsyncGPUReadback.Request(captureRT);
                     await request.ToUniTask();
+
+                    // 대기 후 유효성 재확인
+                    if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
 
                     if (request.hasError) continue;
 
-                    if (_encodeTexture != null)
+                    if (encodeTexture != null)
                     {
-                        _encodeTexture.LoadRawTextureData(request.GetData<byte>());
-                        _encodeTexture.Apply();
+                        encodeTexture.LoadRawTextureData(request.GetData<byte>());
+                        encodeTexture.Apply();
 
-                        byte[] bytes = _encodeTexture.EncodeToJPG(70);
+                        byte[] bytes = encodeTexture.EncodeToJPG(70);
 
                         if (saveToTimelapse)
                         {
@@ -251,29 +265,35 @@ namespace My.Scripts.Timelapse
             _saveQueue.Enqueue(new SaveTaskData { path = path, data = data });
         }
 
-        private async UniTaskVoid StartDiskWriteLoop()
+        private async UniTask StartDiskWriteLoop()
         {
             _cts = new CancellationTokenSource();
             await UniTask.SwitchToThreadPool(); 
 
-            while (!_cts.IsCancellationRequested)
+            try
             {
-                if (_saveQueue.TryDequeue(out var task))
+                while (!_cts.IsCancellationRequested)
                 {
-                    try 
-                    { 
-                        File.WriteAllBytes(task.path, task.data); 
-                    } 
-                    catch (Exception e) 
+                    if (_saveQueue.TryDequeue(out var task))
                     {
-                        Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패 ({task.path}): {e.Message}");
+                        try 
+                        { 
+                            File.WriteAllBytes(task.path, task.data); 
+                        } 
+                        catch (Exception e) 
+                        {
+                            Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패 ({task.path}): {e.Message}");
+                        }
+                    }
+                    else
+                    {
+                        await UniTask.Delay(50, cancellationToken: _cts.Token);
                     }
                 }
-                else
-                {
-                    // 빈 큐 대기 시 CPU 스핀 방지를 위한 딜레이
-                    await UniTask.Delay(50, cancellationToken: _cts.Token);
-                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 취소 시 정상 종료
             }
         }
 
@@ -288,7 +308,7 @@ namespace My.Scripts.Timelapse
             return false;
         }
 
-        // --- 변환 로직 (수정됨) ---
+        // --- 변환 로직 ---
 
         public void ConvertToVideo()
         {
@@ -325,7 +345,7 @@ namespace My.Scripts.Timelapse
                 return;
             }
 
-            // [수정] 호출 즉시 Lock! (매우 중요)
+            // 호출 즉시 Lock
             IsProcessing = true;
 
             float fps = 30f;
@@ -402,8 +422,9 @@ namespace My.Scripts.Timelapse
                 if (File.Exists(outputPath)) File.Delete(outputPath);
 
                 if (fps < 1.0f) fps = 10f;
-
-                string args = $"-framerate {fps:F2} -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
+                
+                string fpsStr = fps.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
                 
                 await UniTask.SwitchToThreadPool();
 
@@ -449,8 +470,16 @@ namespace My.Scripts.Timelapse
             if (_cts != null)
             {
                 _cts.Cancel();
+                
+                long timeoutTicks = DateTime.Now.Ticks + 1000 * 10000; // 최대 1초 대기
+                while (!_diskWriteTask.GetAwaiter().IsCompleted && DateTime.Now.Ticks < timeoutTicks)
+                {
+                    Thread.Sleep(10); // 메인 스레드 블로킹 최소화
+                }
+
                 _cts.Dispose();
             }
+            
             if (_captureRT != null) _captureRT.Release();
             if (_encodeTexture != null) Destroy(_encodeTexture);
         }

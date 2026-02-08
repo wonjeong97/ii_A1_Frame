@@ -56,7 +56,7 @@ namespace My.Scripts.Core
         public QnAPageData page2;
         public CheckPageData page3;
         public TransitionPageData page4;
-        public TransitionPageData page5; 
+        // 미사용 필드 page5 제거 (index 4는 CameraPage로 예약됨)
         public TransitionPageData page6;
         public TransitionPageData page7;
         public TutorialPage8Data page8;
@@ -66,6 +66,8 @@ namespace My.Scripts.Core
         public CheckPageData Page3 { get => page3; set => page3 = value; }
         public TransitionPageData Page4 { get => page4; set => page4 = value; }
         public TransitionPageData Page6 { get => page6; set => page6 = value; }
+        public TransitionPageData Page7 { get => page7; set => page7 = value; }
+        public TutorialPage8Data Page8 { get => page8; set => page8 = value; }
     }
 
     /// <summary> 
@@ -115,13 +117,14 @@ namespace My.Scripts.Core
                 ConfigureCameraPage(false);
 
                 // 페이지 배열 인덱스에 맞춰 데이터 주입
+                // index 4 (CameraPage)는 별도 설정되므로 건너뜀
                 SetupPageData(0, tSetting.Page1);
                 SetupPageData(1, tSetting.Page2);
                 SetupPageData(2, tSetting.Page3);
                 SetupPageData(3, tSetting.Page4);
                 SetupPageData(5, tSetting.Page6);
-                SetupPageData(6, tSetting.page7);
-                SetupPageData(7, tSetting.page8);
+                SetupPageData(6, tSetting.Page7);
+                SetupPageData(7, tSetting.Page8);
             }
             else
             {
@@ -168,7 +171,7 @@ namespace My.Scripts.Core
             }
         }
 
-        /// <summary>
+       /// <summary>
         /// 레벨별 고유 설정이 없는 경우 공통 설정(PlayCommon)값으로 덮어씁니다.
         /// 데이터 입력 작업의 효율성을 높이기 위함입니다.
         /// </summary>
@@ -178,7 +181,6 @@ namespace My.Scripts.Core
             if (specific.Page1 == null) specific.Page1 = new GridPageData();
             if (common.Page1 != null)
             {
-                // 값이 없거나(null) 비어있을 때만 공통 데이터를 사용하도록 변경.
                 if (specific.Page1.descriptionText1 == null || string.IsNullOrEmpty(specific.Page1.descriptionText1.text)) 
                     specific.Page1.descriptionText1 = common.Page1.descriptionText1;
                 
@@ -193,6 +195,9 @@ namespace My.Scripts.Core
             }
 
             // [Page 2: QnA]
+            // [수정] Page2가 null일 경우 NullReferenceException 방지를 위해 초기화 (Page1/Page3 패턴 적용)
+            if (specific.Page2 == null) specific.Page2 = new QnAPageData();
+            
             if (common.Page2 != null)
             {
                 if (specific.Page2.descriptionText == null || string.IsNullOrEmpty(specific.Page2.descriptionText.text)) specific.Page2.descriptionText = common.Page2.descriptionText;
