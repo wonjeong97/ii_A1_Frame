@@ -67,13 +67,6 @@ namespace My.Scripts.Core.Pages
 
         private readonly List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
 
-        /// <summary> 초기화: 부모 설정 로드 </summary>
-        protected override void Start()
-        {
-            base.Start();
-            Debug.Log($"[Page_Grid] 시간 설정: Blink={BlinkThreshold}s, ResetStart={inactivityThreshold}s");
-        }
-
         /// <summary> 데이터 설정: 텍스트 및 팝업 메시지 적용 </summary>
         protected override void SetupData(GridPageData data)
         {

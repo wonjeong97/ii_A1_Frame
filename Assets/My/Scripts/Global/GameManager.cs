@@ -148,8 +148,6 @@ public class GameManager : MonoBehaviour
         // 씬 로딩 완료 대기
         while (asyncLoad != null && !asyncLoad.isDone) yield return null;
 
-        Debug.Log($"[GameManager] {sceneName} Loaded.");
-
         // 4. 페이드 인
         FadeManager.Instance.FadeIn(_fadeTime);
         _isTransitioning = false;
