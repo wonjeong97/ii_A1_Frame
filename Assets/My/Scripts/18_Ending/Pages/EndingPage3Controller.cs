@@ -52,14 +52,17 @@ namespace My.Scripts._18_Ending.Pages
         private IEnumerator SequenceRoutine()
         {
             // 1. 첫 번째 안내 문구 등장
-            yield return StartCoroutine(FadeText(text1, 0f, 1f, 1.0f));
+            yield return StartCoroutine(FadeText(text1, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
             
             // 2. 결과 이미지(마음 조각) 등장
-            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1.0f));
+            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
             
             // 3. 상세 수치 텍스트 등장
-            yield return StartCoroutine(FadeText(text2, 0f, 1f, 1.0f));
-
+            yield return StartCoroutine(FadeText(text2, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            
             // 결과를 충분히 확인할 시간을 제공한 뒤 다음으로 넘어갑니다.
             yield return CoroutineData.GetWaitForSeconds(4.0f);
             CompleteStep();

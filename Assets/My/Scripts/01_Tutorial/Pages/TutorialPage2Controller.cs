@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using My.Scripts.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils; // CoroutineData 사용을 위해 추가
+using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -30,20 +30,18 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 페이지 진입 (바로 보여주고 대기 시작) </summary>
+        /// <summary> 페이지 진입 </summary>
         public override void OnEnter()
         {
-            base.OnEnter(); // 기본 활성화
-
-            // 텍스트가 바로 보이도록 확실하게 알파값 1 설정
+            base.OnEnter(); 
+            
             if (descriptionText)
             {
                 Color c = descriptionText.color;
                 c.a = 1f;
                 descriptionText.color = c;
             }
-
-            // 3초 대기 코루틴 시작
+            
             StartCoroutine(WaitAndNextRoutine());
         }
 

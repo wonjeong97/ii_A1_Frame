@@ -24,6 +24,8 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("Page 1 UI")]
         [SerializeField] private Text descriptionText; // 설명 텍스트 UI
 
+        private readonly float fadeTime = 0.1f;
+
         /// <summary>  데이터 설정: 텍스트 UI 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage1Data data)
         {
@@ -79,13 +81,12 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary>  텍스트 페이드 인 연출 코루틴 </summary>
         private IEnumerator FadeInTextRoutine()
         {
-            float duration = 1.0f;
             float timer = 0f;
 
-            while (timer < duration)
+            while (timer < fadeTime)
             {
                 timer += Time.deltaTime;
-                float alpha = Mathf.Clamp01(timer / duration);
+                float alpha = Mathf.Clamp01(timer / fadeTime);
 
                 if (descriptionText)
                 {

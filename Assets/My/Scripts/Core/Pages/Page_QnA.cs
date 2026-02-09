@@ -3,6 +3,7 @@ using My.Scripts.Core.Data;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.UI;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -43,7 +44,7 @@ namespace My.Scripts.Core.Pages
                 }
             }
             
-            // 팝업 메시지 설정 (부모 메서드 호출)
+            // 팝업 메시지 설정
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
@@ -120,9 +121,12 @@ namespace My.Scripts.Core.Pages
             if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
 
             // 순차 등장 (FadeContent 사용)
-            yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 1.0f));
-            yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 1.0f));
-            yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 1.0f));
+            yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
 
             _isInputEnabled = true;
         }

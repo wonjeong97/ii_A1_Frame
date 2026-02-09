@@ -53,7 +53,7 @@ namespace My.Scripts.Core.Pages
         private TextSetting _warningText; // 경고용 텍스트 데이터
         private Coroutine _textFadeRoutine; // 텍스트 페이드 코루틴
 
-        // [유지] Page_Grid만의 고유 기능인 '깜빡임' 관련 변수
+        // Page_Grid만의 고유 기능인 '깜빡임' 관련 변수
         private Coroutine _textBlinkRoutine; // 텍스트 깜빡임 코루틴
         private const float BlinkThreshold = 10f; // 1차 경고 고정 시간
         private bool _is1stWarningDone = false; // 1차 경고 완료 여부
@@ -92,7 +92,7 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            // 팝업 메시지 설정 (부모 메서드)
+            // 팝업 메시지 설정 
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
@@ -266,18 +266,17 @@ namespace My.Scripts.Core.Pages
             {
                 textSub.gameObject.SetActive(true);
                 Color c = textSub.color;
-                c.a = 1f;
+                c.a = 0f;
                 textSub.color = c;
             }
 
             for (int i = 0; i < 2; i++)
             {
-                yield return StartCoroutine(FadeTo(textSub, 0f, 0.5f));
-                yield return StartCoroutine(FadeTo(textSub, 1f, 0.5f));
-                yield return CoroutineData.GetWaitForSeconds(0.2f);
+                yield return StartCoroutine(FadeTo(textSub, 1f, 0.1f));
+                yield return CoroutineData.GetWaitForSeconds(1f);
+                yield return StartCoroutine(FadeTo(textSub, 0f, 0.1f));
+                yield return CoroutineData.GetWaitForSeconds(1f);
             }
-
-            yield return StartCoroutine(FadeTo(textSub, 0f, 1.0f));
             if (textSub) textSub.gameObject.SetActive(false);
 
             _is1stWarningDone = true;
@@ -301,15 +300,15 @@ namespace My.Scripts.Core.Pages
                 if (!_hasMoved)
                 {
                     _hasMoved = true;
-                    if (textMain != null)
-                        StartCoroutine(FadeTo(textMain, 0f, 1.0f, () => textMain.gameObject.SetActive(false)));
+                    if (textMain)
+                        StartCoroutine(FadeTo(textMain, 0f, 0.1f, () => textMain.gameObject.SetActive(false)));
                 }
 
-                if (textSub != null && textSub.gameObject.activeSelf)
+                if (textSub && textSub.gameObject.activeSelf)
                 {
                     if (_textFadeRoutine != null) StopCoroutine(_textFadeRoutine);
 
-                    _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 1.0f, () =>
+                    _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 0.1f, () =>
                     {
                         textSub.gameObject.SetActive(false);
                         _textFadeRoutine = null;
@@ -385,26 +384,24 @@ namespace My.Scripts.Core.Pages
             if (completionCanvasGroups != null)
             {
                 float t = 0f;
-                while (t < 1.0f)
+                while (t < 0.1f)
                 {
                     t += Time.deltaTime;
                     foreach (var cg in completionCanvasGroups)
-                        if (cg)
-                            cg.alpha = Mathf.Clamp01(t);
+                        if (cg) cg.alpha = Mathf.Clamp01(t);
                     yield return null;
                 }
 
                 foreach (var cg in completionCanvasGroups)
-                    if (cg)
-                        cg.alpha = 1f;
+                    if (cg) cg.alpha = 1f;
             }
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             float t2 = 0f, startA = imageGrid ? imageGrid.color.a : 1f;
-            while (t2 < 0.5f)
+            while (t2 < 0.1f)
             {
                 t2 += Time.deltaTime;
-                float p = t2 / 0.5f;
+                float p = t2 / 0.1f;
                 if (imageGrid)
                 {
                     Color c = imageGrid.color;
@@ -414,8 +411,7 @@ namespace My.Scripts.Core.Pages
 
                 if (textCanvasGroups != null)
                     foreach (var cg in textCanvasGroups)
-                        if (cg)
-                            cg.alpha = Mathf.Lerp(1f, 0f, p);
+                        if (cg) cg.alpha = Mathf.Lerp(1f, 0f, p);
                 yield return null;
             }
 

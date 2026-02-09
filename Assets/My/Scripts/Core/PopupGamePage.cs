@@ -138,7 +138,7 @@ namespace My.Scripts.Core.Pages
             yield return CoroutineData.GetWaitForSeconds(resetPopupDuration);
 
             // 4. 리셋
-            if (GameManager.Instance != null) GameManager.Instance.ReturnToTitle();
+            if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
             else SceneManager.LoadScene(GameConstants.Scene.Title);
         }
 
