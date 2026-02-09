@@ -384,11 +384,16 @@ namespace My.Scripts.Core.Pages
             if (completionCanvasGroups != null)
             {
                 float t = 0f;
-                while (t < 0.1f)
+                float duration = 0.1f;
+
+                while (t < duration)
                 {
                     t += Time.deltaTime;
+                    float alpha = Mathf.Clamp01(t / duration);
+                    
                     foreach (var cg in completionCanvasGroups)
-                        if (cg) cg.alpha = Mathf.Clamp01(t);
+                        if (cg) cg.alpha = alpha;
+                    
                     yield return null;
                 }
 
@@ -397,6 +402,8 @@ namespace My.Scripts.Core.Pages
             }
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
+            
+            // 아래 루프는 이미 p = t2 / 0.1f 로 정상 구현되어 있음
             float t2 = 0f, startA = imageGrid ? imageGrid.color.a : 1f;
             while (t2 < 0.1f)
             {
