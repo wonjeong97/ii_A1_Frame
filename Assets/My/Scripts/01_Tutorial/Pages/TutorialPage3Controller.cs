@@ -35,7 +35,7 @@ namespace My.Scripts._01_Tutorial.Pages
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
 
-            // 팝업 메시지 설정 (부모 메서드 호출)
+            // 팝업 메시지 설정
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
@@ -60,7 +60,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             else
             {
-                // 2. 비활성 시간 누적 (부모 메서드)
+                // 2. 비활성 시간 누적
                 UpdateInactivity();
             }
         }

@@ -106,9 +106,14 @@ namespace My.Scripts.Core.Pages
         private IEnumerator SequenceRoutine()
         {
             // 1. 콘텐츠 등장
-            yield return StartCoroutine(FadeGroup(contentGroup, 0f, 1f, 1.0f));
-            if (namesGroup) yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 0.5f));
-
+            yield return StartCoroutine(FadeGroup(contentGroup, 0f, 1f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            if (namesGroup)
+            {
+                yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 0.1f));
+                yield return CoroutineData.GetWaitForSeconds(0.4f);
+            }
+            
             // 2. 모드별 동작
             if (useButtonAnim && buttonRect)
             {
@@ -129,8 +134,13 @@ namespace My.Scripts.Core.Pages
                 {
                     if (!useButtonAnim && descriptionText)
                     {
-                        yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.5f));
-                        if (namesGroup) yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.5f));
+                        yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.1f));
+                        yield return CoroutineData.GetWaitForSeconds(0.4f);
+                        if (namesGroup)
+                        {
+                            yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.1f));
+                            yield return CoroutineData.GetWaitForSeconds(0.4f);
+                        }
                     }
                 }
                 
@@ -163,7 +173,7 @@ namespace My.Scripts.Core.Pages
             // _isCompleted가 될 때까지 전체 시퀀스 무한 반복
             while (!_isCompleted)
             {
-                // [신규] 깜빡임 애니메이션 (투명도 조절)
+                // 깜빡임 애니메이션 (투명도 조절)
                 // 2회 반복 재생
                 for (int i = 0; i < 2; i++)
                 {
@@ -179,7 +189,7 @@ namespace My.Scripts.Core.Pages
                         if (btnImage)
                         {
                             Color c = btnImage.color;
-                            c.a = Mathf.Lerp(1f, 0.3f, t / 0.5f);
+                            c.a = Mathf.Lerp(1f, 0.1f, t / 0.5f);
                             btnImage.color = c;
                         }
                         yield return null;
@@ -195,7 +205,7 @@ namespace My.Scripts.Core.Pages
                         if (btnImage)
                         {
                             Color c = btnImage.color;
-                            c.a = Mathf.Lerp(0.3f, 1f, t / 0.5f);
+                            c.a = Mathf.Lerp(0.1f, 1f, t / 0.5f);
                             btnImage.color = c;
                         }
                         yield return null;

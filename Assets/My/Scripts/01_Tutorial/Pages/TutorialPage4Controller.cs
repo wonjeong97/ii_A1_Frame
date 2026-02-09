@@ -129,7 +129,7 @@ namespace My.Scripts._01_Tutorial.Pages
             if (backImage == null || lightImage == null) yield break;
 
             float timer = 0f;
-            float duration = 0.3f;
+            float duration = 0.1f;
             
             Color backColor = backImage.color;
             Color lightColor = lightImage.color;

@@ -26,8 +26,7 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 데이터 설정 (텍스트 적용) </summary>
         protected override void SetupData(TutorialPage5Data data)
         {
-            if (descriptionText) 
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
         }
 
         /// <summary> 페이지 진입 (자동 넘김 시작) </summary>

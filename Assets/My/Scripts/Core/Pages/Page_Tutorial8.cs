@@ -22,7 +22,6 @@ namespace My.Scripts.Core.Pages
         protected override void SetupData(TutorialPage8Data data)
         {
             _data = data;
-            // 초기 상태: 인트로 텍스트 적용
             if (descriptionText && _data.introText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.introText);
@@ -54,8 +53,8 @@ namespace My.Scripts.Core.Pages
             // 2초간 유지
             yield return CoroutineData.GetWaitForSeconds(2.0f); 
 
-            // [추가] 1초간 페이드 아웃 (사라짐)
-            yield return StartCoroutine(FadeText(1f, 0f, 1.0f));
+            yield return StartCoroutine(FadeText(1f, 0f, 0.1f));
+            yield return CoroutineData.GetWaitForSeconds(0.9f);
 
             // 2. 카운트다운 (3 -> 2 -> 1)
             string[] counts = { "3", "2", "1" };

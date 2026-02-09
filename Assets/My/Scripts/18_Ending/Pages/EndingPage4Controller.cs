@@ -31,7 +31,7 @@ namespace My.Scripts._18_Ending.Pages
         protected override void SetupData(EndingPage4Data data)
         {
             // 엔딩의 다양성을 위해 50% 확률로 일반 엔딩과 특별 엔딩(Red Line)을 분기합니다.
-            // # TODO: 현재는 완전 랜덤이지만, 추후 플레이어의 선택이나 성취도(QnA 결과 등)에 따라 결정되도록 고도화할 필요가 있음.
+            // # TODO: 현재는 완전 랜덤이지만, 추후 API에 따라 변경
             int randomValue = UnityEngine.Random.Range(0, 2);
             TextSetting textToUse = data.descriptionText;
 
@@ -53,10 +53,6 @@ namespace My.Scripts._18_Ending.Pages
         {
             base.OnEnter();
             
-            Debug.Log($"[EndingPage4Controller] OnEnter: {Time.time}");
-            
-            // 연출 시작 전 화면을 투명하게 초기화하여 자연스러운 페이드 인을 준비합니다.
-            // (실제 페이드 인은 BaseFlowManager의 TransitionRoutine에서 수행됩니다)
             SetAlpha(0f);
 
             if (redLineImage)
@@ -90,9 +86,6 @@ namespace My.Scripts._18_Ending.Pages
             Debug.Log($"[EndingPage4Controller] End Sequence: {Time.time}");
             CompleteStep();
         }
-
-        // [삭제됨] FadePageAlpha 메서드는 BaseFlowManager의 TransitionRoutine과 기능이 중복되고
-        // 호출되지 않으므로 제거되었습니다.
 
         /// <summary>
         /// 이미지의 FillAmount를 조절하여 게이지가 차오르는 듯한 연출을 수행합니다. (붉은 실 연출용)

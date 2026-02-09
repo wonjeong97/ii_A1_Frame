@@ -127,8 +127,8 @@ namespace My.Scripts._18_Ending.Pages
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
             
-            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1.0f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1.0f));
+            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 0.1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 0.1f));
 
             // 4. 타이머 진행 (30초 고정)
             float currentTimer = 0f;
@@ -158,8 +158,8 @@ namespace My.Scripts._18_Ending.Pages
 
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
-            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 1.0f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 1.0f));
+            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 0.1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 0.1f));
             
             yield return CoroutineData.GetWaitForSeconds(1.0f); 
 

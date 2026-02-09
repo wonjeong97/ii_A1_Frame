@@ -41,8 +41,8 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private float minY = -200f; // Y축 최소 범위
         [SerializeField] private float maxY = 250f; // Y축 최대 범위
         
-        [SerializeField] private float fadeDuration = 0.5f; // 텍스트 페이드 시간
-        [SerializeField] private float centerMoveTime = 0.5f; // 중앙 복귀 연출 시간
+        private readonly float fadeDuration = 0.1f; // 텍스트 페이드 시간
+        private readonly float centerMoveTime = 0.1f; // 중앙 복귀 연출 시간
 
         // 내부 로직 변수
         private Vector2 _initialPos; // 초기 위치 저장
@@ -61,8 +61,7 @@ namespace My.Scripts._01_Tutorial.Pages
         protected override void SetupData(TutorialPage6Data data)
         {
             // 첫 텍스트 적용
-            if (descriptionText) 
-                UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
+            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
             
             // 이후 사용될 텍스트 데이터 캐싱
             _dataA_Info = data.txtA_Info;
@@ -79,7 +78,7 @@ namespace My.Scripts._01_Tutorial.Pages
             base.OnEnter();
             
             // 초기 위치 저장 (최초 1회)
-            if (!_isInitialized && imageFocus != null)
+            if (!_isInitialized && imageFocus)
             {
                 _initialPos = imageFocus.rectTransform.anchoredPosition;
                 _isInitialized = true;
@@ -99,8 +98,7 @@ namespace My.Scripts._01_Tutorial.Pages
             SetAlpha(1f);
             SetTextAlpha(1f);
         }
-
-        // OnExit은 부모 클래스에서 리셋 처리를 하므로, 고유 로직만 추가 처리
+        
         public override void OnExit()
         {
             // 실행 중인 시퀀스 코루틴 정지
@@ -120,7 +118,7 @@ namespace My.Scripts._01_Tutorial.Pages
             // 1. 입력 감지
             if (Input.anyKey || Input.touchCount > 0)
             {
-                // 리셋 취소 (부드럽게)
+                // 리셋 취소
                 ResetIdleState(false);
 
                 // 연출 중이 아닐 때만 조작 허용
