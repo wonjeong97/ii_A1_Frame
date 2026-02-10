@@ -35,6 +35,20 @@ namespace My.Scripts._01_Tutorial.Pages
         private bool isLightOnB; // 플레이어 B 점등 여부
         private bool _completionStarted; // 완료 시퀀스 진행 여부
 
+        // 휠 입력 추적 변수
+        private int _lastP1Key = -1;
+        private int _p1StepCount = 0;
+        private float _p1LastTime;
+        private int _p1LastDir; // 1: CW, -1: CCW
+
+        private int _lastP2Key = -1;
+        private int _p2StepCount = 0;
+        private float _p2LastTime;
+        private int _p2LastDir;
+        
+        private const int StepsForFullRotation = 4; // 한 바퀴 판정 기준
+        private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
+
         /// <summary>  데이터 설정: 닉네임 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage4Data data)
         {
@@ -55,6 +69,10 @@ namespace My.Scripts._01_Tutorial.Pages
             isLightOnB = false;
             _completionStarted = false;
             
+            // 휠 상태 초기화
+            _lastP1Key = -1; _p1StepCount = 0; _p1LastDir = 0; _p1LastTime = 0f;
+            _lastP2Key = -1; _p2StepCount = 0; _p2LastDir = 0; _p2LastTime = 0f;
+            
             // 팝업 즉시 끄기 및 타이머 초기화
             ResetIdleState(true); 
             
@@ -70,20 +88,116 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             if (_completionStarted) return; // 완료 시퀀스 중이면 로직 중단
 
-            // 1. 입력 감지
+            HandleWheelInput();
+
+            // 입력 감지 (리셋 타이머 초기화용)
             if (Input.anyKey || Input.touchCount > 0)
             {
-                ResetIdleState(false); // 부드럽게 리셋 취소
-
-                // 테스트용 키 입력 (1, 2번 키)
-                if (Input.GetKeyDown(KeyCode.Alpha1)) ActivatePlayerCheck(true);
-                if (Input.GetKeyDown(KeyCode.Alpha2)) ActivatePlayerCheck(false);
+                ResetIdleState(false); 
             }
             else
             {
-                // 2. 비활성 시간 누적
                 UpdateInactivity();
             }
+        }
+
+        /// <summary> 휠 회전 감지 및 점등 처리 (관성 보정 포함) </summary>
+        private void HandleWheelInput()
+        {
+            float now = Time.time;
+
+            // --- Player 1 (1~4) ---
+            if (!isLightOnA) // 이미 완료된 경우 체크 안 함
+            {
+                int p1Key = GetPressedKeyIndex(1, 4);
+                if (p1Key != -1)
+                {
+                    if (_lastP1Key != -1)
+                    {
+                        int diff = (p1Key - _lastP1Key + 4) % 4;
+                        int currentDir = 0;
+                        
+                        if (diff == 1) currentDir = 1;       // CW
+                        else if (diff == 3) currentDir = -1; // CCW
+
+                        // [관성 보정] 빠른 입력 시 방향 역전이나 점프(2칸) 무시하고 이전 방향 유지
+                        if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
+                        {
+                            if (diff == 2 || (currentDir != 0 && currentDir != _p1LastDir))
+                            {
+                                currentDir = _p1LastDir;
+                            }
+                        }
+
+                        if (currentDir != 0)
+                        {
+                            if (currentDir == _p1LastDir) _p1StepCount++;
+                            else _p1StepCount = 1;
+
+                            _p1LastDir = currentDir;
+                            _p1LastTime = now;
+
+                            if (_p1StepCount >= StepsForFullRotation)
+                            {
+                                ActivatePlayerCheck(true);
+                            }
+                        }
+                    }
+                    _lastP1Key = p1Key;
+                }
+            }
+
+            // --- Player 2 (5~8) ---
+            if (!isLightOnB)
+            {
+                int p2Key = GetPressedKeyIndex(5, 8);
+                if (p2Key != -1)
+                {
+                    if (_lastP2Key != -1)
+                    {
+                        int currIdx = p2Key - 5;
+                        int lastIdx = _lastP2Key - 5;
+                        int diff = (currIdx - lastIdx + 4) % 4;
+                        
+                        int currentDir = 0;
+                        if (diff == 1) currentDir = 1;       // CW
+                        else if (diff == 3) currentDir = -1; // CCW
+
+                        // [관성 보정]
+                        if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0)
+                        {
+                            if (diff == 2 || (currentDir != 0 && currentDir != _p2LastDir))
+                            {
+                                currentDir = _p2LastDir;
+                            }
+                        }
+
+                        if (currentDir != 0)
+                        {
+                            if (currentDir == _p2LastDir) _p2StepCount++;
+                            else _p2StepCount = 1;
+
+                            _p2LastDir = currentDir;
+                            _p2LastTime = now;
+
+                            if (_p2StepCount >= StepsForFullRotation)
+                            {
+                                ActivatePlayerCheck(false);
+                            }
+                        }
+                    }
+                    _lastP2Key = p2Key;
+                }
+            }
+        }
+
+        private int GetPressedKeyIndex(int start, int end)
+        {
+            for (int i = start; i <= end; i++)
+            {
+                if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha0 + i))) return i;
+            }
+            return -1;
         }
 
         /// <summary> 플레이어 체크 활성화 (점등 연출). </summary>

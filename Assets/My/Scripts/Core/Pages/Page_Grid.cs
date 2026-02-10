@@ -58,6 +58,18 @@ namespace My.Scripts.Core.Pages
         private const float BlinkThreshold = 10f; // 1차 경고 고정 시간
         private bool _is1stWarningDone = false; // 1차 경고 완료 여부
 
+        // --- 휠 입력 및 관성 보정 변수 ---
+        private int _lastP1Key = -1;
+        private int _lastP2Key = -1;
+        
+        private float _p1LastTime;
+        private int _p1LastDir; // 1: CW(Right), -1: CCW(Left)
+        
+        private float _p2LastTime;
+        private int _p2LastDir; // 1: CW(Down), -1: CCW(Up)
+
+        private const float FastInputThreshold = 0.2f; // 빠른 입력 판단 기준 시간 (초)
+
         // 셀 페이드 정보 관리
         private class CellFadeInfo
         {
@@ -102,6 +114,12 @@ namespace My.Scripts.Core.Pages
             base.OnEnter();
             _hasMoved = false;
             _isInputBlocked = false;
+
+            // 휠 상태 초기화
+            _lastP1Key = -1;
+            _lastP2Key = -1;
+            _p1LastTime = 0f; _p1LastDir = 0;
+            _p2LastTime = 0f; _p2LastDir = 0;
 
             ResetIdleState(true); // 즉시 초기화
 
@@ -284,16 +302,78 @@ namespace My.Scripts.Core.Pages
         }
 
         // --- 게임 로직 (이동) ---
-        /// <summary> 방향키 입력에 따른 이동 처리 </summary>
+        /// <summary> 휠 입력(1~4:좌우, 5~8:상하)에 따른 이동 처리 (관성 보정 포함) </summary>
         private void HandleMovement()
         {
             if (!imageFocus || _isInputBlocked || _isStageCompleted) return;
 
             int dx = 0, dy = 0;
-            if (Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;
-            else if (Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;
-            else if (Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
-            else if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
+            float now = Time.time;
+
+            // 1. Player 1 (Horizontal: 1~4) -> 좌우
+            int p1Key = GetPressedKeyIndex(1, 4);
+            if (p1Key != -1)
+            {
+                if (_lastP1Key != -1)
+                {
+                    int diff = (p1Key - _lastP1Key + 4) % 4;
+                    int dir = 0; // 1: CW(Right), -1: CCW(Left)
+
+                    if (diff == 1) dir = 1;
+                    else if (diff == 3) dir = -1;
+
+                    // [관성 보정] 빠른 입력 시, 방향 역전이나 점프(diff 2)가 감지되면 이전 방향 유지
+                    if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
+                    {
+                        if (diff == 2 || (dir != 0 && dir != _p1LastDir))
+                        {
+                            dir = _p1LastDir;
+                        }
+                    }
+
+                    if (dir != 0)
+                    {
+                        dx = (dir == 1) ? 1 : -1;
+                        _p1LastDir = dir;
+                        _p1LastTime = now;
+                    }
+                }
+                _lastP1Key = p1Key;
+            }
+
+            // 2. Player 2 (Vertical: 5~8) -> 상하
+            int p2Key = GetPressedKeyIndex(5, 8);
+            if (p2Key != -1)
+            {
+                if (_lastP2Key != -1)
+                {
+                    // 5~8을 0~3 인덱스로 변환
+                    int currIdx = p2Key - 5;
+                    int lastIdx = _lastP2Key - 5;
+                    int diff = (currIdx - lastIdx + 4) % 4;
+                    int dir = 0; // 1: CW(Down), -1: CCW(Up)
+
+                    if (diff == 1) dir = 1;
+                    else if (diff == 3) dir = -1;
+
+                    // [관성 보정]
+                    if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0)
+                    {
+                        if (diff == 2 || (dir != 0 && dir != _p2LastDir))
+                        {
+                            dir = _p2LastDir;
+                        }
+                    }
+
+                    if (dir != 0)
+                    {
+                        dy = (dir == 1) ? 1 : -1;
+                        _p2LastDir = dir;
+                        _p2LastTime = now;
+                    }
+                }
+                _lastP2Key = p2Key;
+            }
 
             if (dx != 0 || dy != 0)
             {
@@ -319,6 +399,16 @@ namespace My.Scripts.Core.Pages
                 int nextX = _currentGridX + dx, nextY = _currentGridY + dy;
                 if (nextX >= 0 && nextX < gridSize && nextY >= 0 && nextY < gridSize) SetFocusToGrid(nextX, nextY);
             }
+        }
+
+        /// <summary> 키 입력 헬퍼 (범위 내 눌린 키 인덱스 반환) </summary>
+        private int GetPressedKeyIndex(int start, int end)
+        {
+            for (int i = start; i <= end; i++)
+            {
+                if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha0 + i))) return i;
+            }
+            return -1;
         }
 
         /// <summary> 텍스트 알파값 페이드 유틸리티 </summary>
