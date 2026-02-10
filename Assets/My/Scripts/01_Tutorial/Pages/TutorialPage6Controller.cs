@@ -31,180 +31,260 @@ namespace My.Scripts._01_Tutorial.Pages
     public class TutorialPage6Controller : PopupGamePage<TutorialPage6Data>
     {
         [Header("Page 6 UI")]
-        [SerializeField] private Text descriptionText; // 설명 텍스트 UI
-        [SerializeField] private Image imageFocus; // 조작 대상 이미지
+        [SerializeField] private Text descriptionText;
+        [SerializeField] private Image imageFocus;
 
         [Header("Settings")]
-        [SerializeField] private float moveSpeed = 500f; // 이동 속도
-        [SerializeField] private float minX = -400; // X축 최소 범위
-        [SerializeField] private float maxX = 400f; // X축 최대 범위
-        [SerializeField] private float minY = -200f; // Y축 최소 범위
-        [SerializeField] private float maxY = 250f; // Y축 최대 범위
+        [SerializeField] private float stepDistance = 50f; // 휠 1클릭당 이동 거리
+        [SerializeField] private float smoothTime = 0.1f;  // 부드러운 이동 시간
+        [SerializeField] private float minX = -400;
+        [SerializeField] private float maxX = 400f;
+        [SerializeField] private float minY = -200f;
+        [SerializeField] private float maxY = 250f;
         
-        private readonly float fadeDuration = 0.1f; // 텍스트 페이드 시간
-        private readonly float centerMoveTime = 0.1f; // 중앙 복귀 연출 시간
+        private readonly float fadeDuration = 0.1f;
+        private readonly float centerMoveTime = 0.1f;
 
-        // 내부 로직 변수
-        private Vector2 _initialPos; // 초기 위치 저장
-        private bool _isInitialized; // 초기화 여부
-        private bool _hasStarted; // 조작 시작 여부
-        private bool _isInputBlocked; // 입력 차단 여부 (연출 중)
-        private int _currentStage; // 현재 단계 (0: A, 1: B)
+        private Vector2 _initialPos;
+        private Vector2 _targetPos; // 목표 위치 
+        private Vector2 _currentVelocity; // SmoothDamp용 속도 변수
+
+        private bool _isInitialized;
+        private bool _hasStarted;
+        private bool _isInputBlocked;
+        private int _currentStage; 
 
         private TextSetting _dataA_Info;
         private TextSetting _dataB_Start;
         private TextSetting _dataB_Info;
         
-        private Coroutine _stageSequenceRoutine; // 시퀀스 코루틴
+        private Coroutine _stageSequenceRoutine;
 
-        /// <summary> 데이터 설정: 텍스트 데이터 캐싱 및 팝업 메시지 설정 </summary>
+        // 휠 입력 추적 변수
+        private int _lastP1Key = -1;
+        private float _p1LastTime;
+        private int _p1LastDir;
+
+        private int _lastP2Key = -1;
+        private float _p2LastTime;
+        private int _p2LastDir;
+
+        private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
+
         protected override void SetupData(TutorialPage6Data data)
         {
-            // 첫 텍스트 적용
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
-            
-            // 이후 사용될 텍스트 데이터 캐싱
             _dataA_Info = data.txtA_Info;
             _dataB_Start = data.txtB_Start;
             _dataB_Info = data.txtB_Info;
-
-            // 팝업 메시지 설정
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary>  페이지 진입: 상태 및 위치 초기화 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             
-            // 초기 위치 저장 (최초 1회)
             if (!_isInitialized && imageFocus)
             {
                 _initialPos = imageFocus.rectTransform.anchoredPosition;
                 _isInitialized = true;
             }
 
-            // 상태 리셋
             _hasStarted = false;
             _isInputBlocked = false;
             _currentStage = 0; 
             _stageSequenceRoutine = null; 
             
-            // 팝업 즉시 끄기 및 타이머 초기화
+            // 휠 상태 초기화
+            _lastP1Key = -1; _p1LastDir = 0; _p1LastTime = 0f;
+            _lastP2Key = -1; _p2LastDir = 0; _p2LastTime = 0f;
+            
             ResetIdleState(true);
             
-            // UI 초기화
-            if (imageFocus) imageFocus.rectTransform.anchoredPosition = _initialPos;
+            if (imageFocus) 
+            {
+                imageFocus.rectTransform.anchoredPosition = _initialPos;
+                _targetPos = _initialPos; // 목표 위치 초기화
+            }
             SetAlpha(1f);
             SetTextAlpha(1f);
         }
         
-        public override void OnExit()
-        {
-            // 실행 중인 시퀀스 코루틴 정지
-            if (_stageSequenceRoutine != null)
-            {
-                StopCoroutine(_stageSequenceRoutine);
-                _stageSequenceRoutine = null;
-            }
-            StopAllCoroutines();
-
-            base.OnExit(); // 부모의 StopResetSequence 호출
-        }
-
-        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
-            // 1. 입력 감지
+            if (!_isInputBlocked)
+            {
+                HandleWheelInput();
+            }
+
+            // 부드러운 이동 처리
+            if (imageFocus)
+            {
+                imageFocus.rectTransform.anchoredPosition = Vector2.SmoothDamp(
+                    imageFocus.rectTransform.anchoredPosition, 
+                    _targetPos, 
+                    ref _currentVelocity, 
+                    smoothTime
+                );
+            }
+
+            // 입력 감지 및 비활성 체크
             if (Input.anyKey || Input.touchCount > 0)
             {
-                // 리셋 취소
                 ResetIdleState(false);
-
-                // 연출 중이 아닐 때만 조작 허용
-                if (!_isInputBlocked)
-                {
-                    HandleInputByStage();
-                }
             }
             else
             {
-                // 2. 비활성 시간 누적 (부모 메서드)
-                // 연출 중(_isInputBlocked)일 때는 시간을 누적하지 않음
                 UpdateInactivity(_isInputBlocked);
             }
         }
 
-        /// <summary>  단계별(A/B) 입력 처리 및 이동 로직 </summary>
-        private void HandleInputByStage()
+        /// <summary> 휠 시퀀스 입력 처리 (관성 보정 포함) </summary>
+        private void HandleWheelInput()
         {
             if (imageFocus == null) return;
 
-            Vector2 moveDir = Vector2.zero;
-            
-            // 단계별 허용 키 확인
-            if (_currentStage == 0) // A: 상하
+            int direction = 0; // 0:None, 1:Positive(Down/Right), -1:Negative(Up/Left)
+            float now = Time.time;
+
+            // Stage A: P1 (1~4) -> Vertical
+            if (_currentStage == 0)
             {
-                if (Input.GetKey(KeyCode.UpArrow)) moveDir.y = 1;
-                else if (Input.GetKey(KeyCode.DownArrow)) moveDir.y = -1;
+                int currentKey = GetPressedKeyIndex(1, 4);
+                if (currentKey != -1)
+                {
+                    if (_lastP1Key != -1)
+                    {
+                        int diff = (currentKey - _lastP1Key + 4) % 4;
+                        int dir = 0;
+
+                        if (diff == 1) dir = 1;       // CW (Down)
+                        else if (diff == 3) dir = -1; // CCW (Up)
+
+                        // [관성 보정]
+                        if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
+                        {
+                            if (diff == 2 || (dir != 0 && dir != _p1LastDir))
+                            {
+                                dir = _p1LastDir;
+                            }
+                        }
+
+                        if (dir != 0)
+                        {
+                            direction = dir;
+                            _p1LastDir = dir;
+                            _p1LastTime = now;
+                        }
+                    }
+                    _lastP1Key = currentKey;
+                }
             }
-            else // B: 좌우
+            // Stage B: P2 (5~8) -> Horizontal
+            else
             {
-                if (Input.GetKey(KeyCode.RightArrow)) moveDir.x = 1;
-                else if (Input.GetKey(KeyCode.LeftArrow)) moveDir.x = -1;
+                int currentKey = GetPressedKeyIndex(5, 8);
+                if (currentKey != -1)
+                {
+                    if (_lastP2Key != -1)
+                    {
+                        // 5~8을 0~3으로 매핑
+                        int currIdx = currentKey - 5;
+                        int lastIdx = _lastP2Key - 5;
+                        int diff = (currIdx - lastIdx + 4) % 4;
+                        int dir = 0;
+                        
+                        if (diff == 1) dir = 1;       // CW (Right)
+                        else if (diff == 3) dir = -1; // CCW (Left)
+
+                        // [관성 보정]
+                        if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0)
+                        {
+                            if (diff == 2 || (dir != 0 && dir != _p2LastDir))
+                            {
+                                dir = _p2LastDir;
+                            }
+                        }
+
+                        if (dir != 0)
+                        {
+                            direction = dir;
+                            _p2LastDir = dir;
+                            _p2LastTime = now;
+                        }
+                    }
+                    _lastP2Key = currentKey;
+                }
             }
 
-            // 이동 입력 발생 시
-            if (moveDir != Vector2.zero)
+            // 이동 적용
+            if (direction != 0)
             {
-                // 첫 조작 시 시퀀스 시작
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
-                // 이동 처리 (범위 제한 포함)
-                Vector2 currentPos = imageFocus.rectTransform.anchoredPosition;
-                Vector2 nextPos = currentPos + (moveDir * (moveSpeed * Time.deltaTime));
-
-                if (_currentStage == 0)
+                if (_currentStage == 0) // Vertical
                 {
-                    nextPos.x = _initialPos.x;
-                    nextPos.y = Mathf.Clamp(nextPos.y, _initialPos.y + minY, _initialPos.y + maxY);
+                    // 방향: 1(Down/Y-), -1(Up/Y+) -- 좌표계 주의
+                    // CW(Down) -> y값 감소, CCW(Up) -> y값 증가
+                    float moveY = (direction == 1) ? -stepDistance : stepDistance;
+                    
+                    _targetPos.y += moveY;
+                    _targetPos.y = Mathf.Clamp(_targetPos.y, _initialPos.y + minY, _initialPos.y + maxY);
+                    _targetPos.x = _initialPos.x; // 축 고정
                 }
-                else
+                else // Horizontal
                 {
-                    nextPos.y = _initialPos.y;
-                    nextPos.x = Mathf.Clamp(nextPos.x, _initialPos.x + minX, _initialPos.x + maxX);
+                    // CW(Right) -> x값 증가, CCW(Left) -> x값 감소
+                    float moveX = (direction == 1) ? stepDistance : -stepDistance;
+                    
+                    _targetPos.x += moveX;
+                    _targetPos.x = Mathf.Clamp(_targetPos.x, _initialPos.x + minX, _initialPos.x + maxX);
+                    _targetPos.y = _initialPos.y; // 축 고정
                 }
-                imageFocus.rectTransform.anchoredPosition = nextPos;
             }
+        }
+
+        /// <summary> 지정된 범위의 숫자 키 중 눌린 키 반환 (없으면 -1) </summary>
+        private int GetPressedKeyIndex(int start, int end)
+        {
+            for (int i = start; i <= end; i++)
+            {
+                KeyCode key = (KeyCode)((int)KeyCode.Alpha0 + i);
+                if (Input.GetKeyDown(key)) return i;
+            }
+            return -1;
         }
 
         /// <summary> 조작 후 대기 및 다음 단계 자동 전환 </summary>
         private IEnumerator ProcessStageSequence()
         {
-            yield return CoroutineData.GetWaitForSeconds(5.0f); // 5초간 자유 조작
+            yield return CoroutineData.GetWaitForSeconds(5.0f); 
 
-            _isInputBlocked = true; // 입력 차단 (이때부터 비활성 타이머도 멈춤)
-            StartCoroutine(MoveFocusToCenter()); // 중앙 복귀 연출
+            _isInputBlocked = true; 
+            StartCoroutine(MoveFocusToCenter()); 
 
             if (_currentStage == 0)
             {
-                // Stage A -> B 전환
                 yield return StartCoroutine(TextChangeSequence(_dataA_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
                 yield return StartCoroutine(TextChangeSequence(_dataB_Start));
 
                 _currentStage = 1;
                 _hasStarted = false;
-                _isInputBlocked = false; // 입력 재개 (비활성 타이머 다시 작동)
+                _isInputBlocked = false;
                 _stageSequenceRoutine = null;
+                
+                // P2 입력 초기화
+                _lastP2Key = -1;
+                _p2LastDir = 0;
+                _p2LastTime = 0f;
             }
             else
             {
-                // Stage B -> 완료
                 yield return StartCoroutine(TextChangeSequence(_dataB_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
                 CompleteStep(); 
@@ -212,13 +292,13 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary>  이미지를 중앙으로 부드럽게 복귀시킴 </summary>
         private IEnumerator MoveFocusToCenter()
         {
             if (imageFocus == null) yield break;
             float timer = 0f;
             Vector2 startPos = imageFocus.rectTransform.anchoredPosition;
-            
+            _targetPos = _initialPos; // 목표 위치도 리셋
+
             while (timer < centerMoveTime)
             {
                 timer += Time.deltaTime;
@@ -228,8 +308,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             imageFocus.rectTransform.anchoredPosition = _initialPos;
         }
-
-        /// <summary>  텍스트 교체 연출 (페이드 아웃 -> 교체 -> 페이드 인) </summary>
+        
         private IEnumerator TextChangeSequence(TextSetting newTextData)
         {
             yield return StartCoroutine(FadeTextRoutine(1f, 0f));
@@ -240,7 +319,6 @@ namespace My.Scripts._01_Tutorial.Pages
             yield return StartCoroutine(FadeTextRoutine(0f, 1f));
         }
 
-        /// <summary>  텍스트 알파값 조절 코루틴 </summary>
         private IEnumerator FadeTextRoutine(float startAlpha, float endAlpha)
         {
             if (descriptionText == null) yield break;
@@ -256,7 +334,6 @@ namespace My.Scripts._01_Tutorial.Pages
             SetTextAlpha(endAlpha);
         }
 
-        /// <summary>  텍스트 알파값 즉시 설정 </summary>
         private void SetTextAlpha(float alpha)
         {
             if (descriptionText == null) return;
