@@ -110,6 +110,16 @@ namespace My.Scripts._01_Tutorial.Pages
             SetTextAlpha(1f);
         }
         
+        public override void OnExit()
+        {
+            if (_stageSequenceRoutine != null)
+            {
+                StopCoroutine(_stageSequenceRoutine);
+                _stageSequenceRoutine = null;
+            }
+            base.OnExit();
+        }
+        
         private void Update()
         {
             if (!_isInputBlocked)
@@ -265,7 +275,9 @@ namespace My.Scripts._01_Tutorial.Pages
             yield return CoroutineData.GetWaitForSeconds(5.0f); 
 
             _isInputBlocked = true; 
-            StartCoroutine(MoveFocusToCenter()); 
+            
+            // 코루틴 대신 메서드 직접 호출 (Update의 SmoothDamp가 이동 처리)
+            MoveFocusToCenter(); 
 
             if (_currentStage == 0)
             {
@@ -292,21 +304,11 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        private IEnumerator MoveFocusToCenter()
+        // 직접 Lerp를 돌리지 않고 TargetPos만 설정하여 Update와 충돌 방지
+        private void MoveFocusToCenter()
         {
-            if (imageFocus == null) yield break;
-            float timer = 0f;
-            Vector2 startPos = imageFocus.rectTransform.anchoredPosition;
-            _targetPos = _initialPos; // 목표 위치도 리셋
-
-            while (timer < centerMoveTime)
-            {
-                timer += Time.deltaTime;
-                float progress = Mathf.SmoothStep(0f, 1f, timer / centerMoveTime);
-                imageFocus.rectTransform.anchoredPosition = Vector2.Lerp(startPos, _initialPos, progress);
-                yield return null;
-            }
-            imageFocus.rectTransform.anchoredPosition = _initialPos;
+            if (imageFocus == null) return;
+            _targetPos = _initialPos; // 목표 위치를 중앙(초기 위치)으로 설정
         }
         
         private IEnumerator TextChangeSequence(TextSetting newTextData)
