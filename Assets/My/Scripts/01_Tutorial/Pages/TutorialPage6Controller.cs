@@ -105,6 +105,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 imageFocus.rectTransform.anchoredPosition = _initialPos;
                 _targetPos = _initialPos; // 목표 위치 초기화
+                _currentVelocity = Vector2.zero;
             }
             SetAlpha(1f);
             SetTextAlpha(1f);
