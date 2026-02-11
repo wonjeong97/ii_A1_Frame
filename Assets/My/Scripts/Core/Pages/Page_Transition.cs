@@ -14,7 +14,6 @@ namespace My.Scripts.Core.Pages
     public class Page_Transition : PopupGamePage<TransitionPageData>
     {
         [Header("Mode Settings")]
-        [SerializeField] private bool useButtonAnim; // 버튼 연출 사용 여부 (Page 4)
         [SerializeField] private bool autoPass = true; // 자동 넘김 여부
         [SerializeField] private float autoPassDelay = 4.0f; // 자동 넘김 대기 시간
         
@@ -25,9 +24,6 @@ namespace My.Scripts.Core.Pages
         [SerializeField] private Text descriptionText; // 설명 텍스트
         [SerializeField] private CanvasGroup contentGroup; // 콘텐츠 그룹
 
-        [Header("Button Mode UI")] 
-        [SerializeField] private RectTransform buttonRect; // 버튼 UI (Page 4)
-
         [Header("Intro Mode UI (Optional)")]
         [SerializeField] private Text playerAName; // 플레이어 A 이름
         [SerializeField] private Text playerBName; // 플레이어 B 이름
@@ -36,7 +32,6 @@ namespace My.Scripts.Core.Pages
         private bool _isCompleted; // 완료 여부
         private float _enterTime; // 진입 시간
 
-        
         /// <summary> 데이터 설정: 텍스트 및 팝업 메시지 적용 </summary>
         protected override void SetupData(TransitionPageData data)
         {
@@ -63,7 +58,6 @@ namespace My.Scripts.Core.Pages
             // UI 초기화
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
-            if (buttonRect) buttonRect.localScale = Vector3.one;
             
             if (gameObject.name == "Page6" && SceneManager.GetActiveScene().name == GameConstants.Scene.PlayQ15)
             {
@@ -88,7 +82,7 @@ namespace My.Scripts.Core.Pages
                 // 입력 시 리셋 타이머 초기화 (부드럽게)
                 ResetIdleState(false);
 
-                // Space 키 입력 시 다음 단계로 진행 (Page 4 버튼 기능)
+                // Space 키 입력 시 다음 단계로 진행 (수동 넘김)
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
                     _isCompleted = true;
@@ -102,7 +96,7 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>  연출 시퀀스 (등장 -> 대기/애니메이션 -> 퇴장) </summary>
+        /// <summary>  연출 시퀀스 (등장 -> 대기 -> 퇴장) </summary>
         private IEnumerator SequenceRoutine()
         {
             // 1. 콘텐츠 등장
@@ -112,25 +106,19 @@ namespace My.Scripts.Core.Pages
                 yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 1f));
             }
             
-            // 2. 모드별 동작
-            if (useButtonAnim && buttonRect)
+            // 2. 대기
+            if (autoPass)
             {
-                // 버튼 애니메이션 재생 (입력 대기 상태)
-                yield return StartCoroutine(ButtonAnim());
-            }
-            else if (autoPass)
-            {
-                // 자동 넘김 대기
                 yield return CoroutineData.GetWaitForSeconds(autoPassDelay);
             }
 
-            // 3. 종료 처리 (자동 넘김인 경우)
+            // 3. 종료 처리
             if (!_isCompleted && autoPass) 
             {
                 // 유지 옵션이 꺼져있을 때만 페이드 아웃
                 if (!keepContentOnFinish)
                 {
-                    if (!useButtonAnim && descriptionText)
+                    if (descriptionText)
                     {
                         yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.5f));
                         if (namesGroup)
@@ -158,88 +146,6 @@ namespace My.Scripts.Core.Pages
             }
 
             cg.alpha = end;
-        }
-        
-       /// <summary> 버튼 연출 애니메이션 </summary>
-        private IEnumerator ButtonAnim()
-        {
-            // 알파값 조절을 위해 Image 컴포넌트 가져오기
-            Image btnImage = buttonRect  ? buttonRect.GetComponent<Image>() : null;
-
-            // _isCompleted가 될 때까지 전체 시퀀스 무한 반복
-            while (!_isCompleted)
-            {
-                // 깜빡임 애니메이션 (투명도 조절)
-                // 2회 반복 재생
-                for (int i = 0; i < 2; i++)
-                {
-                    if (_isCompleted) yield break;
-
-                    // Fade Out (1 -> 0.1)
-                    float t = 0;
-                    while (t < 0.5f)
-                    {
-                        if (_isCompleted) yield break;
-                        t += Time.deltaTime;
-                        
-                        if (btnImage)
-                        {
-                            Color c = btnImage.color;
-                            c.a = Mathf.Lerp(1f, 0.1f, t / 0.5f);
-                            btnImage.color = c;
-                        }
-                        yield return null;
-                    }
-
-                    // Fade In (0.3 -> 1)
-                    t = 0;
-                    while (t < 0.5f)
-                    {
-                        if (_isCompleted) yield break;
-                        t += Time.deltaTime;
-                        
-                        if (btnImage)
-                        {
-                            Color c = btnImage.color;
-                            c.a = Mathf.Lerp(0.1f, 1f, t / 0.5f);
-                            btnImage.color = c;
-                        }
-                        yield return null;
-                    }
-                }
-
-                // [기존] 스케일 애니메이션 (주석 처리됨)
-                /*
-                for (int i = 0; i < 2; i++)
-                {
-                    if (_isCompleted) yield break;
-                    
-                    float t = 0;
-                    while (t < 0.5f)
-                    {
-                        if (_isCompleted) yield break;
-                        t += Time.deltaTime;
-                        buttonRect.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.9f, Mathf.SmoothStep(0, 1, t / 0.5f));
-                        yield return null;
-                    }
-                    
-                    t = 0;
-                    while (t < 0.5f)
-                    {
-                        if (_isCompleted) yield break;
-                        t += Time.deltaTime;
-                        buttonRect.localScale = Vector3.Lerp(Vector3.one * 0.9f, Vector3.one, Mathf.SmoothStep(0, 1, t / 0.5f));
-                        yield return null;
-                    }
-                }
-                */
-
-                // 2회 재생 후 1초 대기
-                if (!_isCompleted)
-                {
-                    yield return CoroutineData.GetWaitForSeconds(1.0f);
-                }
-            }
         }
     }
 }

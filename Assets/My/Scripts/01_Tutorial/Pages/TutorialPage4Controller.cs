@@ -26,16 +26,22 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("Page 4 UI")]
         [SerializeField] private Text nicknameA; // 플레이어 A 닉네임 UI
         [SerializeField] private Text nicknameB; // 플레이어 B 닉네임 UI
-        [SerializeField] private Image imgBackA; // 플레이어 A 배경 이미지 (Off)
-        [SerializeField] private Image imgLightA; // 플레이어 A 조명 이미지 (On)
-        [SerializeField] private Image imgBackB; // 플레이어 B 배경 이미지 (Off)
-        [SerializeField] private Image imgLightB; // 플레이어 B 조명 이미지 (On)
+        
+        [Tooltip("체크 표시가 나타날 배경 이미지")]
+        [SerializeField] private Image imgBackA; 
+        [Tooltip("완료 시 나타날 체크(V) 이미지")]
+        [SerializeField] private Image imgLightA; 
+        
+        [Tooltip("체크 표시가 나타날 배경 이미지")]
+        [SerializeField] private Image imgBackB; 
+        [Tooltip("완료 시 나타날 체크(V) 이미지")]
+        [SerializeField] private Image imgLightB; 
 
-        private bool isLightOnA; // 플레이어 A 점등 여부
-        private bool isLightOnB; // 플레이어 B 점등 여부
+        private bool isLightOnA; // 플레이어 A 완료 여부
+        private bool isLightOnB; // 플레이어 B 완료 여부
         private bool _completionStarted; // 완료 시퀀스 진행 여부
 
-        // 휠 입력 추적 변수
+        // 휠 입력 추적 변수 (관성 보정 포함)
         private int _lastP1Key = -1;
         private int _p1StepCount = 0;
         private float _p1LastTime;
@@ -49,13 +55,12 @@ namespace My.Scripts._01_Tutorial.Pages
         private const int StepsForFullRotation = 4; // 한 바퀴 판정 기준
         private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
 
-        /// <summary>  데이터 설정: 닉네임 적용 및 팝업 메시지 설정 </summary>
+        /// <summary>  데이터 설정 </summary>
         protected override void SetupData(TutorialPage4Data data)
         {
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
 
-            // 팝업 메시지 설정
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
@@ -64,7 +69,6 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             base.OnEnter();
             
-            // 로직 상태 리셋
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
@@ -73,24 +77,25 @@ namespace My.Scripts._01_Tutorial.Pages
             _lastP1Key = -1; _p1StepCount = 0; _p1LastDir = 0; _p1LastTime = 0f;
             _lastP2Key = -1; _p2StepCount = 0; _p2LastDir = 0; _p2LastTime = 0f;
             
-            // 팝업 즉시 끄기 및 타이머 초기화
             ResetIdleState(true); 
             
-            // 이미지 초기화 (Back 보임, Light 숨김)
+            // 이미지 초기화
+            // 배경(Back)은 보이고(Alpha 1), 체크(Light)는 숨김(Alpha 0)
             SetImageAlpha(imgBackA, 1f);
             SetImageAlpha(imgLightA, 0f);
+            if(imgLightA) imgLightA.gameObject.SetActive(false);
+
             SetImageAlpha(imgBackB, 1f);
             SetImageAlpha(imgLightB, 0f);
+            if(imgLightB) imgLightB.gameObject.SetActive(false);
         }
 
-        /// <summary> 매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
-            if (_completionStarted) return; // 완료 시퀀스 중이면 로직 중단
+            if (_completionStarted) return; 
 
             HandleWheelInput();
 
-            // 입력 감지 (리셋 타이머 초기화용)
             if (Input.anyKey || Input.touchCount > 0)
             {
                 ResetIdleState(false); 
@@ -101,13 +106,13 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 휠 회전 감지 및 점등 처리 </summary>
+        /// <summary> 휠 회전 감지 및 점등 처리 (관성 보정 포함) </summary>
         private void HandleWheelInput()
         {
             float now = Time.time;
 
             // --- Player 1 (1~4) ---
-            if (!isLightOnA) // 이미 완료된 경우 체크 안 함
+            if (!isLightOnA) 
             {
                 int p1Key = GetPressedKeyIndex(1, 4);
                 if (p1Key != -1)
@@ -120,7 +125,7 @@ namespace My.Scripts._01_Tutorial.Pages
                         if (diff == 1) currentDir = 1;       // CW
                         else if (diff == 3) currentDir = -1; // CCW
 
-                        // [관성 보정] 빠른 입력 시 방향 역전이나 점프(2칸) 무시하고 이전 방향 유지
+                        // [관성 보정]
                         if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
                         {
                             if (diff == 2 || (currentDir != 0 && currentDir != _p1LastDir))
@@ -200,26 +205,25 @@ namespace My.Scripts._01_Tutorial.Pages
             return -1;
         }
 
-        /// <summary> 플레이어 체크 활성화 (점등 연출). </summary>
+        /// <summary> 플레이어 체크 활성화 (체크 표시 V 등장) </summary>
         public void ActivatePlayerCheck(bool isPlayerA)
         {
-            // 외부 호출 시에도 리셋 로직 취소 (활동 감지)
             ResetIdleState(false);
 
             if (isPlayerA)
             {
                 if (isLightOnA) return; 
                 isLightOnA = true;
-                StartCoroutine(TransitionCheckImage(imgBackA, imgLightA));
+                // 배경(Back)은 그대로 두고 체크(Light)만 페이드 인
+                StartCoroutine(ShowCheckMarkRoutine(imgBackA, imgLightA));
             }
             else
             {
                 if (isLightOnB) return;
                 isLightOnB = true;
-                StartCoroutine(TransitionCheckImage(imgBackB, imgLightB));
+                StartCoroutine(ShowCheckMarkRoutine(imgBackB, imgLightB));
             }
             
-            // 양쪽 모두 켜졌는지 확인
             if (isLightOnA && isLightOnB)
             {
                 if (!_completionStarted)
@@ -237,17 +241,19 @@ namespace My.Scripts._01_Tutorial.Pages
             CompleteStep(); 
         }
 
-        /// <summary> 이미지 교차 페이드(Cross Fade) 연출 </summary>
-        private IEnumerator TransitionCheckImage(Image backImage, Image lightImage)
+        /// <summary> 
+        /// 체크 표시(V) 페이드 인 연출 
+        /// <para>수정됨: 배경(Back)은 투명해지지 않고 유지되며, 체크(Light)만 1초 동안 나타납니다.</para>
+        /// </summary>
+        private IEnumerator ShowCheckMarkRoutine(Image backImage, Image lightImage)
         {
-            if (!backImage || !lightImage) yield break;
+            // BackImage는 null 체크만 하고 알파값은 건드리지 않음 (배경 유지)
+            if (backImage == null || lightImage == null) yield break;
 
             float timer = 0f;
-            float duration = 1f;
+            float duration = 1.0f; // 1초 동안 페이드 인
             
-            Color backColor = backImage.color;
             Color lightColor = lightImage.color;
-            
             lightColor.a = 0f;
             lightImage.color = lightColor;
             lightImage.gameObject.SetActive(true);
@@ -257,9 +263,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 timer += Time.deltaTime;
                 float progress = timer / duration;
                 
-                // Back은 투명해지고, Light는 불투명해짐
-                backColor.a = Mathf.Lerp(1f, 0f, progress);
-                backImage.color = backColor;
+                // Light(체크 V)만 알파값 0 -> 1 증가
                 lightColor.a = Mathf.Lerp(0f, 1f, progress);
                 lightImage.color = lightColor;
                 
@@ -267,13 +271,10 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             
             // 최종값 보정
-            backColor.a = 0f;
-            backImage.color = backColor;
             lightColor.a = 1f;
             lightImage.color = lightColor;
         }
 
-        /// <summary>  이미지 투명도 즉시 설정 </summary>
         private void SetImageAlpha(Image img, float alpha)
         {
             if (img == null) return;

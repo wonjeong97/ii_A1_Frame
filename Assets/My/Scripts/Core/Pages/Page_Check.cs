@@ -16,27 +16,27 @@ namespace My.Scripts.Core.Pages
         [SerializeField] private Text waitText;  // 대기 텍스트
 
         [Header("Check Images")] 
-        [SerializeField] private Image imgBackA; // 플레이어 A 배경 (Off)
-        [SerializeField] private Image imgLightA; // 플레이어 A 조명 (On)
-        [SerializeField] private Image imgBackB; // 플레이어 B 배경 (Off)
-        [SerializeField] private Image imgLightB; // 플레이어 B 조명 (On)
+        [SerializeField] private Image imgBackA; // 플레이어 A 배경
+        [SerializeField] private Image imgLightA; // 플레이어 A 조명 (V 표시)
+        [SerializeField] private Image imgBackB; // 플레이어 B 배경
+        [SerializeField] private Image imgLightB; // 플레이어 B 조명
 
         private bool isLightOnA; // A 점등 여부
         private bool isLightOnB; // B 점등 여부
         private bool _completionStarted; // 완료 시퀀스 시작 여부
+        private float _enterTime; // 페이지 진입 시간 기록용
 
-        /// <summary> 데이터 설정: 닉네임/텍스트 및 팝업 메시지 적용 </summary>
+        /// <summary> 데이터 설정 </summary>
         protected override void SetupData(CheckPageData data)
         {
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
             if (waitText) UIManager.Instance.SetText(waitText.gameObject, data.waitText);
 
-            // 팝업 메시지 설정 (부모 메서드)
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary>  페이지 진입: 상태 초기화 </summary>
+        /// <summary>  페이지 진입 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -44,11 +44,11 @@ namespace My.Scripts.Core.Pages
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
+            _enterTime = Time.time; // 진입 시간 기록
 
-            // 팝업 즉시 끄기 및 타이머 초기화
             ResetIdleState(true);
 
-            // 이미지 초기화: 불 꺼짐(Back 1, Light 0)
+            // 이미지 초기화
             SetImgAlpha(imgBackA, 1f);
             SetImgAlpha(imgLightA, 0f);
             if (imgLightA) imgLightA.gameObject.SetActive(false);
@@ -58,15 +58,14 @@ namespace My.Scripts.Core.Pages
             if (imgLightB) imgLightB.gameObject.SetActive(false);
         }
         
-        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
+        /// <summary>  매 프레임 업데이트 </summary>
         private void Update()
         {
-            if (_completionStarted) return; // 완료 중이면 로직 중단
+            if (_completionStarted) return; 
 
-            // 1. 입력 감지
             bool inputDetected = false;
 
-            // Player A (1~5) 입력 체크
+            // Player A (1~5)
             if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Alpha2) || 
                 Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Alpha4) || 
                 Input.GetKeyDown(KeyCode.Alpha5))
@@ -75,7 +74,7 @@ namespace My.Scripts.Core.Pages
                 ActivatePlayerCheck(true);
             }
 
-            // Player B (6~0) 입력 체크
+            // Player B (6~0)
             if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Alpha7) || 
                 Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Alpha9) || 
                 Input.GetKeyDown(KeyCode.Alpha0))
@@ -84,41 +83,40 @@ namespace My.Scripts.Core.Pages
                 ActivatePlayerCheck(false);
             }
 
-            // 아무 키나 눌러도 리셋 방지 (위의 조건 외 입력 포함)
             if (inputDetected || Input.anyKey || Input.touchCount > 0)
             {
-                ResetIdleState(false); // 부드럽게 리셋 취소
+                ResetIdleState(false); 
             }
             else
             {
-                // 2. 비활성 시간 누적 (부모 메서드)
                 UpdateInactivity();
             }
         }
 
-        /// <summary>  플레이어 체크 활성화 (점등 및 완료 확인). </summary>
+        /// <summary>  플레이어 체크 활성화 (지연 로직 적용) </summary>
         public void ActivatePlayerCheck(bool isPlayerA)
         {
-            // 외부 호출 시에도 활동으로 간주하여 리셋 취소
             ResetIdleState(false);
+
+            // [수정] 페이지 진입 후 최소 0.5초가 지나야 불이 켜지도록 딜레이 계산
+            float delay = Mathf.Max(0f, 0.5f - (Time.time - _enterTime));
 
             if (isPlayerA)
             {
                 if (isLightOnA) return;
                 isLightOnA = true;
-                StartCoroutine(LightOnRoutine(imgBackA, imgLightA));
+                StartCoroutine(LightOnRoutine(imgBackA, imgLightA, delay));
             }
             else
             {
                 if (isLightOnB) return;
                 isLightOnB = true;
-                StartCoroutine(LightOnRoutine(imgBackB, imgLightB));
+                StartCoroutine(LightOnRoutine(imgBackB, imgLightB, delay));
             }
 
             CheckCompletion();
         }
 
-        /// <summary> 양쪽 완료 확인 </summary>
         private void CheckCompletion()
         {
             if (isLightOnA && isLightOnB && !_completionStarted)
@@ -128,40 +126,45 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator CompleteRoutine()
         {
-            yield return CoroutineData.GetWaitForSeconds(1.0f); // 1초 대기 후 완료
+            yield return CoroutineData.GetWaitForSeconds(1.0f);
             CompleteStep();
         }
 
-        /// <summary> 점등 연출 (Cross Fade) </summary>
-        private IEnumerator LightOnRoutine(Image back, Image light)
+        /// <summary> 
+        /// 점등 연출 (Delay + Fade In)
+        /// </summary>
+        private IEnumerator LightOnRoutine(Image back, Image light, float delay)
         {
             if (!back || !light) yield break;
+            
+            // 계산된 시간만큼 대기 (페이지 전환 직후 즉시 점등 방지)
+            if (delay > 0f) yield return CoroutineData.GetWaitForSeconds(delay);
+
             light.gameObject.SetActive(true);
+            Color cl = light.color;
+            cl.a = 0f;
+            light.color = cl;
 
-            float t = 0f, d = 1f;
-            Color cb = back.color, cl = light.color;
+            float t = 0f;
+            float duration = 1.0f; // 1초 페이드 인
 
-            while (t < d)
+            while (t < duration)
             {
                 t += Time.deltaTime;
-                float p = t / d;
-                cb.a = Mathf.Lerp(1f, 0f, p);
-                back.color = cb;
+                float p = t / duration;
+                
                 cl.a = Mathf.Lerp(0f, 1f, p);
                 light.color = cl;
+                
                 yield return null;
             }
 
-            cb.a = 0f;
-            back.color = cb;
             cl.a = 1f;
             light.color = cl;
         }
 
-        /// <summary> 이미지 투명도 즉시 설정 </summary>
         private void SetImgAlpha(Image i, float a)
         {
             if (i)
