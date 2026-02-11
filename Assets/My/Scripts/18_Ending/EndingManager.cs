@@ -95,7 +95,7 @@ namespace My.Scripts._18_Ending
         protected override void OnAllFinished()
         {
             Debug.Log("[EndingManager] 종료 -> 타이틀 이동");
-            if (GameManager.Instance != null)
+            if (GameManager.Instance)
             {
                 GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
             }

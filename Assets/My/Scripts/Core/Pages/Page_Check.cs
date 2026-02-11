@@ -141,7 +141,7 @@ namespace My.Scripts.Core.Pages
             if (!back || !light) yield break;
             light.gameObject.SetActive(true);
 
-            float t = 0f, d = 0.1f;
+            float t = 0f, d = 1f;
             Color cb = back.color, cl = light.color;
 
             while (t < d)

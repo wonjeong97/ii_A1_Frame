@@ -4,6 +4,7 @@ using My.Scripts._01_Tutorial.Pages;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -47,22 +48,22 @@ namespace My.Scripts._01_Tutorial
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>
         protected override void OnAllFinished()
         {
-            if (FadeManager.Instance != null)
+            if (!FadeManager.Instance)
             {
-                if (GameManager.Instance != null)
+                if (!GameManager.Instance)
                 {
                     GameManager.Instance.ChangeScene(GameConstants.Scene.PlayTutorial);
                 }
                 else
                 {
                     Debug.LogWarning("GameManager Missing. Force loading.");
-                    UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
+                    SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
                 }
             }
             else
             {
                 Debug.LogWarning("FadeManager Missing. Force loading.");
-                UnityEngine.SceneManagement.SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
+                SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
             }
         }
 
@@ -81,14 +82,14 @@ namespace My.Scripts._01_Tutorial
             GamePage next = pages[targetIndex];
 
             // 1. 현재 페이지 퇴장
-            if (current != null)
+            if (current)
             {
                 yield return StartCoroutine(FadePage(current, 1f, 0f));
                 current.OnExit();
             }
 
             // 2. 다음 페이지 준비
-            if (next != null)
+            if (next)
             {
                 next.OnEnter();
                 HandleTriggerInfo(next, info); // 정보 전달

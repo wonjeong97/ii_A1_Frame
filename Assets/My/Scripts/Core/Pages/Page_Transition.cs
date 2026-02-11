@@ -106,12 +106,10 @@ namespace My.Scripts.Core.Pages
         private IEnumerator SequenceRoutine()
         {
             // 1. 콘텐츠 등장
-            yield return StartCoroutine(FadeGroup(contentGroup, 0f, 1f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            yield return StartCoroutine(FadeGroup(contentGroup, 0f, 1f, 1f));
             if (namesGroup)
             {
-                yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 0.1f));
-                yield return CoroutineData.GetWaitForSeconds(0.4f);
+                yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 1f));
             }
             
             // 2. 모드별 동작
@@ -134,12 +132,10 @@ namespace My.Scripts.Core.Pages
                 {
                     if (!useButtonAnim && descriptionText)
                     {
-                        yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.1f));
-                        yield return CoroutineData.GetWaitForSeconds(0.4f);
+                        yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.5f));
                         if (namesGroup)
                         {
-                            yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.1f));
-                            yield return CoroutineData.GetWaitForSeconds(0.4f);
+                            yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.5f));
                         }
                     }
                 }
@@ -179,7 +175,7 @@ namespace My.Scripts.Core.Pages
                 {
                     if (_isCompleted) yield break;
 
-                    // Fade Out (1 -> 0.3)
+                    // Fade Out (1 -> 0.1)
                     float t = 0;
                     while (t < 0.5f)
                     {

@@ -31,7 +31,7 @@ namespace My.Scripts.Core.Pages
         [SerializeField] private List<Vector2Int> questionSpots; // 정답 좌표 리스트
 
         private readonly int gridSize = 10; // 그리드 크기 (10x10)
-        private readonly float cellFadeDuration = 0.25f; // 셀 페이드 시간
+        private readonly float cellFadeDuration = 0.5f; // 셀 페이드 시간
 
         // --- 내부 로직 변수 ---
         private RectTransform _blackRect; // 배경 Rect
@@ -225,7 +225,7 @@ namespace My.Scripts.Core.Pages
                     {
                         if (!_is1stWarningDone && _textBlinkRoutine == null)
                         {
-                            if (_warningText != null && textSub != null)
+                            if (_warningText != null && textSub)
                                 UIManager.Instance.SetText(textSub.gameObject, _warningText);
 
                             _textBlinkRoutine = StartCoroutine(BlinkRoutine());
@@ -290,10 +290,8 @@ namespace My.Scripts.Core.Pages
 
             for (int i = 0; i < 2; i++)
             {
-                yield return StartCoroutine(FadeTo(textSub, 1f, 0.1f));
-                yield return CoroutineData.GetWaitForSeconds(1f);
-                yield return StartCoroutine(FadeTo(textSub, 0f, 0.1f));
-                yield return CoroutineData.GetWaitForSeconds(1f);
+                yield return StartCoroutine(FadeTo(textSub, 1f, 1f));
+                yield return StartCoroutine(FadeTo(textSub, 0f, 1f));
             }
             if (textSub) textSub.gameObject.SetActive(false);
 
@@ -381,14 +379,14 @@ namespace My.Scripts.Core.Pages
                 {
                     _hasMoved = true;
                     if (textMain)
-                        StartCoroutine(FadeTo(textMain, 0f, 0.1f, () => textMain.gameObject.SetActive(false)));
+                        StartCoroutine(FadeTo(textMain, 0f, 1f, () => textMain.gameObject.SetActive(false)));
                 }
 
                 if (textSub && textSub.gameObject.activeSelf)
                 {
                     if (_textFadeRoutine != null) StopCoroutine(_textFadeRoutine);
 
-                    _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 0.1f, () =>
+                    _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 1f, () =>
                     {
                         textSub.gameObject.SetActive(false);
                         _textFadeRoutine = null;
@@ -550,7 +548,7 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            if (_maskTexture != null) _maskTexture.Apply();
+            if (_maskTexture) _maskTexture.Apply();
         }
 
         /// <summary> 마스크 픽셀 값 조회 </summary>

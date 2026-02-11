@@ -108,14 +108,14 @@ namespace My.Scripts._18_Ending.Pages
             // isPrepared 상태여도 Texture가 아직 생성되지 않았을 수 있으므로 확인 대기
             // videoPlayer.texture가 null이 아닐 때까지 잠시 대기 (최대 5초)
             float textureWait = 0f;
-            while (videoPlayer.texture == null && textureWait < 5f)
+            while (!videoPlayer.texture && textureWait < 5f)
             {
                 yield return null;
                 textureWait += Time.deltaTime;
             }
 
             // 텍스처 생성 실패 시 안전하게 종료
-            if (videoPlayer.texture == null)
+            if (!videoPlayer.texture)
             {
                 Debug.LogError("[EndingPage2] Video prepared but texture is null.");
                 CompleteStep();
@@ -127,8 +127,8 @@ namespace My.Scripts._18_Ending.Pages
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
             
-            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 0.1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 0.1f));
+            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
 
             // 4. 타이머 진행 (30초 고정)
             float currentTimer = 0f;
@@ -158,11 +158,9 @@ namespace My.Scripts._18_Ending.Pages
 
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
-            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 0.1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 0.1f));
+            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 1f));
             
-            yield return CoroutineData.GetWaitForSeconds(1.0f); 
-
             CompleteStep();
         }
 

@@ -120,7 +120,7 @@ namespace My.Scripts.Core
         }
 
         /// <summary> 페이지 투명도 조절 코루틴 </summary>
-        protected IEnumerator FadePage(GamePage page, float start, float end, float duration = 0.1f)
+        protected IEnumerator FadePage(GamePage page, float start, float end, float duration = 0.5f)
         {
             if (!page) yield break;
             if (duration <= 0f)

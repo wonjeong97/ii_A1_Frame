@@ -101,7 +101,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 휠 회전 감지 및 점등 처리 (관성 보정 포함) </summary>
+        /// <summary> 휠 회전 감지 및 점등 처리 </summary>
         private void HandleWheelInput()
         {
             float now = Time.time;
@@ -240,10 +240,10 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 이미지 교차 페이드(Cross Fade) 연출 </summary>
         private IEnumerator TransitionCheckImage(Image backImage, Image lightImage)
         {
-            if (backImage == null || lightImage == null) yield break;
+            if (!backImage || !lightImage) yield break;
 
             float timer = 0f;
-            float duration = 0.1f;
+            float duration = 1f;
             
             Color backColor = backImage.color;
             Color lightColor = lightImage.color;

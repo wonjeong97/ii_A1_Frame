@@ -25,7 +25,7 @@ namespace My.Scripts.Core.Pages
             if (descriptionText && _data.introText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.introText);
-                SetTextAlpha(1f); // 알파값 확실하게 초기화
+                SetTextAlpha(1f);
             }
         }
 
@@ -51,11 +51,9 @@ namespace My.Scripts.Core.Pages
             }
             
             // 2초간 유지
-            yield return CoroutineData.GetWaitForSeconds(2.0f); 
-
-            yield return StartCoroutine(FadeText(1f, 0f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
-
+            yield return CoroutineData.GetWaitForSeconds(2.0f);
+            yield return StartCoroutine(FadeText(1f, 0f, 1f));
+            
             // 2. 카운트다운 (3 -> 2 -> 1)
             string[] counts = { "3", "2", "1" };
             TextSetting countSetting = _data?.countdownText;

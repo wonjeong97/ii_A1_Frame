@@ -121,13 +121,10 @@ namespace My.Scripts.Core.Pages
             if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
 
             // 순차 등장 (FadeContent 사용)
-            yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
-            yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
-            yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
-
+            yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 1f));
+            yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 1f));
+            yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 1f));
+            
             _isInputEnabled = true;
         }
 

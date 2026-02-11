@@ -195,7 +195,7 @@ namespace My.Scripts.Core
             }
 
             // [Page 2: QnA]
-            // [수정] Page2가 null일 경우 NullReferenceException 방지를 위해 초기화 (Page1/Page3 패턴 적용)
+            // Page2가 null일 경우 NullReferenceException 방지를 위해 초기화 (Page1/Page3 패턴 적용)
             if (specific.Page2 == null) specific.Page2 = new QnAPageData();
             
             if (common.Page2 != null)

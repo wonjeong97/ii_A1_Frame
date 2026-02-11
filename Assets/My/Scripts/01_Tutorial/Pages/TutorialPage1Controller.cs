@@ -24,7 +24,7 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("Page 1 UI")]
         [SerializeField] private Text descriptionText; // 설명 텍스트 UI
 
-        private readonly float fadeTime = 0.1f;
+        private readonly float fadeTime = 1f;
 
         /// <summary>  데이터 설정: 텍스트 UI 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage1Data data)

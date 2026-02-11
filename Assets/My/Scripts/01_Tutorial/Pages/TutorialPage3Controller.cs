@@ -73,7 +73,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 휠 회전 감지 및 완료 처리 (관성 보정 포함) </summary>
+        /// <summary> 휠 회전 감지 및 완료 처리 </summary>
         private void HandleWheelInput()
         {
             float now = Time.time;
@@ -90,7 +90,7 @@ namespace My.Scripts._01_Tutorial.Pages
                     if (diff == 1) currentDir = 1;       // CW
                     else if (diff == 3) currentDir = -1; // CCW
 
-                    // [관성 보정] 빠른 입력 시 방향 역전이나 점프(2칸) 무시하고 이전 방향 유지
+                    // 빠른 입력 시 방향 역전이나 점프(2칸) 무시하고 이전 방향 유지
                     if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
                     {
                         if (diff == 2 || (currentDir != 0 && currentDir != _p1LastDir))

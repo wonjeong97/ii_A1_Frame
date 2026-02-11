@@ -155,7 +155,7 @@ namespace My.Scripts.Core.Pages
             yield return CoroutineData.GetWaitForSeconds(cameraFadeDelay);
 
             // 웹캠 초기화 대기 (너비가 16 이하인 경우 초기화 덜 된 것으로 간주)
-            if (_webCamTexture != null)
+            if (_webCamTexture)
             {
                 while (_webCamTexture.width <= 16) yield return null;
             }
@@ -190,7 +190,7 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(ShowAndFadeNumber("1"));
 
             // 촬영 직전 녹화 종료 (촬영 찰나의 멈춤 방지 및 프레임 확보 완료)
-            if (_shouldSavePhoto && TimeLapseRecorder.Instance != null)
+            if (_shouldSavePhoto && TimeLapseRecorder.Instance)
             {
                 TimeLapseRecorder.Instance.StopCapture();
             }
@@ -221,7 +221,7 @@ namespace My.Scripts.Core.Pages
             CapturePhoto();
             
             // Q15 등 마지막 단계에서 즉시 인코딩이 필요한 경우 트리거
-            if (_triggerEncodingOnCapture && TimeLapseRecorder.Instance != null)
+            if (_triggerEncodingOnCapture && TimeLapseRecorder.Instance)
             {
                 // 현재는 LevelManager에서 일괄 처리하므로 주석 처리됨. 필요시 활성화.
                 // TimeLapseRecorder.Instance.ConvertToVideo(); 
@@ -252,13 +252,13 @@ namespace My.Scripts.Core.Pages
         /// </summary>
         private void CapturePhoto()
         {
-            if (_webCamTexture != null && _webCamTexture.isPlaying)
+            if (_webCamTexture && _webCamTexture.isPlaying)
             {
                 RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
 
                 // GPU 상에서 텍스처 복사 (마스킹 적용)
                 Material maskToUse = _currentMaskingMaterial;
-                if (maskToUse != null) Graphics.Blit(_webCamTexture, rt, maskToUse);
+                if (maskToUse) Graphics.Blit(_webCamTexture, rt, maskToUse);
                 else Graphics.Blit(_webCamTexture, rt);
 
                 // # TODO: 매번 텍스처를 새로 생성(new)하고 있음. 

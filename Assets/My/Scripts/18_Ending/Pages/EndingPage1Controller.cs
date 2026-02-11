@@ -61,8 +61,7 @@ namespace My.Scripts._18_Ending.Pages
             yield return CoroutineData.GetWaitForSeconds(2.0f); 
 
             // 2. 텍스트 교체를 위해 페이드 아웃 (사라짐)
-            yield return StartCoroutine(FadeText(1f, 0f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            yield return StartCoroutine(FadeText(1f, 0f, 1f));
 
             // 3. 내용 교체 ("STEP.2...")
             if (descriptionText && _data?.secondText != null)
@@ -71,8 +70,7 @@ namespace My.Scripts._18_Ending.Pages
             }
 
             // 4. 두 번째 텍스트 페이드 인 (나타남)
-            yield return StartCoroutine(FadeText(0f, 1f, 0.1f));
-            yield return CoroutineData.GetWaitForSeconds(0.9f);
+            yield return StartCoroutine(FadeText(0f, 1f, 1f));
             
             // 5. 충분히 보여준 뒤 다음 단계로 넘어갑니다.
             yield return CoroutineData.GetWaitForSeconds(2.0f);

@@ -42,8 +42,8 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private float minY = -200f;
         [SerializeField] private float maxY = 250f;
         
-        private readonly float fadeDuration = 0.1f;
-        private readonly float centerMoveTime = 0.1f;
+        private readonly float fadeDuration = 1.0f;
+        private readonly float centerMoveTime = 0.5f;
 
         private Vector2 _initialPos;
         private Vector2 _targetPos; // 목표 위치 
@@ -153,7 +153,7 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 휠 시퀀스 입력 처리 (관성 보정 포함) </summary>
         private void HandleWheelInput()
         {
-            if (imageFocus == null) return;
+            if (!imageFocus) return;
 
             int direction = 0; // 0:None, 1:Positive(Down/Right), -1:Negative(Up/Left)
             float now = Time.time;
@@ -308,7 +308,7 @@ namespace My.Scripts._01_Tutorial.Pages
         // 직접 Lerp를 돌리지 않고 TargetPos만 설정하여 Update와 충돌 방지
         private void MoveFocusToCenter()
         {
-            if (imageFocus == null) return;
+            if (!imageFocus) return;
             _targetPos = _initialPos; // 목표 위치를 중앙(초기 위치)으로 설정
         }
         
@@ -324,7 +324,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator FadeTextRoutine(float startAlpha, float endAlpha)
         {
-            if (descriptionText == null) yield break;
+            if (!descriptionText) yield break;
             float timer = 0f;
             SetTextAlpha(startAlpha);
             while (timer < fadeDuration)
@@ -339,7 +339,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private void SetTextAlpha(float alpha)
         {
-            if (descriptionText == null) return;
+            if (!descriptionText) return;
             Color c = descriptionText.color;
             c.a = alpha;
             descriptionText.color = c;

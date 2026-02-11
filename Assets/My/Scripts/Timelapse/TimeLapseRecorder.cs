@@ -21,7 +21,7 @@ namespace My.Scripts.Timelapse
 
         [Header("Capture Settings")]
         public int realtimeCaptureFPS = 30; 
-        public int timelapseCaptureFPS = 15; 
+        public int timelapseCaptureFPS = 10; 
         
         [Header("Output Settings")]
         public float timelapseDuration = 20f; 

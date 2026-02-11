@@ -71,10 +71,10 @@ namespace My.Scripts._18_Ending.Pages
         {
             if (_isAllFinished && redLineImage != null)
             {
-                // 특별 엔딩: 텍스트를 먼저 읽을 시간을 주고(1초), 붉은 실이 차오르는 연출(1초)을 보여줍니다.
+                // 특별 엔딩: 텍스트를 먼저 읽을 시간을 주고(1초), 붉은 실이 차오르는 연출(2초)을 보여줍니다.
                 // 그 후 충분한 여운(5초)을 남깁니다.
                 yield return CoroutineData.GetWaitForSeconds(1.0f);
-                yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 1.0f));
+                yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 2.0f));
                 yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
             else
