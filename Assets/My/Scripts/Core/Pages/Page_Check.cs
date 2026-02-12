@@ -40,6 +40,7 @@ namespace My.Scripts.Core.Pages
         public override void OnEnter()
         {
             base.OnEnter();
+            StopAllCoroutines();
             
             isLightOnA = false;
             isLightOnB = false;
