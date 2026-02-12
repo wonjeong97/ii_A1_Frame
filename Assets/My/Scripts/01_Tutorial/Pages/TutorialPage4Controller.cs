@@ -237,7 +237,7 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator WaitAndComplete()
         {
-            yield return CoroutineData.GetWaitForSeconds(1.0f);
+            yield return CoroutineData.GetWaitForSeconds(2f);
             CompleteStep(); 
         }
 

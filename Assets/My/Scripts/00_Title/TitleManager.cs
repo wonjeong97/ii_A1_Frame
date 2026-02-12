@@ -46,15 +46,15 @@ namespace My.Scripts._00_Title
             if (_isTransitioning) return; // 전환 중이면 입력 무시
 
             // 플레이어 1 태그 (키보드 1번)
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            if (Input.GetKeyDown(KeyCode.Return))
             {
                 ProcessTag(1);
             }
-            // 플레이어 2 태그 (키보드 2번)
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                ProcessTag(2);
-            }
+            // // 플레이어 2 태그 (키보드 2번)
+            // else if (Input.GetKeyDown(KeyCode.Return))
+            // {
+            //     ProcessTag(2);
+            // }
         }
 
         /// <summary> 태그 처리 및 튜토리얼 씬 이동 </summary>

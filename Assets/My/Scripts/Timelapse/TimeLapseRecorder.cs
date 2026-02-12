@@ -20,15 +20,15 @@ namespace My.Scripts.Timelapse
         public static TimeLapseRecorder Instance;
 
         [Header("Capture Settings")]
-        public int realtimeCaptureFPS = 30; 
-        public int timelapseCaptureFPS = 10; 
+        public int timelapseCaptureFPS = 10;
+        public int realtimeCaptureFPS = 30;
         
         [Header("Output Settings")]
         public float timelapseDuration = 20f; 
-        public float realtimeDuration = 30f;  
+        public float realtimeDuration = 15f;  
         
-        public int captureWidth = 1280;     
-        public int captureHeight = 720;     
+        private readonly int captureWidth = 1920;     
+        private readonly int captureHeight = 1080;     
 
         private WebCamTexture _webCam;      
         private bool _isRecording;          
@@ -338,8 +338,8 @@ namespace My.Scripts.Timelapse
             string numPart = Regex.Replace(levelID, "[^0-9]", ""); 
             if (int.TryParse(numPart, out int num))
             {
-                // Q1~Q5, Q11~Q15 레벨에서만 리얼타임 저장
-                if ((num >= 1 && num <= 5) || (num >= 11 && num <= 15)) return true;
+                // Q11~Q15 레벨에서만 리얼타임 저장
+                if (num >= 11 && num <= 15) return true;
             }
             return false;
         }

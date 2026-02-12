@@ -729,7 +729,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &199686957
 RectTransform:
   m_ObjectHideFlags: 0
@@ -778,13 +778,11 @@ MonoBehaviour:
   popupText: {fileID: 0}
   warningDuration: 3
   resetPopupDuration: 3
-  useButtonAnim: 0
   autoPass: 1
   autoPassDelay: 4
   keepContentOnFinish: 0
   descriptionText: {fileID: 337498055}
-  contentGroup: {fileID: 0}
-  buttonRect: {fileID: 0}
+  contentGroup: {fileID: 337498057}
   playerAName: {fileID: 0}
   playerBName: {fileID: 0}
   namesGroup: {fileID: 0}
@@ -948,13 +946,11 @@ MonoBehaviour:
   popupText: {fileID: 244246404}
   warningDuration: 3
   resetPopupDuration: 3
-  useButtonAnim: 1
   autoPass: 0
   autoPassDelay: 4
   keepContentOnFinish: 0
   descriptionText: {fileID: 270182476}
   contentGroup: {fileID: 64744873}
-  buttonRect: {fileID: 1204149397}
   playerAName: {fileID: 0}
   playerBName: {fileID: 0}
   namesGroup: {fileID: 0}
@@ -1347,6 +1343,7 @@ GameObject:
   - component: {fileID: 337498054}
   - component: {fileID: 337498056}
   - component: {fileID: 337498055}
+  - component: {fileID: 337498057}
   m_Layer: 5
   m_Name: "Text_\uC0AC\uC9C4\uC774 \uAE30\uB85D\uB418\uC5C8\uC2B5\uB2C8\uB2E4."
   m_TagString: Untagged
@@ -1415,6 +1412,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 337498053}
   m_CullTransparentMesh: 1
+--- !u!225 &337498057
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 337498053}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &351893379
 GameObject:
   m_ObjectHideFlags: 0
@@ -3427,7 +3436,7 @@ MonoBehaviour:
   - {fileID: 199686959}
   levelID: Q15
   nextSceneName: 18_Ending
-  useFadeTransition: 1
+  useFadeTransition: 0
   globalBlackCanvasGroup: {fileID: 1710963004}
   globalWhiteBackground: {fileID: 0}
   cameraMaskMaterial: {fileID: 2100000, guid: 90ed4b9ee3c03004ab9f164f508d7241, type: 2}
@@ -4641,7 +4650,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1314940352
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6836,7 +6845,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1838117321
 RectTransform:
   m_ObjectHideFlags: 0
