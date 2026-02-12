@@ -380,6 +380,12 @@ namespace My.Scripts.Timelapse
 
             if (_realtimeFrameIndex <= 0)
             {
+                // 녹화 대상 레벨이 아닌 경우(Q1~Q10 등), 데이터가 없는 것이 정상이므로 경고 없이 종료
+                if (!IsRealtimeTargetLevel(_currentLevelID))
+                {
+                    return; 
+                }
+
                 Debug.LogWarning($"[Realtime] 데이터 부족으로 변환 취소. (Frame: {_realtimeFrameIndex})");
                 return;
             }

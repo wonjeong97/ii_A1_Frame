@@ -136,9 +136,9 @@ namespace My.Scripts._18_Ending.Pages
 
                 if (descriptionText)
                 {
-                    int minutes = Mathf.FloorToInt(displayTime / 60f);
-                    int seconds = Mathf.FloorToInt(displayTime % 60f);
-                    descriptionText.text = $"{minutes:00}:{seconds:00}";
+                    int seconds = Mathf.FloorToInt(displayTime);
+                    int milliseconds = Mathf.FloorToInt((displayTime * 100) % 100);
+                    descriptionText.text = $"{seconds:00}:{milliseconds:00}";
                 }
                 yield return null;
             }
@@ -146,9 +146,9 @@ namespace My.Scripts._18_Ending.Pages
             // 타이머 종료 확정 표시
             if (descriptionText) 
             {
-                int finalMinutes = Mathf.FloorToInt(FixedDuration / 60f);
-                int finalSeconds = Mathf.FloorToInt(FixedDuration % 60f);
-                descriptionText.text = $"{finalMinutes:00}:{finalSeconds:00}";
+                int finalSeconds = Mathf.FloorToInt(FixedDuration);
+                int finalMilliseconds = Mathf.FloorToInt((FixedDuration * 100) % 100);
+                descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
             }
             
             if (videoPlayer.isPlaying) videoPlayer.Pause();
