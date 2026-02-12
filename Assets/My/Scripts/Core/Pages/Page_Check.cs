@@ -98,7 +98,7 @@ namespace My.Scripts.Core.Pages
         {
             ResetIdleState(false);
 
-            // [수정] 페이지 진입 후 최소 0.5초가 지나야 불이 켜지도록 딜레이 계산
+            // 페이지 진입 후 최소 0.5초가 지나야 불이 켜지도록 딜레이 계산
             float delay = Mathf.Max(0f, 0.5f - (Time.time - _enterTime));
 
             if (isPlayerA)
@@ -113,12 +113,11 @@ namespace My.Scripts.Core.Pages
                 isLightOnB = true;
                 StartCoroutine(LightOnRoutine(imgBackB, imgLightB, delay));
             }
-
-            CheckCompletion();
         }
 
         private void CheckCompletion()
-        {
+        {   
+            // 양쪽 모두 켜졌고, 완료 시퀀스가 아직 시작되지 않았다면 진행
             if (isLightOnA && isLightOnB && !_completionStarted)
             {
                 _completionStarted = true;
@@ -163,6 +162,9 @@ namespace My.Scripts.Core.Pages
 
             cl.a = 1f;
             light.color = cl;
+            
+            // 페이드 연출이 완전히 끝난 후 완료 조건을 체크
+            CheckCompletion();
         }
 
         private void SetImgAlpha(Image i, float a)
