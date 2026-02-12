@@ -18,8 +18,8 @@ namespace My.Scripts._18_Ending.Pages
     }
 
     /// <summary> 
-    /// 엔딩 2페이지 컨트롤러입니다.
-    /// 플레이 중 녹화된 '리얼타임' 영상을 재생하며, 영상의 실제 길이와 무관하게 30초 카운트다운 연출을 동기화합니다.
+    /// 엔딩 2페이지 컨트롤러
+    /// 플레이 중 녹화된 '리얼타임' 영상을 재생하며, 영상의 실제 길이와 무관하게 15초 카운트다운 연출을 동기화.
     /// </summary>
     public class EndingPage2Controller : GamePage<EndingPage2Data>
     {
@@ -28,10 +28,10 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private VideoPlayer videoPlayer; 
         [SerializeField] private Text descriptionText; 
 
-        // [확인] 파일명 대소문자 주의 (Test_Realtime.mp4 권장)
-        // # TODO: 파일명을 상수로 박아두기보다 GameManager나 DataManager에서 관리하는 것이 유연함.
         private const string FixedVideoFileName = "Test_Realtime.mp4"; 
-        private const float FixedDuration = 30f; 
+        
+        // 영상 길이에 맞춰 타이머를 30초 -> 15초로 변경
+        private const float FixedDuration = 15f; 
         
         protected override void SetupData(EndingPage2Data data)
         {
@@ -65,7 +65,7 @@ namespace My.Scripts._18_Ending.Pages
         
         /// <summary>
         /// 영상 재생 및 타이머 연출의 전체 시퀀스를 제어합니다.
-        /// (준비 -> 재생/페이드인 -> 30초 타이머 -> 정지/페이드아웃 -> 완료)
+        /// (준비 -> 재생/페이드인 -> 15초 타이머 -> 정지/페이드아웃 -> 완료)
         /// </summary>
         private IEnumerator PresentationRoutine()
         {   
@@ -105,8 +105,7 @@ namespace My.Scripts._18_Ending.Pages
                 yield break;
             }
 
-            // isPrepared 상태여도 Texture가 아직 생성되지 않았을 수 있으므로 확인 대기
-            // videoPlayer.texture가 null이 아닐 때까지 잠시 대기 (최대 5초)
+            // 텍스처 생성 대기
             float textureWait = 0f;
             while (!videoPlayer.texture && textureWait < 5f)
             {
@@ -114,7 +113,6 @@ namespace My.Scripts._18_Ending.Pages
                 textureWait += Time.deltaTime;
             }
 
-            // 텍스처 생성 실패 시 안전하게 종료
             if (!videoPlayer.texture)
             {
                 Debug.LogError("[EndingPage2] Video prepared but texture is null.");
@@ -123,14 +121,13 @@ namespace My.Scripts._18_Ending.Pages
             }
 
             // 3. 재생 시작 및 화면/텍스트 페이드 인
-            // 안전하게 확인된 텍스처를 할당하고 재생 시작
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
             
             StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
             if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
 
-            // 4. 타이머 진행 (30초 고정)
+            // 4. 타이머 진행 (15초 고정)
             float currentTimer = 0f;
             while (currentTimer < FixedDuration)
             {
@@ -139,19 +136,19 @@ namespace My.Scripts._18_Ending.Pages
 
                 if (descriptionText)
                 {
-                    int minutes = Mathf.FloorToInt(displayTime / 60f);
-                    int seconds = Mathf.FloorToInt(displayTime % 60f);
-                    descriptionText.text = $"{minutes:00}:{seconds:00}";
+                    int seconds = Mathf.FloorToInt(displayTime);
+                    int milliseconds = Mathf.FloorToInt((displayTime * 100) % 100);
+                    descriptionText.text = $"{seconds:00}:{milliseconds:00}";
                 }
                 yield return null;
             }
             
-            // 30초 종료 확정
+            // 타이머 종료 확정 표시
             if (descriptionText) 
             {
-                int finalMinutes = Mathf.FloorToInt(FixedDuration / 60f);
-                int finalSeconds = Mathf.FloorToInt(FixedDuration % 60f);
-                descriptionText.text = $"{finalMinutes:00}:{finalSeconds:00}";
+                int finalSeconds = Mathf.FloorToInt(FixedDuration);
+                int finalMilliseconds = Mathf.FloorToInt((FixedDuration * 100) % 100);
+                descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
             }
             
             if (videoPlayer.isPlaying) videoPlayer.Pause();
@@ -164,9 +161,6 @@ namespace My.Scripts._18_Ending.Pages
             CompleteStep();
         }
 
-        /// <summary>
-        /// 날짜별 폴더 구조에서 리얼타임 영상 경로를 생성하여 반환합니다.
-        /// </summary>
         private string GetVideoPath()
         {   
             string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;

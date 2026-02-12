@@ -26,6 +26,7 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text text1; 
         [SerializeField] private Text text2; 
         [SerializeField] private CanvasGroup imageCanvasGroup;
+        [SerializeField] private CanvasGroup textCanvasGroup;
 
         protected override void SetupData(EndingPage3Data data)
         {
@@ -37,50 +38,24 @@ namespace My.Scripts._18_Ending.Pages
         {
             base.OnEnter();
             
-            // 연출 시작 전 모든 요소를 숨겨두어 깜빡임 없이 자연스럽게 등장하도록 초기화합니다.
-            SetTextAlpha(text1, 0f);
-            SetTextAlpha(text2, 0f);
+            if (textCanvasGroup) textCanvasGroup.alpha = 0;
             if (imageCanvasGroup) imageCanvasGroup.alpha = 0f;
-
+            
             StartCoroutine(SequenceRoutine());
         }
 
         /// <summary>
-        /// 결과 확인 시퀀스를 제어합니다. (텍스트1 -> 이미지 -> 텍스트2 -> 대기 -> 완료)
-        /// 순차적인 등장을 통해 사용자의 시선을 유도합니다.
+        /// 마음 조각 이미지 페이드인(1초) >> 2초 대기 >> 텍스트 페이드인(1초) >> 3초 대기 후 완료
         /// </summary>
         private IEnumerator SequenceRoutine()
         {
-            // 1. 첫 번째 안내 문구 등장
-            yield return StartCoroutine(FadeText(text1, 0f, 1f, 1f));
+            yield return CoroutineData.GetWaitForSeconds(0.5f); // 페이지 로드 대기
+            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1.0f));
+            yield return CoroutineData.GetWaitForSeconds(2.0f);
+            yield return StartCoroutine(FadeCanvasGroup(textCanvasGroup, 0f, 1f, 1.0f));
+            yield return CoroutineData.GetWaitForSeconds(3.0f);
             
-            // 2. 결과 이미지(마음 조각) 등장
-            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1f));
-            
-            // 3. 상세 수치 텍스트 등장
-            yield return StartCoroutine(FadeText(text2, 0f, 1f, 1f));
-            
-            // 결과를 충분히 확인할 시간을 제공한 뒤 다음으로 넘어갑니다.
-            yield return CoroutineData.GetWaitForSeconds(4.0f);
             CompleteStep();
-        }
-
-        /// <summary>
-        /// 텍스트의 투명도를 부드럽게 변경합니다.
-        /// </summary>
-        private IEnumerator FadeText(Text t, float s, float e, float d)
-        {
-            if (!t) yield break;
-            float time = 0f;
-            SetTextAlpha(t, s);
-            
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                SetTextAlpha(t, Mathf.Lerp(s, e, time/d)); 
-                yield return null; 
-            }
-            SetTextAlpha(t, e);
         }
 
         /// <summary>
@@ -99,16 +74,6 @@ namespace My.Scripts._18_Ending.Pages
                 yield return null; 
             }
             cg.alpha = e;
-        }
-
-        private void SetTextAlpha(Text t, float a) 
-        { 
-            if(t) 
-            { 
-                Color c = t.color; 
-                c.a = a; 
-                t.color = c; 
-            } 
         }
     }
 }

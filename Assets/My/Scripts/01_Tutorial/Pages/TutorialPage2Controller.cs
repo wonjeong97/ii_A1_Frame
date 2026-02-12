@@ -49,7 +49,7 @@ namespace My.Scripts._01_Tutorial.Pages
         private IEnumerator WaitAndNextRoutine()
         {
             // 3초 대기
-            yield return CoroutineData.GetWaitForSeconds(3.0f);
+            yield return CoroutineData.GetWaitForSeconds(6.0f);
 
             // 단계 완료
             CompleteStep();

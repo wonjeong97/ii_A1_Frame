@@ -63,10 +63,10 @@ namespace My.Scripts.Core.Pages
         private int _lastP2Key = -1;
         
         private float _p1LastTime;
-        private int _p1LastDir; // 1: CW(Right), -1: CCW(Left)
+        private int _p1LastDir; // 1: CW, -1: CCW
         
         private float _p2LastTime;
-        private int _p2LastDir; // 1: CW(Down), -1: CCW(Up)
+        private int _p2LastDir; // 1: CW, -1: CCW
 
         private const float FastInputThreshold = 0.2f; // 빠른 입력 판단 기준 시간 (초)
 
@@ -300,7 +300,7 @@ namespace My.Scripts.Core.Pages
         }
 
         // --- 게임 로직 (이동) ---
-        /// <summary> 휠 입력(1~4:좌우, 5~8:상하)에 따른 이동 처리 (관성 보정 포함) </summary>
+        /// <summary> 휠 입력(1~4:상하, 5~8:좌우)에 따른 이동 처리 (관성 보정 포함) </summary>
         private void HandleMovement()
         {
             if (!imageFocus || _isInputBlocked || _isStageCompleted) return;
@@ -308,14 +308,14 @@ namespace My.Scripts.Core.Pages
             int dx = 0, dy = 0;
             float now = Time.time;
 
-            // 1. Player 1 (Horizontal: 1~4) -> 좌우
+            // 1. Player 1 (Vertical: 1~4) -> 상하 (dy)
             int p1Key = GetPressedKeyIndex(1, 4);
             if (p1Key != -1)
             {
                 if (_lastP1Key != -1)
                 {
                     int diff = (p1Key - _lastP1Key + 4) % 4;
-                    int dir = 0; // 1: CW(Right), -1: CCW(Left)
+                    int dir = 0; // 1: CW(Down), -1: CCW(Up)
 
                     if (diff == 1) dir = 1;
                     else if (diff == 3) dir = -1;
@@ -331,7 +331,7 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dx = (dir == 1) ? 1 : -1;
+                        dy = (dir == 1) ? 1 : -1; // dx -> dy로 변경
                         _p1LastDir = dir;
                         _p1LastTime = now;
                     }
@@ -339,7 +339,7 @@ namespace My.Scripts.Core.Pages
                 _lastP1Key = p1Key;
             }
 
-            // 2. Player 2 (Vertical: 5~8) -> 상하
+            // 2. Player 2 (Horizontal: 5~8) -> 좌우 (dx)
             int p2Key = GetPressedKeyIndex(5, 8);
             if (p2Key != -1)
             {
@@ -349,7 +349,7 @@ namespace My.Scripts.Core.Pages
                     int currIdx = p2Key - 5;
                     int lastIdx = _lastP2Key - 5;
                     int diff = (currIdx - lastIdx + 4) % 4;
-                    int dir = 0; // 1: CW(Down), -1: CCW(Up)
+                    int dir = 0; // 1: CW(Right), -1: CCW(Left)
 
                     if (diff == 1) dir = 1;
                     else if (diff == 3) dir = -1;
@@ -365,7 +365,7 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dy = (dir == 1) ? 1 : -1;
+                        dx = (dir == 1) ? 1 : -1; // dy -> dx로 변경
                         _p2LastDir = dir;
                         _p2LastTime = now;
                     }
@@ -472,7 +472,7 @@ namespace My.Scripts.Core.Pages
             if (completionCanvasGroups != null)
             {
                 float t = 0f;
-                float duration = 0.1f;
+                float duration = 1f;
 
                 while (t < duration)
                 {
@@ -491,12 +491,12 @@ namespace My.Scripts.Core.Pages
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             
-            // 아래 루프는 이미 p = t2 / 0.1f 로 정상 구현되어 있음
+            // 아래 루프는 이미 p = t2 / 0.5f 로 정상 구현되어 있음
             float t2 = 0f, startA = imageGrid ? imageGrid.color.a : 1f;
-            while (t2 < 0.1f)
+            while (t2 < 0.5f)
             {
                 t2 += Time.deltaTime;
-                float p = t2 / 0.1f;
+                float p = t2 / 0.5f;
                 if (imageGrid)
                 {
                     Color c = imageGrid.color;
@@ -548,7 +548,7 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            if (_maskTexture) _maskTexture.Apply();
+            if (_maskTexture != null) _maskTexture.Apply();
         }
 
         /// <summary> 마스크 픽셀 값 조회 </summary>

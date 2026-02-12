@@ -7,7 +7,7 @@
       "text": "두 사람 모두 태그하면, 체험이 시작됩니다.",
       "fontName": "font4",
       "fontSize": 55,
-      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1},
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 0},
       "isBold": true
     },
     "warningMessage": "태그 해주세요",

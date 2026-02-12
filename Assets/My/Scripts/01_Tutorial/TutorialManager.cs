@@ -48,9 +48,9 @@ namespace My.Scripts._01_Tutorial
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>
         protected override void OnAllFinished()
         {
-            if (!FadeManager.Instance)
+            if (FadeManager.Instance)
             {
-                if (!GameManager.Instance)
+                if (GameManager.Instance)
                 {
                     GameManager.Instance.ChangeScene(GameConstants.Scene.PlayTutorial);
                 }

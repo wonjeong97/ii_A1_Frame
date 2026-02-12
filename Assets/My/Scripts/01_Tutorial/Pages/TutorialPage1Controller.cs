@@ -26,6 +26,18 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private readonly float fadeTime = 1f;
 
+        protected override void Awake()
+        {
+            base.Awake();
+            
+            if (descriptionText != null)
+            {
+                Color c = descriptionText.color;
+                c.a = 0f;
+                descriptionText.color = c;
+            }
+        }
+
         /// <summary>  데이터 설정: 텍스트 UI 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(TutorialPage1Data data)
         {
@@ -50,9 +62,6 @@ namespace My.Scripts._01_Tutorial.Pages
             // 텍스트 페이드 인 연출 
             if (descriptionText)
             {
-                Color c = descriptionText.color;
-                c.a = 0f;
-                descriptionText.color = c;
                 StartCoroutine(FadeInTextRoutine());
             }
         }

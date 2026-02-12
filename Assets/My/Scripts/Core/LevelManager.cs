@@ -419,7 +419,7 @@ namespace My.Scripts.Core
                     yield break;
                 }
 
-                // [수정] 리얼타임 전용 플래그 확인
+                // 리얼타임 전용 플래그 확인
                 if (!TimeLapseRecorder.Instance.IsRealtimeProcessing)
                 {
                     Debug.Log("[LevelManager] 리얼타임(1배속) 영상 인코딩 시작");
