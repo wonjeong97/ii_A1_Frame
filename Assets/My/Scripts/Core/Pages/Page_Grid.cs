@@ -29,8 +29,8 @@ namespace My.Scripts.Core.Pages
         
         [Header("Settings")]
         [SerializeField] private List<Vector2Int> questionSpots; // 정답 좌표 리스트
-
-        private readonly int gridSize = 10; // 그리드 크기 (10x10)
+        [SerializeField] private int gridSize = 10; // 그리드 크기 (10x10)
+        
         private readonly float cellFadeDuration = 0.5f; // 셀 페이드 시간
 
         // --- 내부 로직 변수 ---
@@ -69,6 +69,8 @@ namespace My.Scripts.Core.Pages
         private int _p2LastDir; // 1: CW, -1: CCW
 
         private const float FastInputThreshold = 0.2f; // 빠른 입력 판단 기준 시간 (초)
+        
+        private int GetGridCenterIndex() => Mathf.Max(0, (gridSize - 1) / 2);
 
         // 셀 페이드 정보 관리
         private class CellFadeInfo
@@ -79,7 +81,7 @@ namespace My.Scripts.Core.Pages
 
         private readonly List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
 
-        /// <summary> 데이터 설정: 텍스트 및 팝업 메시지 적용 </summary>
+        /// <summary> 데이터 설정: 텍스트, 팝업 메시지 및 정답 좌표 적용 </summary>
         protected override void SetupData(GridPageData data)
         {
             if (data == null) return;
@@ -89,6 +91,20 @@ namespace My.Scripts.Core.Pages
 
             _defaultTextSub = data.descriptionText2;
             _warningText = data.descriptionText3;
+
+            // JSON에 좌표 데이터가 있다면 인스펙터 값을 덮어씌움
+            if (data.questionSpots != null && data.questionSpots.Count > 0)
+            {
+                var filtered = new HashSet<Vector2Int>();
+                foreach (var spot in data.questionSpots)
+                {
+                    if (spot.x >= 0 && spot.x < gridSize && spot.y >= 0 && spot.y < gridSize)
+                    {
+                        filtered.Add(spot);
+                    }
+                    questionSpots = new List<Vector2Int>(filtered);
+                }
+            }
 
             if (questionTexts != null)
             {
@@ -125,9 +141,10 @@ namespace My.Scripts.Core.Pages
 
             if (!InitializeGame()) return;
 
-            // 중앙 위치에서 시작
-            int startX = Mathf.Min(4, gridSize - 1);
-            int startY = Mathf.Min(4, gridSize - 1);
+            // 시작 위치 설정
+            int center = GetGridCenterIndex();
+            int startX = center;
+            int startY = center;
             SetFocusToGrid(startX, startY, true);
         }
 
@@ -135,6 +152,12 @@ namespace My.Scripts.Core.Pages
         private bool InitializeGame()
         {
             if (!imageBlack || !imageFocus) return false;
+
+            if (gridSize <= 0)
+            {
+                Debug.LogError("[Page_Grid] gridSize must be >= 1");
+                return false;
+            }
             _blackRect = imageBlack.rectTransform;
             _cellWidth = _blackRect.rect.width / gridSize;
             _cellHeight = _blackRect.rect.height / gridSize;
@@ -168,7 +191,9 @@ namespace My.Scripts.Core.Pages
 
             if (_totalQuestionCount == 0)
             {
-                _questionMap[Mathf.Min(5, gridSize - 1), Mathf.Min(5, gridSize - 1)] = true;
+                // 중앙 위치를 기본 정답으로 설정
+                int center = GetGridCenterIndex();
+                _questionMap[center, center] = true;
                 _totalQuestionCount = 1;
             }
 
@@ -202,6 +227,7 @@ namespace My.Scripts.Core.Pages
             if (Input.GetKeyDown(KeyCode.Space) && !_isStageCompleted)
             {
                 _isStageCompleted = true;
+                RevealAllQuestions();
                 StartCoroutine(ShowCompletionRoutine());
             }
 #endif
@@ -300,7 +326,7 @@ namespace My.Scripts.Core.Pages
         }
 
         // --- 게임 로직 (이동) ---
-        /// <summary> 휠 입력(1~4:상하, 5~8:좌우)에 따른 이동 처리 (관성 보정 포함) </summary>
+        /// <summary> 휠 입력 및 방향키 입력에 따른 이동 처리 (관성 보정 포함) </summary>
         private void HandleMovement()
         {
             if (!imageFocus || _isInputBlocked || _isStageCompleted) return;
@@ -320,7 +346,7 @@ namespace My.Scripts.Core.Pages
                     if (diff == 1) dir = 1;
                     else if (diff == 3) dir = -1;
 
-                    // [관성 보정] 빠른 입력 시, 방향 역전이나 점프(diff 2)가 감지되면 이전 방향 유지
+                    // [관성 보정]
                     if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
                     {
                         if (diff == 2 || (dir != 0 && dir != _p1LastDir))
@@ -331,7 +357,7 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dy = (dir == 1) ? 1 : -1; // dx -> dy로 변경
+                        dy = (dir == 1) ? 1 : -1;
                         _p1LastDir = dir;
                         _p1LastTime = now;
                     }
@@ -345,7 +371,6 @@ namespace My.Scripts.Core.Pages
             {
                 if (_lastP2Key != -1)
                 {
-                    // 5~8을 0~3 인덱스로 변환
                     int currIdx = p2Key - 5;
                     int lastIdx = _lastP2Key - 5;
                     int diff = (currIdx - lastIdx + 4) % 4;
@@ -365,13 +390,19 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dx = (dir == 1) ? 1 : -1; // dy -> dx로 변경
+                        dx = (dir == 1) ? 1 : -1;
                         _p2LastDir = dir;
                         _p2LastTime = now;
                     }
                 }
                 _lastP2Key = p2Key;
             }
+
+            // [추가] 3. 키보드 방향키 지원 (테스트/보조용)
+            if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
+            if (Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
+            if (Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;
+            if (Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;
 
             if (dx != 0 || dy != 0)
             {
@@ -584,6 +615,27 @@ namespace My.Scripts.Core.Pages
             if (_maskTexture) Destroy(_maskTexture);
             if (_eraserMaterial) Destroy(_eraserMaterial);
             if (_gridMaterial) Destroy(_gridMaterial);
+        }
+        
+        /// <summary> 모든 정답 위치의 마스크를 부드럽게 제거합니다. (스킵 연출용) </summary>
+        private void RevealAllQuestions()
+        {
+            if (questionSpots == null) return;
+
+            foreach (var spot in questionSpots)
+            {
+                // 범위 체크
+                if (spot.x >= 0 && spot.x < gridSize && spot.y >= 0 && spot.y < gridSize)
+                {
+                    // StartCellFade를 호출하여 Update 루프에서 서서히 지워지도록(target=1.0f) 합니다.
+                    StartCellFade(spot.x, spot.y, 1.0f);
+                }
+            }
+            // 현재 플레이어 위치가 정답이 아니라면 다시 어둡게 복원 (Target 0.0f)
+            if (!_questionMap[_currentGridX, _currentGridY])
+            {
+                StartCellFade(_currentGridX, _currentGridY, 0.0f);
+            }
         }
     }
 }

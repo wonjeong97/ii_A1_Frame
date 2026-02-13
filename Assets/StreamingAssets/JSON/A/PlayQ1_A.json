@@ -1,0 +1,114 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01_나는",
+        "position": {"x": 360, "y": -75},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "나는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_상대와",
+        "position": {"x": 600, "y": -200},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대와",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_함께 있을 때,",
+        "position": {"x": 480, "y": -600},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "함께 있을 때,",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_말보다",
+        "position": {"x": 840, "y": -340},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "말보다",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_그때의",
+        "position": {"x": 960, "y": -880},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "그때의",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_느낌이",
+        "position": {"x": 1325, "y": -540},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "느낌이",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "07_더 크게",
+        "position": {"x": 1440, "y": -75},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "더 크게",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "08_남는",
+        "position": {"x": 1560, "y": -340},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "남는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "09_편이다..",
+        "position": {"x": 1450, "y": -880},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "편이다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 1, "y": 0 },
+      { "x": 2, "y": 1 },
+      { "x": 1, "y": 4 },
+      { "x": 2, "y": 4 },
+      { "x": 3, "y": 2 },
+      { "x": 3, "y": 6 },
+      { "x": 4, "y": 6 },
+      { "x": 5, "y": 3 },
+      { "x": 5, "y": 4 },
+      { "x": 5, "y": 0 },
+      { "x": 6, "y": 0 },
+      { "x": 6, "y": 2 },
+      { "x": 5, "y": 6 },
+      { "x": 6, "y": 6 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.나는 상대와 함께 있을 때, 말보다 그때의 느낌이 더 크게 남는 편이다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

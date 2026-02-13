@@ -1,0 +1,106 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01_우리는",
+        "position": {"x": 1800, "y": -950},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "우리는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_함께",
+        "position": {"x": 120, "y": -75},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "함께",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_있을 때의",
+        "position": {"x": 1320, "y": -205},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "있을 때의",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_감정이",
+        "position": {"x": 480, "y": -340},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "감정이",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_자연스럽게",
+        "position": {"x": 720, "y": -940},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "자연스럽게",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_오가고",
+        "position": {"x": 1080, "y": -540},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "오가고",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "07_있다고",
+        "position": {"x": 120, "y": -480},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "있다고",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "08_느낀다.",
+        "position": {"x": 720, "y": -610},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "느낀다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 7, "y": 6 },
+      { "x": 7, "y": 7 },
+      { "x": 0, "y": 0 },
+      { "x": 5, "y": 1 },
+      { "x": 1, "y": 2 },
+      { "x": 2, "y": 2 },
+      { "x": 2, "y": 6 },
+      { "x": 2, "y": 7 },
+      { "x": 3, "y": 6 },
+      { "x": 3, "y": 7 },
+      { "x": 4, "y": 3 },
+      { "x": 4, "y": 4 },
+      { "x": 0, "y": 3 },
+      { "x": 2, "y": 4 },
+      { "x": 3, "y": 4 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.우리는 함께 있을 때의 감정이 자연스럽게 오가고 있다고 느낀다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}
