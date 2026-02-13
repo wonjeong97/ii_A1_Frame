@@ -189,10 +189,11 @@
       "url": "https://packages.unity.com"
     },
     "com.wonjeong.template": {
-      "version": "file:D:/HULIAC/HULIAC_Project/Template",
+      "version": "https://github.com/wonjeong97/Template.git",
       "depth": 0,
-      "source": "local",
-      "dependencies": {}
+      "source": "git",
+      "dependencies": {},
+      "hash": "afd50ce2a320040b5a413a776b5516260ae560f7"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
