@@ -59,11 +59,12 @@ namespace My.Scripts.Core.Pages
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
             
-            if (gameObject.name == "Page6" && SceneManager.GetActiveScene().name == GameConstants.Scene.PlayQ15)
+            string currentSceneName = SceneManager.GetActiveScene().name;
+            if (gameObject.name == "Page6" && currentSceneName.Contains("Q15"))
             {
                 if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsProcessing)
                 {
-                    Debug.Log($"[{gameObject.name}] OnEnter: 리얼타임 영상 변환 시작");
+                    Debug.Log($"[{gameObject.name}] OnEnter: 리얼타임 영상 변환 시작 (Scene: {currentSceneName})");
                     TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
                 }
             }

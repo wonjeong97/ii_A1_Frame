@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Wonjeong.Data;
 
@@ -12,6 +13,7 @@ namespace My.Scripts.Core.Data
         public TextSetting descriptionText2; // 경고/안내 멘트
         public TextSetting descriptionText3; // 시간 초과 경고
         public TextSetting[] questions; // 질문 목록
+        public List<Vector2Int> questionSpots; // 정답 좌표 리스트
         public string warningMessage;
         public string resetMessage;
     }

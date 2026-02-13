@@ -1,3 +1,4 @@
+using System;
 using My.Scripts.Global;
 using My.Scripts.Timelapse; // TimeLapseRecorder 사용을 위해 추가
 using UnityEngine;
@@ -64,6 +65,19 @@ namespace My.Scripts._00_Title
             _isTransitioning = true; // 중복 호출 방지
 
             SceneManager.LoadScene(GameConstants.Scene.Tutorial);
+        }
+        
+        public void OnClickTypeButton(string typeStr)
+        {
+            // 버튼의 OnClick 이벤트에 연결 (인자로 "A", "B" 등 전달)
+            if (Enum.TryParse(typeStr, out UserType selectedType))
+            {
+                GameManager.Instance.currentUserType = selectedType;
+                Debug.Log($"유저 타입 설정됨: {selectedType}");
+        
+                // 타입 설정 후 튜토리얼로 이동 (혹은 다음 단계)
+                SceneManager.LoadScene(GameConstants.Scene.Tutorial);
+            }
         }
     }
 }

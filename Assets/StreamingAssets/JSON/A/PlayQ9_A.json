@@ -1,0 +1,85 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01_나는",
+        "position": {"x": 1440, "y": -215},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "나는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_상대방이,",
+        "position": {"x": 720, "y": -200},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대방이",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_감정에",
+        "position": {"x": 1080, "y": -410},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "감정에",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_솔직할 때,",
+        "position": {"x": 720, "y": -750},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "솔직할 때,",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_편안하다고",
+        "position": {"x": 1680, "y": -880},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "편안하다고",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_느낀다.",
+        "position": {"x": 120, "y": -540},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "느낀다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 5, "y": 1 },
+      { "x": 6, "y": 1 },
+      { "x": 2, "y": 1 },
+      { "x": 3, "y": 1 },
+      { "x": 4, "y": 2 },
+      { "x": 4, "y": 3 },
+      { "x": 2, "y": 5 },
+      { "x": 3, "y": 5 },
+      { "x": 6, "y": 6 },
+      { "x": 7, "y": 6 },
+      { "x": 0, "y": 3 },
+      { "x": 0, "y": 4 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.나는 상대방이 감정에 솔직할 때, 편안하다고 느낀다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

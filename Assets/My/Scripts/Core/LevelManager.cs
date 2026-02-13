@@ -3,6 +3,7 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
+using My.Scripts.Global;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -72,13 +73,16 @@ namespace My.Scripts.Core
 
     /// <summary> 
     /// 개별 레벨(Q1~Q15 및 튜토리얼)의 전체 흐름을 관리하는 매니저입니다.
-    /// JSON 데이터 로드, 페이지 간의 특수 전환 연출(Cover, Reveal 등), 그리고 최종 영상 변환 트리거를 담당합니다.
+    /// JSON 데이터 로드, 페이지 간의 특수 전환 연출, 그리고 최종 영상 변환 트리거를 담당합니다.
     /// </summary>
     public class LevelManager : BaseFlowManager
     {
-        [Header("Level Settings")] 
-        [SerializeField] private string levelID = "Q2"; // 현재 레벨 식별자 (JSON 파일명 매핑용)
-        [SerializeField] private string nextSceneName = "00_Title"; 
+        [Header("Level Settings")]
+        [SerializeField] private UserType levelType = UserType.A;
+        [Tooltip("현재 레벨의 ID (예: Q1, Q2...). 숫자 파싱 및 JSON 로드에 사용됩니다.")]
+        [SerializeField] private string levelID = "Q1"; 
+        
+        [Tooltip("페이드 효과 사용 여부")]
         [SerializeField] private bool useFadeTransition = true; 
 
         [Header("Global Backgrounds")] 
@@ -89,35 +93,44 @@ namespace My.Scripts.Core
         [SerializeField] private Material cameraMaskMaterial; 
 
         private bool _isTutorialMode; 
+        private int _currentQuestionNumber;
 
         protected override void LoadSettings()
         {
             InitializeGlobals();
+            
+            // 1. 현재 레벨의 숫자 파싱 (Q1 -> 1)
+            _currentQuestionNumber = ParseLevelNumber(levelID);
 
-            // 모든 레벨에서 공통으로 사용하는 텍스트나 설정을 로드합니다.
-            // 이를 통해 각 레벨 JSON 파일의 중복 데이터를 줄입니다.
-            var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
-            if (commonData == null)
+            // 2. 현재 레벨에 맞는 접미사 가져오기 (예: _A, _B)
+            string suffix = "";
+            if (!_isTutorialMode && GameManager.Instance != null)
             {
-                Debug.LogError("[LevelManager] PlayCommon.json 로드 실패");
-                return;
+                suffix = GameManager.Instance.GetLevelSuffix(_currentQuestionNumber);
             }
 
-            string path = _isTutorialMode ? "JSON/PlayTutorial" : $"JSON/Play{levelID}";
-
-            // 튜토리얼과 일반 레벨의 데이터 구조가 다르므로 분기 처리
+            // 3. 공통 데이터 로드
+            var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
+            
+            // 4. 경로 생성 및 로드
+            string path;
             if (_isTutorialMode)
             {
+                path = "JSON/PlayTutorial"; 
+                
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
                 
-                // 개별 설정에 누락된 값이 있다면 공통 데이터로 채워 넣습니다.
-                MergeCommonData(tSetting, commonData);
+                if (tSetting == null)
+                {
+                    Debug.LogError($"[LevelManager] 튜토리얼 데이터를 찾을 수 없습니다: {path}");
+                    return;
+                }
 
+                MergeCommonData(tSetting, commonData);
                 SetCameraFileName(tSetting.Page3);
                 ConfigureCameraPage(false);
 
-                // 페이지 배열 인덱스에 맞춰 데이터 주입
-                // index 4 (CameraPage)는 별도 설정되므로 건너뜀
+                // SetupPageData ... (생략)
                 SetupPageData(0, tSetting.Page1);
                 SetupPageData(1, tSetting.Page2);
                 SetupPageData(2, tSetting.Page3);
@@ -128,10 +141,18 @@ namespace My.Scripts.Core
             }
             else
             {
+                string typeStr = levelType.ToString(); // "A", "B"...
+                path = $"JSON/{typeStr}/Play{levelID}_{typeStr}";
+                
                 var sSetting = JsonLoader.Load<StandardLevelSetting>(path);
                 
-                MergeCommonData(sSetting, commonData);
+                if (sSetting == null)
+                {
+                    Debug.LogError($"[LevelManager] 레벨 데이터를 찾을 수 없습니다: {path}");
+                    return;
+                }
 
+                MergeCommonData(sSetting, commonData);
                 SetCameraFileName(sSetting.Page3);
                 ConfigureCameraPage(true);
 
@@ -141,6 +162,15 @@ namespace My.Scripts.Core
                 SetupPageData(3, sSetting.Page4);
                 SetupPageData(5, sSetting.Page6);
             }
+        }
+        
+        /// <summary> 레벨 ID 문자열에서 숫자만 추출 </summary>
+        private int ParseLevelNumber(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return 0;
+            string numStr = Regex.Replace(id, "[^0-9]", "");
+            if (int.TryParse(numStr, out int num)) return num;
+            return 0;
         }
 
         private void InitializeGlobals()
@@ -171,7 +201,7 @@ namespace My.Scripts.Core
             }
         }
 
-       /// <summary>
+        /// <summary>
         /// 레벨별 고유 설정이 없는 경우 공통 설정(PlayCommon)값으로 덮어씁니다.
         /// 데이터 입력 작업의 효율성을 높이기 위함입니다.
         /// </summary>
@@ -195,7 +225,6 @@ namespace My.Scripts.Core
             }
 
             // [Page 2: QnA]
-            // Page2가 null일 경우 NullReferenceException 방지를 위해 초기화 (Page1/Page3 패턴 적용)
             if (specific.Page2 == null) specific.Page2 = new QnAPageData();
             
             if (common.Page2 != null)
@@ -237,39 +266,39 @@ namespace My.Scripts.Core
             }
         }
         
+        /// <summary>
+        /// 모든 페이지(단계)가 끝났을 때 호출됩니다.
+        /// </summary>
         protected override void OnAllFinished()
         {
-            // 마지막 레벨(Q15)이 끝나면 즉시 씬 이동을 하지 않고, 
-            // 지금까지 녹화된 리얼타임 영상 변환을 수행한 뒤 이동합니다.
+            // 마지막 레벨(Q15)이 끝나면 영상 변환 후 엔딩으로 이동
+            // 그 외에는 계산된 다음 레벨로 이동
             if (string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase))
             {
                 StartCoroutine(ProcessVideoAndFinish());
             }
             else
             {
-                TransitionToNextScene();
+                MoveToNextLevelDynamic(); 
             }
         }
 
+        // ... (TransitionRoutine, ConfigureCameraPage, SetCameraFileName, SanitizeString 등은 기존과 동일) ...
         /// <summary>
         /// 현재 페이지에서 다음 페이지로 넘어갈 때의 연출을 제어합니다.
-        /// 페이지 인덱스에 따라 서로 다른 트랜지션 효과(Cover, Reveal, Amjeon)를 적용합니다.
         /// </summary>
         protected override IEnumerator TransitionRoutine(int targetIndex, int info)
         {
             isTransitioning = true;
-            GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length)
-                ? pages[currentPageIndex]
-                : null;
+            GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
+            
             if (targetIndex < 0 || targetIndex >= pages.Length)
             {
                 isTransitioning = false;
                 yield break;
             }
             
-            // # TODO: 인덱스(3, 4) 하드코딩 제거 권장. PageType이나 Enum으로 상태를 확인하는 것이 안전함.
-            // Page 4(안내) 진입 시, 곧 나올 Page 5(카메라)를 미리 예열하여 
-            // 웹캠 초기화 딜레이로 인한 검은 화면이나 렉을 방지합니다.
+            // Page 4(안내) 진입 시, 곧 나올 Page 5(카메라)를 미리 예열
             if (targetIndex == 3)
             {
                 if (pages.Length > 4 && pages[4] is Page_Camera camPage)
@@ -281,10 +310,8 @@ namespace My.Scripts.Core
             GamePage next = pages[targetIndex];
             bool handled = false;
 
-            // 튜토리얼과 일반 모드의 페이지 구성이 다르므로 트랜지션 로직을 분기합니다.
             if (_isTutorialMode)
             {
-                // [Tutorial Transition Logic]
                 if (currentPageIndex == 0 && targetIndex == 1)
                 {
                     yield return StartCoroutine(CoverTransition(current, next, info));
@@ -313,7 +340,6 @@ namespace My.Scripts.Core
             }
             else
             {
-                // [Standard Transition Logic]
                 if (currentPageIndex == 0 && targetIndex == 1)
                 {
                     yield return StartCoroutine(CoverTransition(current, next, info));
@@ -331,7 +357,6 @@ namespace My.Scripts.Core
                 }
             }
 
-            // 별도 트랜지션이 정의되지 않은 경우 기본 크로스 페이드 처리
             if (!handled)
             {
                 if (current != null)
@@ -363,10 +388,7 @@ namespace My.Scripts.Core
             if (pages.Length > 4 && pages[4] is Page_Camera camPage)
             {
                 bool isQ15 = string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase);
-                
                 camPage.Configure(save, cameraMaskMaterial, isQ15);
-                
-                // 레벨 ID를 전달하여 타임랩스 레코더가 리얼타임 녹화 여부를 결정하도록 합니다.
                 camPage.SetLevelID(levelID);
             }
         }
@@ -377,27 +399,18 @@ namespace My.Scripts.Core
             var cameraPage = pages[4] as Page_Camera;
             if (cameraPage == null) return;
             
-            string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text)
-                ? checkPageData.nicknamePlayerA.text
-                : "PlayerA";
-            string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text)
-                ? checkPageData.nicknamePlayerB.text
-                : "PlayerB";
+            string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text) ? checkPageData.nicknamePlayerA.text : "PlayerA";
+            string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text) ? checkPageData.nicknamePlayerB.text : "PlayerB";
             nameA = SanitizeString(nameA);
             nameB = SanitizeString(nameB);
             
             cameraPage.SetPhotoFilename($"{nameA}{nameB}_{levelID}");
         }
 
-        /// <summary> 
-        /// 파일명으로 사용할 문자열에서 특수문자나 공백 등을 제거하여 안전하게 만듭니다. 
-        /// </summary>
         private string SanitizeString(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
             string clean = input.Replace("\n", "").Replace("\r", "").Replace("님", "").Trim();
-            
-            // 파일 시스템에서 허용하지 않는 문자 제거
             string invalidChars = Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
             return Regex.Replace(clean, invalidRegStr, "");
@@ -411,31 +424,26 @@ namespace My.Scripts.Core
         {
             if (TimeLapseRecorder.Instance != null)
             {
-                // 중복 변환 방지
                 if (TimeLapseRecorder.Instance.IsConversionSuccessful)
                 {
                     Debug.Log("[LevelManager] 이미 변환 완료됨. 인코딩을 스킵합니다.");
-                    TransitionToNextScene();
+                    MoveToNextLevelDynamic();
                     yield break;
                 }
 
-                // 리얼타임 전용 플래그 확인
                 if (!TimeLapseRecorder.Instance.IsRealtimeProcessing)
                 {
                     Debug.Log("[LevelManager] 리얼타임(1배속) 영상 인코딩 시작");
                     TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
                 }
 
-                // 변환 완료 대기 (최대 60초 타임아웃)
                 float timeout = 60f, elapsed = 0f;
-                // 리얼타임 전용 플래그 대기
                 while (TimeLapseRecorder.Instance.IsRealtimeProcessing && elapsed < timeout)
                 {
                     yield return CoroutineData.GetWaitForSeconds(0.5f);
                     elapsed += 0.5f;
                 }
 
-                // 타임아웃 발생 시 리얼타임 플래그 강제 초기화 (Deadlock 방지)
                 if (TimeLapseRecorder.Instance.IsRealtimeProcessing)
                 {
                     Debug.LogWarning("[LevelManager] 리얼타임 변환 타임아웃. 플래그를 강제 리셋합니다.");
@@ -443,23 +451,69 @@ namespace My.Scripts.Core
                 }
             }
 
-            TransitionToNextScene();
+            MoveToNextLevelDynamic();
         }
 
-        private void TransitionToNextScene()
+        /// <summary>
+        /// 현재 상태(튜토리얼 여부, 현재 질문 번호)와 유저 타입을 고려하여 다음 씬으로 이동합니다.
+        /// </summary>
+        private void MoveToNextLevelDynamic()
         {
-            if (useFadeTransition && GameManager.Instance != null) GameManager.Instance.ChangeScene(nextSceneName);
-            else SceneManager.LoadScene(nextSceneName);
+            if (_isTutorialMode)
+            {
+                // 튜토리얼 종료 -> Q1 시작
+                // Q1은 타입 분기가 없거나 A타입을 따르므로 GetNextSceneName(1) 호출
+                string firstScene = GetNextSceneName(1); 
+                
+                if (useFadeTransition && GameManager.Instance != null) 
+                    GameManager.Instance.ChangeScene(firstScene);
+                else 
+                    SceneManager.LoadScene(firstScene);
+                
+                return;
+            }
+
+            // 현재가 Q1이면 다음은 Q2
+            int nextNum = _currentQuestionNumber + 1;
+            
+            // 다음 씬 이름 계산 (PlayQ2_A, PlayQ4_B 등)
+            string nextScene = GetNextSceneName(nextNum);
+            
+            Debug.Log($"[LevelManager] Moving to next level: {nextScene}");
+
+            if (useFadeTransition && GameManager.Instance != null) 
+                GameManager.Instance.ChangeScene(nextScene);
+            else 
+                SceneManager.LoadScene(nextScene);
         }
 
-        /// <summary> 페이지 진입 시 특정 데이터(트리거 정보)를 전달하여 로직을 실행합니다. </summary>
+        /// <summary> 
+        /// 질문 번호와 유저 타입에 기반해 씬 이름 생성 
+        /// <para>GameManager.GetLevelSuffix를 통해 _A, _B, _C 등을 받아옵니다.</para>
+        /// </summary>
+        private string GetNextSceneName(int qNum)
+        {
+            // 질문 번호가 15를 넘어가면 엔딩으로
+            if (qNum > 15) return GameConstants.Scene.Ending;
+
+            // GameManager에서 현재 유저 타입과 질문 번호에 맞는 접미사 획득
+            // 예: B유형이면서 4번 질문이면 "_B" 반환
+            string suffix = "";
+            if (GameManager.Instance != null)
+            {
+                suffix = GameManager.Instance.GetLevelSuffix(qNum);
+            }
+
+            // [수정] 씬 이름 포맷을 "Play_Q{n}{suffix}"로 변경 (예: Play_Q1_A)
+            return $"Play_Q{qNum}{suffix}"; 
+        }
+        
+        // ... (나머지 헬퍼 함수들: HandleTrigger, CoverTransition 등은 기존 코드 그대로 유지) ...
         private void HandleTrigger(GamePage page, int info)
         {
-            // 예: Page3에서 누가 먼저 버튼을 눌렀는지(1 or 2)에 따라 불 켜는 연출 실행
             if (info != 0 && page is Page_Check checkPage) checkPage.ActivatePlayerCheck(info == 1);
         }
 
-        /// <summary> 커버 트랜지션: 검은 화면이 덮이면서 페이지를 교체하고 다시 열립니다. </summary>
         private IEnumerator CoverTransition(GamePage current, GamePage next, int info)
         {
             if (globalBlackCanvasGroup != null)
@@ -478,14 +532,11 @@ namespace My.Scripts.Core
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
         }
 
-        /// <summary> 리빌 트랜지션: 현재 페이지가 사라지면서 뒤에 있던 다음 페이지가 드러납니다. </summary>
         private IEnumerator RevealTransition(GamePage current, GamePage next, int info)
         {
-            // 배경을 미리 깔아둠
             if (globalBlackCanvasGroup != null) globalBlackCanvasGroup.alpha = 1f;
             if (current)
             {
-                // 현재 페이지 페이드 아웃
                 yield return StartCoroutine(FadePage(current, 1f, 0f));
                 current.OnExit();
             }
@@ -495,19 +546,15 @@ namespace My.Scripts.Core
                 next.OnEnter();
                 next.SetAlpha(0f);
                 HandleTrigger(next, info);
-                // 다음 페이지 페이드 인
                 yield return StartCoroutine(FadePage(next, 0f, 1f));
             }
 
-            // 배경 제거
             if (globalBlackCanvasGroup != null)
                 yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
         }
 
-        /// <summary> 암전 트랜지션: 화면이 완전히 어두워졌다가 다음 페이지로 밝아집니다. </summary>
         private IEnumerator AmjeonTransition(GamePage current, GamePage next, int info, bool enableWhiteBg = false)
         {
-            // FadeManager를 통한 전체 화면 페이드 아웃
             if (FadeManager.Instance)
             {
                 bool d = false;
@@ -518,7 +565,6 @@ namespace My.Scripts.Core
 
             if (current) current.OnExit();
             
-            // 카메라 플래시 효과 등을 위해 흰 배경이 필요한 경우 처리
             if (enableWhiteBg && globalWhiteBackground)
             {
                 globalWhiteBackground.gameObject.SetActive(true);
@@ -537,9 +583,7 @@ namespace My.Scripts.Core
             if (FadeManager.Instance) FadeManager.Instance.FadeIn(1f);
         }
 
-        /// <summary> 순차 트랜지션: 현재 페이지 퇴장 -> 대기 -> 다음 페이지 입장 </summary>
-        private IEnumerator SequenceTransition(GamePage current, GamePage next, Image background, int info,
-            float waitTime = 0f)
+        private IEnumerator SequenceTransition(GamePage current, GamePage next, Image background, int info, float waitTime = 0f)
         {
             if (background) background.gameObject.SetActive(true);
             if (current)
@@ -569,7 +613,6 @@ namespace My.Scripts.Core
                 cg.alpha = Mathf.Lerp(s, e, t / d);
                 yield return null;
             }
-
             cg.alpha = e;
         }
     }
