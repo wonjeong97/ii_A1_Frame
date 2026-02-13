@@ -36,23 +36,6 @@ namespace My.Scripts.Global
             public const string Title = "JSON/Title"; // 타이틀 데이터
             public const string Tutorial = "JSON/Tutorial"; // 튜토리얼 데이터
             public const string PlayTutorial = "JSON/PlayTutorial"; // 플레이 튜토리얼 데이터
-            
-            public const string PlayQ1_A = "JSON/A/PlayQ1_A"; // 질문 1 데이터
-            public const string PlayQ2_A = "JSON/A/PlayQ2_A"; // 질문 2 데이터
-            public const string PlayQ3_A = "JSON/A/PlayQ3_A"; // 질문 3 데이터
-            public const string PlayQ4_A = "JSON/A/PlayQ4_A"; // 질문 4 데이터
-            public const string PlayQ5_A = "JSON/A/PlayQ5_A"; // 질문 5 데이터
-            public const string PlayQ6_A = "JSON/A/PlayQ6_A"; // 질문 6 데이터
-            public const string PlayQ7_A = "JSON/A/PlayQ7_A"; // 질문 7 데이터
-            public const string PlayQ8_A = "JSON/A/PlayQ8_A"; // 질문 8 데이터
-            public const string PlayQ9_A = "JSON/A/PlayQ9_A"; // 질문 9 데이터
-            public const string PlayQ10_A = "JSON/A//PlayQ10_A"; // 질문 10 데이터
-            public const string PlayQ11_A = "JSON/A/PlayQ11_A"; // 질문 11 데이터
-            public const string PlayQ12_A = "JSON/A/PlayQ12_A"; // 질문 12 데이터
-            public const string PlayQ13_A = "JSON/A/PlayQ13_A"; // 질문 13 데이터
-            public const string PlayQ14_A = "JSON/A/PlayQ14_A"; // 질문 14 데이터
-            public const string PlayQ15_A = "JSON/A/PlayQ15_A"; // 질문 15 데이터
-            
             public const string Ending = "JSON/Ending"; // 엔딩 데이터
         }
     }

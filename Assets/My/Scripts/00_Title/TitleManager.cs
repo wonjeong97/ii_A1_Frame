@@ -67,17 +67,32 @@ namespace My.Scripts._00_Title
             SceneManager.LoadScene(GameConstants.Scene.Tutorial);
         }
         
-        public void OnClickTypeButton(string typeStr)
-        {
-            // 버튼의 OnClick 이벤트에 연결 (인자로 "A", "B" 등 전달)
-            if (Enum.TryParse(typeStr, out UserType selectedType))
-            {
-                GameManager.Instance.currentUserType = selectedType;
-                Debug.Log($"유저 타입 설정됨: {selectedType}");
-        
-                // 타입 설정 후 튜토리얼로 이동 (혹은 다음 단계)
-                SceneManager.LoadScene(GameConstants.Scene.Tutorial);
-            }
-        }
+       public void OnClickTypeButton(string typeStr)
+               {
+
+                   if (_isTransitioning) return;
+                   if (GameManager.Instance == null)
+                   {
+                       Debug.LogError("[TitleManager] GameManager.Instance is null. Cannot set UserType.");
+                       return;
+                   }
+       
+                   // 버튼의 OnClick 이벤트에 연결 (인자로 "A", "B" 등 전달)
+                   // Enum 파싱 실패 시 피드백 제공
+                   if (Enum.TryParse(typeStr, out UserType selectedType))
+                   {
+                       _isTransitioning = true; // 전환 시작
+       
+                       GameManager.Instance.currentUserType = selectedType;
+                       Debug.Log($"유저 타입 설정됨: {selectedType}");
+               
+                       // 타입 설정 후 튜토리얼로 이동
+                       SceneManager.LoadScene(GameConstants.Scene.Tutorial);
+                   }
+                   else
+                   {
+                       Debug.LogWarning($"[TitleManager] Invalid UserType string: {typeStr}. Please check button arguments.");
+                   }
+               }
     }
 }

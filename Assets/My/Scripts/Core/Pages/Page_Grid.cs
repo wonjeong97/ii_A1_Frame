@@ -69,6 +69,8 @@ namespace My.Scripts.Core.Pages
         private int _p2LastDir; // 1: CW, -1: CCW
 
         private const float FastInputThreshold = 0.2f; // 빠른 입력 판단 기준 시간 (초)
+        
+        private int GetGridCenterIndex() => Mathf.Max(0, (gridSize - 1) / 2);
 
         // 셀 페이드 정보 관리
         private class CellFadeInfo
@@ -93,7 +95,15 @@ namespace My.Scripts.Core.Pages
             // JSON에 좌표 데이터가 있다면 인스펙터 값을 덮어씌움
             if (data.questionSpots != null && data.questionSpots.Count > 0)
             {
-                questionSpots = new List<Vector2Int>(data.questionSpots);
+                var filtered = new HashSet<Vector2Int>();
+                foreach (var spot in data.questionSpots)
+                {
+                    if (spot.x >= 0 && spot.x < gridSize && spot.y >= 0 && spot.y < gridSize)
+                    {
+                        filtered.Add(spot);
+                    }
+                    questionSpots = new List<Vector2Int>(filtered);
+                }
             }
 
             if (questionTexts != null)
@@ -132,8 +142,9 @@ namespace My.Scripts.Core.Pages
             if (!InitializeGame()) return;
 
             // 시작 위치 설정
-            int startX = (gridSize / 2) - 1;
-            int startY = (gridSize / 2) - 1;
+            int center = GetGridCenterIndex();
+            int startX = center;
+            int startY = center;
             SetFocusToGrid(startX, startY, true);
         }
 
@@ -141,6 +152,12 @@ namespace My.Scripts.Core.Pages
         private bool InitializeGame()
         {
             if (!imageBlack || !imageFocus) return false;
+
+            if (gridSize <= 0)
+            {
+                Debug.LogError("[Page_Grid] gridSize must be >= 1");
+                return false;
+            }
             _blackRect = imageBlack.rectTransform;
             _cellWidth = _blackRect.rect.width / gridSize;
             _cellHeight = _blackRect.rect.height / gridSize;
@@ -175,7 +192,7 @@ namespace My.Scripts.Core.Pages
             if (_totalQuestionCount == 0)
             {
                 // 중앙 위치를 기본 정답으로 설정
-                int center = (gridSize / 2) - 1;
+                int center = GetGridCenterIndex();
                 _questionMap[center, center] = true;
                 _totalQuestionCount = 1;
             }
