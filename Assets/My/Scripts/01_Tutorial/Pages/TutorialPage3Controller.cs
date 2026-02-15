@@ -111,6 +111,7 @@ namespace My.Scripts._01_Tutorial.Pages
                         // 한 바퀴 완료 체크
                         if (_p1StepCount >= StepsForFullRotation)
                         {
+                            SoundManager.Instance?.PlaySFX("카메라_1");
                             CompleteStep(1);
                             _p1StepCount = 0; // 중복 호출 방지
                         }
@@ -151,7 +152,8 @@ namespace My.Scripts._01_Tutorial.Pages
                         _p2LastTime = now;
 
                         if (_p2StepCount >= StepsForFullRotation)
-                        {
+                        {   
+                            SoundManager.Instance?.PlaySFX("카메라_1");
                             CompleteStep(2);
                             _p2StepCount = 0;
                         }

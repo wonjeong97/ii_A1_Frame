@@ -4,6 +4,7 @@ using My.Scripts.Timelapse; // TimeLapseRecorder 사용을 위해 추가
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Wonjeong.Data;
+using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts._00_Title
@@ -30,14 +31,17 @@ namespace My.Scripts._00_Title
         private void LoadSettings()
         {
             Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-            
-            if (settings != null)
-            {
-                _fadeTime = settings.fadeTime; // 설정값 적용
-            }
-            else
+
+            if (settings == null)
             {
                 Debug.LogWarning("[TitleManager] Settings.json 로드 실패.");
+                return;
+            }
+            _fadeTime = settings.fadeTime; // 설정값 적용
+
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlayBGM("MainBGM");
             }
         }
         

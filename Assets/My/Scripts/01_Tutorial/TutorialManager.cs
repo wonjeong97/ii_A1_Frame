@@ -43,6 +43,12 @@ namespace My.Scripts._01_Tutorial
             if (pages.Length > 4 && pages[4] != null) pages[4].SetupData(setting.page5);
             if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
             if (pages.Length > 6 && pages[6] != null) pages[6].SetupData(setting.page7);
+
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.StopBGM();
+                SoundManager.Instance.PlayBGM("MainBGM"); // BGM 처음부터 다시 재생
+            }
         }
 
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>

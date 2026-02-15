@@ -186,6 +186,7 @@ namespace My.Scripts._01_Tutorial.Pages
                             direction = dir;
                             _p1LastDir = dir;
                             _p1LastTime = now;
+                            SoundManager.Instance?.PlaySFX("카메라_1");
                         }
                     }
                     _lastP1Key = currentKey;
@@ -222,6 +223,7 @@ namespace My.Scripts._01_Tutorial.Pages
                             direction = dir;
                             _p2LastDir = dir;
                             _p2LastTime = now;
+                            SoundManager.Instance?.PlaySFX("카메라_1");
                         }
                     }
                     _lastP2Key = currentKey;
@@ -315,7 +317,7 @@ namespace My.Scripts._01_Tutorial.Pages
         private IEnumerator TextChangeSequence(TextSetting newTextData)
         {
             yield return StartCoroutine(FadeTextRoutine(1f, 0f));
-            if (newTextData != null && descriptionText != null)
+            if (newTextData != null && descriptionText)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, newTextData);
             }
