@@ -41,6 +41,11 @@ namespace My.Scripts._01_Tutorial.Pages
                 c.a = 1f;
                 descriptionText.color = c;
             }
+
+            if (SoundManager.Instance)
+            {
+                SoundManager.Instance.PlaySFX("공통_6");
+            }
             
             StartCoroutine(WaitAndNextRoutine());
         }

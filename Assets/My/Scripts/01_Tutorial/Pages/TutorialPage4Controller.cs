@@ -88,6 +88,8 @@ namespace My.Scripts._01_Tutorial.Pages
             SetImageAlpha(imgBackB, 1f);
             SetImageAlpha(imgLightB, 0f);
             if(imgLightB) imgLightB.gameObject.SetActive(false);
+            
+            SoundManager.Instance?.PlaySFX("공통_1");
         }
 
         private void Update()
@@ -236,7 +238,8 @@ namespace My.Scripts._01_Tutorial.Pages
 
         /// <summary> 대기 후 단계 완료 처리 </summary>
         private IEnumerator WaitAndComplete()
-        {
+        {   
+            SoundManager.Instance?.PlaySFX("공통_3");
             yield return CoroutineData.GetWaitForSeconds(2f);
             CompleteStep(); 
         }
