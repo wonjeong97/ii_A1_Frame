@@ -62,7 +62,7 @@ namespace My.Scripts.Core.Pages
             PlaySFXOnEnter();
             
             string currentSceneName = SceneManager.GetActiveScene().name;
-            if (gameObject.name == "Page6" && currentSceneName.Contains("Q15"))
+            if (gameObject.name.Contains("Page6") && currentSceneName.Contains("Q15"))
             {
                 if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsProcessing)
                 {

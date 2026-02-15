@@ -207,7 +207,7 @@ namespace My.Scripts.Core.Pages
         {
             float maxAlpha = 0.8f;
 
-            // 카메라 활영 효과
+            // 카메라 촬영 효과
             if (flashImage)
             {   
                 SoundManager.Instance?.PlaySFX("공통_11");
