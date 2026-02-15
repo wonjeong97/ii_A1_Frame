@@ -104,7 +104,7 @@ namespace My.Scripts._00_Title
 
         private IEnumerator StartMainBGM()
         {
-            if (SoundManager.Instance == null) yield break;
+            if (!SoundManager.Instance) yield break;
 
             SoundManager.Instance.StopBGM();
             yield return CoroutineData.GetWaitForSeconds(5.0f);
