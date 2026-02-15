@@ -32,6 +32,7 @@ namespace My.Scripts.Core.Pages
         public override void OnEnter()
         {
             base.OnEnter();
+            SoundManager.Instance?.PlaySFX("공통_13");
             StartCoroutine(SequenceRoutine());
         }
 
@@ -57,7 +58,8 @@ namespace My.Scripts.Core.Pages
             // 2. 카운트다운 (3 -> 2 -> 1)
             string[] counts = { "3", "2", "1" };
             TextSetting countSetting = _data?.countdownText;
-
+            
+            SoundManager.Instance?.PlaySFX("공통_10_3초");
             foreach (string count in counts)
             {
                 // 카운트다운 시작 전 텍스트 다시 보이게 설정 (알파 1)
@@ -83,9 +85,10 @@ namespace My.Scripts.Core.Pages
 
             // 3. 시작 텍스트 ("시작!")
             if (descriptionText && _data?.startText != null)
-            {
+            {   
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.startText);
                 SetTextAlpha(1f); // 스타일 적용 시 알파가 변경될 수 있으므로 확인
+                SoundManager.Instance?.PlaySFX("공통_14");
             }
             yield return CoroutineData.GetWaitForSeconds(1.0f); 
 

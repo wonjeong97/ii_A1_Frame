@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using My.Scripts.Global;
 using My.Scripts.Timelapse; // TimeLapseRecorder 사용을 위해 추가
 using UnityEngine;
@@ -14,10 +15,17 @@ namespace My.Scripts._00_Title
     {
         private bool _isTransitioning = false; // 중복 전환 방지 플래그
         private float _fadeTime = 1.0f; // 페이드 시간 (설정값)
-    
+        
+        private Coroutine _soundCoroutine;
+
         private void Start()
         {
             LoadSettings();
+
+            if (_soundCoroutine == null)
+            {
+                _soundCoroutine = StartCoroutine(StartMainBGM());
+            }
             
             // 타이틀 진입 시 혹시 남아있을 수 있는 이전 촬영 데이터(소스 이미지) 정리
             if (TimeLapseRecorder.Instance != null)
@@ -26,7 +34,7 @@ namespace My.Scripts._00_Title
                 TimeLapseRecorder.Instance.ClearRecordingData();
             }
         }
-        
+
         /// <summary> JSON 설정 파일 로드 </summary>
         private void LoadSettings()
         {
@@ -37,14 +45,10 @@ namespace My.Scripts._00_Title
                 Debug.LogWarning("[TitleManager] Settings.json 로드 실패.");
                 return;
             }
-            _fadeTime = settings.fadeTime; // 설정값 적용
 
-            if (SoundManager.Instance != null)
-            {
-                SoundManager.Instance.PlayBGM("MainBGM");
-            }
+            _fadeTime = settings.fadeTime; // 설정값 적용
         }
-        
+
         /// <summary> 입력 감지 (태그 시뮬레이션) </summary>
         private void Update()
         {
@@ -70,33 +74,47 @@ namespace My.Scripts._00_Title
 
             SceneManager.LoadScene(GameConstants.Scene.Tutorial);
         }
-        
-       public void OnClickTypeButton(string typeStr)
-               {
 
-                   if (_isTransitioning) return;
-                   if (GameManager.Instance == null)
-                   {
-                       Debug.LogError("[TitleManager] GameManager.Instance is null. Cannot set UserType.");
-                       return;
-                   }
-       
-                   // 버튼의 OnClick 이벤트에 연결 (인자로 "A", "B" 등 전달)
-                   // Enum 파싱 실패 시 피드백 제공
-                   if (Enum.TryParse(typeStr, out UserType selectedType))
-                   {
-                       _isTransitioning = true; // 전환 시작
-       
-                       GameManager.Instance.currentUserType = selectedType;
-                       Debug.Log($"유저 타입 설정됨: {selectedType}");
-               
-                       // 타입 설정 후 튜토리얼로 이동
-                       SceneManager.LoadScene(GameConstants.Scene.Tutorial);
-                   }
-                   else
-                   {
-                       Debug.LogWarning($"[TitleManager] Invalid UserType string: {typeStr}. Please check button arguments.");
-                   }
-               }
+        public void OnClickTypeButton(string typeStr)
+        {
+            if (_isTransitioning) return;
+            if (GameManager.Instance == null)
+            {
+                Debug.LogError("[TitleManager] GameManager.Instance is null. Cannot set UserType.");
+                return;
+            }
+
+            // 버튼의 OnClick 이벤트에 연결 (인자로 "A", "B" 등 전달)
+            // Enum 파싱 실패 시 피드백 제공
+            if (Enum.TryParse(typeStr, out UserType selectedType))
+            {
+                _isTransitioning = true; // 전환 시작
+
+                GameManager.Instance.currentUserType = selectedType;
+                Debug.Log($"유저 타입 설정됨: {selectedType}");
+
+                // 타입 설정 후 튜토리얼로 이동
+                SceneManager.LoadScene(GameConstants.Scene.Tutorial);
+            }
+            else
+            {
+                Debug.LogWarning($"[TitleManager] Invalid UserType string: {typeStr}. Please check button arguments.");
+            }
+        }
+
+        private IEnumerator StartMainBGM()
+        {
+            if (!SoundManager.Instance) yield break;
+
+            SoundManager.Instance.StopBGM();
+            yield return CoroutineData.GetWaitForSeconds(5.0f);
+            SoundManager.Instance.PlayBGM("MainBGM");
+        }
+
+        private void OnDestroy()
+        {   
+            StopAllCoroutines();
+            _soundCoroutine = null;
+        }
     }
 }

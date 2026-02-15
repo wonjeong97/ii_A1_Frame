@@ -58,9 +58,11 @@ namespace My.Scripts.Core.Pages
             // UI 초기화
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
+
+            PlaySFXOnEnter();
             
             string currentSceneName = SceneManager.GetActiveScene().name;
-            if (gameObject.name == "Page6" && currentSceneName.Contains("Q15"))
+            if (gameObject.name.Contains("Page6") && currentSceneName.Contains("Q15"))
             {
                 if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsProcessing)
                 {
@@ -69,6 +71,20 @@ namespace My.Scripts.Core.Pages
                 }
             }
             StartCoroutine(SequenceRoutine());
+        }
+
+        private void PlaySFXOnEnter()
+        {
+            if (!SoundManager.Instance) return;
+            
+            if (gameObject.name.Contains("Page4"))
+            {
+                SoundManager.Instance.PlaySFX("공통_9");
+            }
+            else if (gameObject.name.Contains("Page6"))
+            {
+                SoundManager.Instance.PlaySFX("공통_12");
+            }
         }
 
         /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>

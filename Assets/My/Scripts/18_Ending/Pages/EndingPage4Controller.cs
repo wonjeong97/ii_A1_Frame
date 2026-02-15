@@ -68,22 +68,21 @@ namespace My.Scripts._18_Ending.Pages
         /// 엔딩 시퀀스 루틴입니다. 분기된 엔딩 타입에 따라 다른 연출과 대기 시간을 가집니다.
         /// </summary>
         private IEnumerator SequenceRoutine()
-        {
-            if (_isAllFinished && redLineImage != null)
+        {   
+            yield return CoroutineData.GetWaitForSeconds(1.0f);
+            
+            if (_isAllFinished && redLineImage)
             {
-                // 특별 엔딩: 텍스트를 먼저 읽을 시간을 주고(1초), 붉은 실이 차오르는 연출(2초)을 보여줍니다.
-                // 그 후 충분한 여운(5초)을 남깁니다.
-                yield return CoroutineData.GetWaitForSeconds(1.0f);
                 yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 2.0f));
+                SoundManager.Instance?.FadeOutBGM(5.0f);
                 yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
             else
-            {
-                // 일반 엔딩: 텍스트만 보여주며 7초간 대기합니다.
-                yield return CoroutineData.GetWaitForSeconds(7.0f);
+            {   
+                yield return CoroutineData.GetWaitForSeconds(2.0f);
+                SoundManager.Instance?.FadeOutBGM(5.0f);
+                yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
-            
-            Debug.Log($"[EndingPage4Controller] End Sequence: {Time.time}");
             CompleteStep();
         }
 

@@ -127,7 +127,8 @@ namespace My.Scripts.Core.Pages
         }
 
         private IEnumerator CompleteRoutine()
-        {
+        {   
+            SoundManager.Instance?.PlaySFX("공통_22");
             yield return CoroutineData.GetWaitForSeconds(1.0f);
             CompleteStep();
         }
