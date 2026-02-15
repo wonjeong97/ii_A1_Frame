@@ -398,7 +398,7 @@ namespace My.Scripts.Core.Pages
                 _lastP2Key = p2Key;
             }
 
-            // [추가] 3. 키보드 방향키 지원 (테스트/보조용)
+            // 3. 키보드 방향키 지원 (테스트/보조용)
             if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
             if (Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
             if (Input.GetKeyDown(KeyCode.UpArrow)) dy = -1;
@@ -488,6 +488,7 @@ namespace My.Scripts.Core.Pages
                 if (!_foundSpots.Contains(p))
                 {
                     _foundSpots.Add(p);
+                    SoundManager.Instance?.PlaySFX("카메라_2");
                     if (_foundSpots.Count >= _totalQuestionCount && !_isStageCompleted)
                     {
                         _isStageCompleted = true;
@@ -499,7 +500,8 @@ namespace My.Scripts.Core.Pages
 
         /// <summary> 완료 연출 시퀀스 </summary>
         private IEnumerator ShowCompletionRoutine()
-        {
+        {   
+            SoundManager.Instance?.PlaySFX("카메라_3");
             if (completionCanvasGroups != null)
             {
                 float t = 0f;
@@ -522,7 +524,6 @@ namespace My.Scripts.Core.Pages
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             
-            // 아래 루프는 이미 p = t2 / 0.5f 로 정상 구현되어 있음
             float t2 = 0f, startA = imageGrid ? imageGrid.color.a : 1f;
             while (t2 < 0.5f)
             {

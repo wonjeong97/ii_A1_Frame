@@ -4,6 +4,7 @@ using System.IO;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.UI;
+using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
@@ -179,12 +180,13 @@ namespace My.Scripts.Core.Pages
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
             // 카운트다운 시작과 동시에 타임랩스/리얼타임 녹화 시작
-            if (_shouldSavePhoto && TimeLapseRecorder.Instance != null && _webCamTexture != null)
+            if (_shouldSavePhoto && TimeLapseRecorder.Instance && _webCamTexture)
             {
                 TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
                 TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
             }
-
+            
+            SoundManager.Instance?.PlaySFX("공통_10_3초");
             yield return StartCoroutine(ShowAndFadeNumber("3"));
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
@@ -205,9 +207,10 @@ namespace My.Scripts.Core.Pages
         {
             float maxAlpha = 0.8f;
 
-            // 플래시 켜기
+            // 카메라 활영 효과
             if (flashImage)
-            {
+            {   
+                SoundManager.Instance?.PlaySFX("공통_11");
                 flashImage.gameObject.SetActive(true);
                 SetImageAlpha(flashImage, maxAlpha);
             }

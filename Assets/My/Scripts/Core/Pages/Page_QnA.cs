@@ -119,7 +119,9 @@ namespace My.Scripts.Core.Pages
         {
             // 페이지 전체 페이드 완료 대기
             if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
-
+            
+            SoundManager.Instance?.PlaySFX("공통_8");
+            
             // 순차 등장 (FadeContent 사용)
             yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 1f));
             yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 1f));

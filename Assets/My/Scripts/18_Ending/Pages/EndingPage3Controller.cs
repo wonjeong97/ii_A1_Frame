@@ -50,6 +50,7 @@ namespace My.Scripts._18_Ending.Pages
         private IEnumerator SequenceRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(0.5f); // 페이지 로드 대기
+            SoundManager.Instance?.PlaySFX("공통_6");
             yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1.0f));
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             yield return StartCoroutine(FadeCanvasGroup(textCanvasGroup, 0f, 1f, 1.0f));
