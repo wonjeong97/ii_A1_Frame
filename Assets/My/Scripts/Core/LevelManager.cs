@@ -76,7 +76,9 @@ namespace My.Scripts.Core
     /// JSON 데이터 로드, 페이지 간의 특수 전환 연출, 그리고 최종 영상 변환 트리거를 담당합니다.
     /// </summary>
     public class LevelManager : BaseFlowManager
-    {
+    {   
+        public static LevelManager Instance { get; private set; }
+        
         [Header("Level Settings")]
         [SerializeField] private UserType levelType = UserType.A;
         [Tooltip("현재 레벨의 ID (예: Q1, Q2...). 숫자 파싱 및 JSON 로드에 사용됩니다.")]
@@ -94,6 +96,13 @@ namespace My.Scripts.Core
 
         private bool _isTutorialMode; 
         private int _currentQuestionNumber;
+        
+        public int CurrentQuestionNumber => _currentQuestionNumber;
+        
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         protected override void LoadSettings()
         {

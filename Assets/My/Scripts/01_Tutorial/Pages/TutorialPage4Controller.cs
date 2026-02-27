@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Pages;
+using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -52,7 +53,8 @@ namespace My.Scripts._01_Tutorial.Pages
         private float _p2LastTime;
         private int _p2LastDir;
         
-        private const int StepsForFullRotation = 4; // 한 바퀴 판정 기준
+        // 360도 회전을 위해 3칸 이동 시 한 바퀴로 판정
+        private const int StepsForFullRotation = 3; 
         private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
 
         /// <summary>  데이터 설정 </summary>
@@ -88,6 +90,15 @@ namespace My.Scripts._01_Tutorial.Pages
             SetImageAlpha(imgBackB, 1f);
             SetImageAlpha(imgLightB, 0f);
             if(imgLightB) imgLightB.gameObject.SetActive(false);
+            
+            if (GameManager.Instance)
+            {
+                Sprite spriteA = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerAColor);
+                if (spriteA && imgBackA) imgBackA.sprite = spriteA;
+
+                Sprite spriteB = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerBColor);
+                if (spriteB && imgBackB) imgBackB.sprite = spriteB;
+            }
             
             SoundManager.Instance?.PlaySFX("공통_1");
         }
@@ -229,7 +240,8 @@ namespace My.Scripts._01_Tutorial.Pages
             if (isLightOnA && isLightOnB)
             {
                 if (!_completionStarted)
-                {
+                {   
+                    SoundManager.Instance?.PlaySFX("카메라_1");
                     _completionStarted = true;
                     StartCoroutine(WaitAndComplete());
                 }
@@ -246,12 +258,10 @@ namespace My.Scripts._01_Tutorial.Pages
 
         /// <summary> 
         /// 체크 표시(V) 페이드 인 연출 
-        /// <para>수정됨: 배경(Back)은 투명해지지 않고 유지되며, 체크(Light)만 1초 동안 나타납니다.</para>
         /// </summary>
         private IEnumerator ShowCheckMarkRoutine(Image backImage, Image lightImage)
         {
-            // BackImage는 null 체크만 하고 알파값은 건드리지 않음 (배경 유지)
-            if (backImage == null || lightImage == null) yield break;
+            if (!backImage || !lightImage) yield break;
 
             float timer = 0f;
             float duration = 1.0f; // 1초 동안 페이드 인
@@ -280,7 +290,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private void SetImageAlpha(Image img, float alpha)
         {
-            if (img == null) return;
+            if (!img) return;
             Color c = img.color;
             c.a = alpha;
             img.color = c;

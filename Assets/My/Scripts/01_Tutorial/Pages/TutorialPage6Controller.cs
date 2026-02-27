@@ -62,13 +62,16 @@ namespace My.Scripts._01_Tutorial.Pages
 
         // 휠 입력 추적 변수
         private int _lastP1Key = -1;
+        private int _p1StepCount = 0; // [추가] P1 연속 이동 카운트
         private float _p1LastTime;
         private int _p1LastDir;
 
         private int _lastP2Key = -1;
+        private int _p2StepCount = 0; // [추가] P2 연속 이동 카운트
         private float _p2LastTime;
         private int _p2LastDir;
 
+        private const int StepsForFullRotation = 3; // [추가] 360도 회전을 위해 3칸 이동 시 한 바퀴 판정
         private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
 
         protected override void SetupData(TutorialPage6Data data)
@@ -96,8 +99,8 @@ namespace My.Scripts._01_Tutorial.Pages
             _stageSequenceRoutine = null; 
             
             // 휠 상태 초기화
-            _lastP1Key = -1; _p1LastDir = 0; _p1LastTime = 0f;
-            _lastP2Key = -1; _p2LastDir = 0; _p2LastTime = 0f;
+            _lastP1Key = -1; _p1StepCount = 0; _p1LastDir = 0; _p1LastTime = 0f;
+            _lastP2Key = -1; _p2StepCount = 0; _p2LastDir = 0; _p2LastTime = 0f;
             
             ResetIdleState(true);
             
@@ -183,10 +186,21 @@ namespace My.Scripts._01_Tutorial.Pages
 
                         if (dir != 0)
                         {
-                            direction = dir;
+                            direction = dir; // UI 이동을 위한 방향 전달
+                            
+                            // [추가] 회전 카운트 누적
+                            if (dir == _p1LastDir) _p1StepCount++;
+                            else _p1StepCount = 1;
+
                             _p1LastDir = dir;
                             _p1LastTime = now;
-                            SoundManager.Instance?.PlaySFX("카메라_1");
+
+                            // 한 바퀴를 돌렸을 때만 사운드 출력
+                            if (_p1StepCount >= StepsForFullRotation)
+                            {
+                                SoundManager.Instance?.PlaySFX("카메라_1");
+                                _p1StepCount = 0; // 초기화
+                            }
                         }
                     }
                     _lastP1Key = currentKey;
@@ -220,17 +234,28 @@ namespace My.Scripts._01_Tutorial.Pages
 
                         if (dir != 0)
                         {
-                            direction = dir;
+                            direction = dir; // UI 이동을 위한 방향 전달
+
+                            // [추가] 회전 카운트 누적
+                            if (dir == _p2LastDir) _p2StepCount++;
+                            else _p2StepCount = 1;
+
                             _p2LastDir = dir;
                             _p2LastTime = now;
-                            SoundManager.Instance?.PlaySFX("카메라_1");
+
+                            // 한 바퀴를 돌렸을 때만 사운드 출력
+                            if (_p2StepCount >= StepsForFullRotation)
+                            {
+                                SoundManager.Instance?.PlaySFX("카메라_1");
+                                _p2StepCount = 0; // 초기화
+                            }
                         }
                     }
                     _lastP2Key = currentKey;
                 }
             }
 
-            // 이동 적용
+            // 이동 적용 (이동은 휠 1틱마다 동작함)
             if (direction != 0)
             {
                 if (!_hasStarted)
@@ -295,6 +320,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 
                 // P2 입력 초기화
                 _lastP2Key = -1;
+                _p2StepCount = 0;
                 _p2LastDir = 0;
                 _p2LastTime = 0f;
             }

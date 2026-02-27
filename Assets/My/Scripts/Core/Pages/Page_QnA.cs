@@ -1,5 +1,6 @@
 using System.Collections;
 using My.Scripts.Core.Data;
+using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.UI;
@@ -95,22 +96,38 @@ namespace My.Scripts.Core.Pages
         /// <summary>  플레이어의 키 입력(숫자키)에 따라 답변을 선택 처리 </summary>
         private void HandleSelectionInput()
         {
-            // Player A (1~5)
-            if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Alpha2) ||
-                Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.Alpha4) ||
-                Input.GetKeyDown(KeyCode.Alpha5))
-            {
-                _isCompleted = true;
-                CompleteStep(1); // 1: Player A 완료 정보
-            }
+            int selectedValue = 0;
+            string side = "";
 
-            // Player B (6~0)
-            if (Input.GetKeyDown(KeyCode.Alpha6) || Input.GetKeyDown(KeyCode.Alpha7) ||
-                Input.GetKeyDown(KeyCode.Alpha8) || Input.GetKeyDown(KeyCode.Alpha9) ||
-                Input.GetKeyDown(KeyCode.Alpha0))
+            // Left (1~5) -> Value (1~5)
+            if (Input.GetKeyDown(KeyCode.Alpha1)) { selectedValue = 1; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha2)) { selectedValue = 2; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha3)) { selectedValue = 3; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha4)) { selectedValue = 4; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha5)) { selectedValue = 5; side = "left"; }
+            
+            // Right (6~0) -> Value (1~5)
+            else if (Input.GetKeyDown(KeyCode.Alpha6)) { selectedValue = 1; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha7)) { selectedValue = 2; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha8)) { selectedValue = 3; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha9)) { selectedValue = 4; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.Alpha0)) { selectedValue = 5; side = "right"; }
+
+            if (selectedValue != 0)
             {
                 _isCompleted = true;
-                CompleteStep(2); // 2: Player B 완료 정보
+                
+                // API 호출 (튜토리얼 씬(qNo == 0)이 아닐 때만 전송)
+                if (GameManager.Instance && LevelManager.Instance)
+                {
+                    int qNo = LevelManager.Instance.CurrentQuestionNumber;
+                    if (qNo > 0)
+                    {
+                        GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
+                    }
+                }
+
+                CompleteStep(side == "left" ? 1 : 2); // 1: Player A 완료 정보, 2: Player B 완료 정보
             }
         }
 
