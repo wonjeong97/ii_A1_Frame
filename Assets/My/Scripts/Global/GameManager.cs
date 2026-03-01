@@ -116,7 +116,7 @@ namespace My.Scripts.Global
         private void Update()
         {
             // D키: 리포터(로그) 제어
-            if (Input.GetKeyDown(KeyCode.D) && reporter != null)
+            if (Input.GetKeyDown(KeyCode.D) && reporter)
             {
                 reporter.showGameManagerControl = !reporter.showGameManagerControl;
                 if (reporter.show) reporter.show = false;
@@ -169,7 +169,7 @@ namespace My.Scripts.Global
         /// <summary> 페이드 효과를 포함한 씬 전환 코루틴 </summary>
         private IEnumerator ChangeSceneRoutine(string sceneName)
         {
-            if (FadeManager.Instance == null)
+            if (!FadeManager.Instance)
             {
                 Debug.LogWarning("[GameManager] FadeManager instance not found. Loading immediately.");
                 SceneManager.LoadScene(sceneName);
