@@ -60,12 +60,12 @@ namespace My.Scripts._18_Ending
         /// <returns>조합된 플레이어 이름 문자열</returns>
         private string GetCurrentPlayerNames()
         {
-            // # TODO: 현재는 하드코딩된 이름을 반환 중. GameManager에 저장된 실제 유저 데이터를 연동해야 함.
+            // GameManager에 저장된 실제 유저 데이터를 연동합니다.
             if (GameManager.Instance != null) 
             {
-                // return GameManager.Instance.SavedNameString; 
+                return $"{GameManager.Instance.PlayerALastName}{GameManager.Instance.PlayerBLastName}"; 
             }
-            return "아영길동"; 
+            return "NoName"; 
         }
         
         /// <summary>

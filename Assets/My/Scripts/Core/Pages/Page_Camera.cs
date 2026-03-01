@@ -388,7 +388,7 @@ namespace My.Scripts.Core.Pages
         /// </summary>
         private void StartWebCam()
         {
-            if (_webCamTexture != null && _webCamTexture.isPlaying)
+            if (_webCamTexture && _webCamTexture.isPlaying)
             {
                 return;
             }

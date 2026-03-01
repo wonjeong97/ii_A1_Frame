@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace My.Scripts.Utils
@@ -47,6 +48,17 @@ namespace My.Scripts.Utils
                 Debug.LogError("[PhotoCompositor] 배경 이미지 누락");
                 return;
             }
+            
+            string safeBaseName = string.IsNullOrEmpty(baseName) ? "" : baseName;
+            string clean = safeBaseName.Replace("\n", "").Replace("\r", "").Trim();
+            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+            string sanitizedName = Regex.Replace(clean, invalidRegStr, "");
+            
+            if (string.IsNullOrWhiteSpace(sanitizedName))
+            {
+                sanitizedName = "UnknownPlayers";
+            }
 
             // 1. 경로 설정 (날짜 폴더 포함) - 한 번만 계산하여 로드/저장에 동일하게 사용
             string rootPath = GetRootPath();
@@ -73,8 +85,7 @@ namespace My.Scripts.Utils
             // 5. 사진 합성 (해당 날짜 폴더에서 파일 로드)
             foreach (var slot in slots)
             {
-                // rootPath에 이미 날짜 폴더가 포함되어 있음
-                string targetPath = Path.Combine(rootPath, $"{baseName}{slot.fileSuffix}.png");
+                string targetPath = Path.Combine(rootPath, $"{sanitizedName}{slot.fileSuffix}.png");
                 
                 if (File.Exists(targetPath))
                 {
@@ -92,10 +103,6 @@ namespace My.Scripts.Utils
                         Destroy(photoTex);
                     }
                 }
-                else
-                {
-                    // Debug.Log($"[PhotoCompositor] 파일 없음(건너뜀): {targetPath}");
-                }
             }
 
             GL.PopMatrix();
@@ -109,11 +116,10 @@ namespace My.Scripts.Utils
             RenderTexture.ReleaseTemporary(rt);
 
             // 7. 저장 (동일한 rootPath 사용)
-            // [수정] rootPath를 인자로 전달하여 경로 불일치 방지
-            SaveToFile(resultTex, $"{baseName}_{outputFileName}.png", rootPath);
+            SaveToFile(resultTex, $"{sanitizedName}_{outputFileName}.png", rootPath);
             Destroy(resultTex);
 
-            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{baseName}_{outputFileName}.png")}");
+            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{sanitizedName}_{outputFileName}.png")}");
         }
 
         private Texture2D LoadTextureFromFile(string path)

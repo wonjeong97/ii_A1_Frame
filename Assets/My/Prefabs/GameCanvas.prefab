@@ -1940,7 +1940,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "(\uC774\uB984)\uB2D8"
+  m_Text: "{nameB}\uB2D8"
 --- !u!1 &3348137830671695629
 GameObject:
   m_ObjectHideFlags: 0
@@ -2116,7 +2116,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &6524651472306186713
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2634,7 +2634,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC544\uC601\uB2D8"
+  m_Text: "{nameA}\uB2D8"
 --- !u!1 &4109662524035508583
 GameObject:
   m_ObjectHideFlags: 0

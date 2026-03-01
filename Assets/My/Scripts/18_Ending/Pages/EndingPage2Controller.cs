@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Text.RegularExpressions;
 using My.Scripts.Core;
+using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -27,8 +29,6 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private RawImage videoDisplay; 
         [SerializeField] private VideoPlayer videoPlayer; 
         [SerializeField] private Text descriptionText; 
-
-        private const string FixedVideoFileName = "Test_Realtime.mp4"; 
         
         // 영상 길이에 맞춰 타이머를 30초 -> 15초로 변경
         private const float FixedDuration = 15f; 
@@ -165,7 +165,30 @@ namespace My.Scripts._18_Ending.Pages
         {   
             string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, FixedVideoFileName);
+            
+            // GameManager에서 이름 가져오기
+            string nameA = "PlayerA";
+            string nameB = "PlayerB";
+
+            if (GameManager.Instance)
+            {
+                nameA = GameManager.Instance.PlayerALastName;
+                nameB = GameManager.Instance.PlayerBLastName;
+            }
+            
+            // 파일명 조합
+            string combined = $"{nameA}{nameB}";
+            string clean = combined.Replace("\n", "").Replace("\r", "").Trim();
+            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+            string safeName = Regex.Replace(clean, invalidRegStr, "");
+
+            // Fallback for empty names
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = "UnknownPlayers";
+
+            string dynamicVideoFileName = $"{safeName}_Realtime.mp4";
+            
+            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, dynamicVideoFileName);
         }
 
         private IEnumerator FadeRawImage(RawImage t, float s, float e, float d)

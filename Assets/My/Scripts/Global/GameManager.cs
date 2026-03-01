@@ -39,8 +39,8 @@ namespace My.Scripts.Global
         
         public ApiSettings ApiConfig { get; private set; }
         public int CurrentUserId { get; set; } = 0; 
-        public string PlayerALastName { get; set; } = "아영";
-        public string PlayerBLastName { get; set; } = "길동";
+        public string PlayerALastName { get; set; } = "NoNameA";
+        public string PlayerBLastName { get; set; } = "NoNameB";
         public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
         public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
 
