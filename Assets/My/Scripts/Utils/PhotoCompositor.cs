@@ -49,7 +49,8 @@ namespace My.Scripts.Utils
                 return;
             }
             
-            string clean = baseName.Replace("\n", "").Replace("\r", "").Trim();
+            string safeBaseName = string.IsNullOrEmpty(baseName) ? "" : baseName;
+            string clean = safeBaseName.Replace("\n", "").Replace("\r", "").Trim();
             string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
             string sanitizedName = Regex.Replace(clean, invalidRegStr, "");
@@ -84,8 +85,7 @@ namespace My.Scripts.Utils
             // 5. 사진 합성 (해당 날짜 폴더에서 파일 로드)
             foreach (var slot in slots)
             {
-                // rootPath에 이미 날짜 폴더가 포함되어 있음
-                string targetPath = Path.Combine(rootPath, $"{baseName}{slot.fileSuffix}.png");
+                string targetPath = Path.Combine(rootPath, $"{sanitizedName}{slot.fileSuffix}.png");
                 
                 if (File.Exists(targetPath))
                 {
@@ -116,11 +116,10 @@ namespace My.Scripts.Utils
             RenderTexture.ReleaseTemporary(rt);
 
             // 7. 저장 (동일한 rootPath 사용)
-            // [수정] rootPath를 인자로 전달하여 경로 불일치 방지
-            SaveToFile(resultTex, $"{baseName}_{outputFileName}.png", rootPath);
+            SaveToFile(resultTex, $"{sanitizedName}_{outputFileName}.png", rootPath);
             Destroy(resultTex);
 
-            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{baseName}_{outputFileName}.png")}");
+            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{sanitizedName}_{outputFileName}.png")}");
         }
 
         private Texture2D LoadTextureFromFile(string path)
