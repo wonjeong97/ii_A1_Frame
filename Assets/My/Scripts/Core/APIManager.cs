@@ -218,7 +218,10 @@ namespace My.Scripts.Core
             {
                 if (int.TryParse(row[index].ToString(), out int val))
                 {
-                    return (ColorData)val;
+                    if (val >= (int)ColorData.NotSet && val <= (int)ColorData.Yellow)
+                    {
+                        return (ColorData)val;   
+                    }
                 }
             }
             return ColorData.NotSet; 

@@ -38,8 +38,8 @@ namespace My.Scripts._01_Tutorial.Pages
         private float _p2LastTime;
         private int _p2LastDir;
 
-        // [수정] 360도 회전을 위해 3칸 이동 시 한 바퀴로 판정
-        private const int StepsForFullRotation = 3; 
+        // 4분할 입력 기준: 4스텝을 1회전으로 판정
+        private const int StepsForFullRotation = 4;
         private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
 
         protected override void SetupData(TutorialPage3Data data)

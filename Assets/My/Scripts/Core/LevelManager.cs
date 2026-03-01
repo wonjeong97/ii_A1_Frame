@@ -101,7 +101,17 @@ namespace My.Scripts.Core
         
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
+        }
+        
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         protected override void LoadSettings()
