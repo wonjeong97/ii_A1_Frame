@@ -44,6 +44,9 @@ namespace My.Scripts._01_Tutorial.Pages
 
             if (SoundManager.Instance)
             {
+                SoundManager.Instance.StopBGM();
+                SoundManager.Instance.PlayBGM("MainBGM");
+                
                 SoundManager.Instance.PlaySFX("공통_6");
             }
             

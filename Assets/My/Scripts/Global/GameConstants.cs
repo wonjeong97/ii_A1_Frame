@@ -37,6 +37,7 @@ namespace My.Scripts.Global
             public const string Tutorial = "JSON/Tutorial"; // 튜토리얼 데이터
             public const string PlayTutorial = "JSON/PlayTutorial"; // 플레이 튜토리얼 데이터
             public const string Ending = "JSON/Ending"; // 엔딩 데이터
+            public const string ApiSetting = "JSON/API";
         }
     }
 }

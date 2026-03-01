@@ -35,6 +35,45 @@ namespace My.Scripts._01_Tutorial
                 return;
             }
 
+            // GameManager에서 이름을 가져와 JSON 플레이스홀더({nameA}, {nameB})를 교체.
+            if (GameManager.Instance != null)
+            {
+                string nameA = GameManager.Instance.PlayerALastName;
+                string nameB = GameManager.Instance.PlayerBLastName;
+
+                // 3페이지(체크)
+                if (setting.page3 != null)
+                {
+                    if (setting.page3.nicknamePlayerA != null && !string.IsNullOrEmpty(setting.page3.nicknamePlayerA.text)) 
+                        setting.page3.nicknamePlayerA.text = setting.page3.nicknamePlayerA.text.Replace("{nameA}", nameA);
+                    if (setting.page3.nicknamePlayerB != null && !string.IsNullOrEmpty(setting.page3.nicknamePlayerB.text)) 
+                        setting.page3.nicknamePlayerB.text = setting.page3.nicknamePlayerB.text.Replace("{nameB}", nameB);
+                }
+                
+                // 4페이지(체크)
+                if (setting.page4 != null)
+                {
+                    if (setting.page4.nicknamePlayerA != null && !string.IsNullOrEmpty(setting.page4.nicknamePlayerA.text)) 
+                        setting.page4.nicknamePlayerA.text = setting.page4.nicknamePlayerA.text.Replace("{nameA}", nameA);
+                    if (setting.page4.nicknamePlayerB != null && !string.IsNullOrEmpty(setting.page4.nicknamePlayerB.text)) 
+                        setting.page4.nicknamePlayerB.text = setting.page4.nicknamePlayerB.text.Replace("{nameB}", nameB);
+                }
+                
+                // 6페이지(이동 설명) 
+                if (setting.page6 != null)
+                {
+                    if (setting.page6.txtA_Start != null && !string.IsNullOrEmpty(setting.page6.txtA_Start.text)) 
+                        setting.page6.txtA_Start.text = setting.page6.txtA_Start.text.Replace("{nameA}", nameA);
+                    if (setting.page6.txtA_Info != null && !string.IsNullOrEmpty(setting.page6.txtA_Info.text)) 
+                        setting.page6.txtA_Info.text = setting.page6.txtA_Info.text.Replace("{nameA}", nameA);
+                    
+                    if (setting.page6.txtB_Start != null && !string.IsNullOrEmpty(setting.page6.txtB_Start.text)) 
+                        setting.page6.txtB_Start.text = setting.page6.txtB_Start.text.Replace("{nameB}", nameB);
+                    if (setting.page6.txtB_Info != null && !string.IsNullOrEmpty(setting.page6.txtB_Info.text)) 
+                        setting.page6.txtB_Info.text = setting.page6.txtB_Info.text.Replace("{nameB}", nameB);
+                }
+            }
+
             // 각 페이지에 데이터 주입
             if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(setting.page1);
             if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(setting.page2);
@@ -43,12 +82,6 @@ namespace My.Scripts._01_Tutorial
             if (pages.Length > 4 && pages[4] != null) pages[4].SetupData(setting.page5);
             if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
             if (pages.Length > 6 && pages[6] != null) pages[6].SetupData(setting.page7);
-
-            if (SoundManager.Instance != null)
-            {
-                SoundManager.Instance.StopBGM();
-                SoundManager.Instance.PlayBGM("MainBGM"); // BGM 처음부터 다시 재생
-            }
         }
 
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>

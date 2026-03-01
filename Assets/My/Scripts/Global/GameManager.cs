@@ -1,5 +1,8 @@
 using System.Collections;
+using My.Scripts.Core;
+using My.Scripts.Core.Data;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using Wonjeong.Data;
 using Wonjeong.Reporter;
@@ -17,6 +20,7 @@ namespace My.Scripts.Global
         E, // 부모-사춘기자녀 (추후)
         F  // 부부사이 (추후)
     }
+
     /// <summary> 게임 전반적인 상태 및 씬 전환 관리 매니저 </summary>
     public class GameManager : MonoBehaviour
     {
@@ -32,6 +36,17 @@ namespace My.Scripts.Global
         // 플레이어 태그 정보 (0: 없음, 1: Player1, 2: Player2)
         public int firstTaggedPlayer = 0;
         public UserType currentUserType = UserType.A;
+        
+        public ApiSettings ApiConfig { get; private set; }
+        public int CurrentUserId { get; set; } = 0; 
+        public string PlayerALastName { get; set; } = "아영";
+        public string PlayerBLastName { get; set; } = "길동";
+        public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
+        public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
+
+        [Header("Player Color Sprites")]
+        [Tooltip("인덱스 순서대로 등록하세요. 0:Cyan, 1:Pink, 2:Orange, 3:Green, 4:Red, 5:Yellow")]
+        public Sprite[] playerColorSprites;
 
         /// <summary> 싱글톤 초기화 </summary>
         private void Awake()
@@ -65,20 +80,35 @@ namespace My.Scripts.Global
             }
         }
 
+        /// <summary> ColorData에 해당하는 스프라이트 반환 </summary>
+        public Sprite GetColorSprite(ColorData color)
+        {
+            int index = (int)color;
+            if (index >= 0 && playerColorSprites != null && index < playerColorSprites.Length)
+            {
+                return playerColorSprites[index];
+            }
+            return null;
+        }
+
         /// <summary> 설정 파일 로드 </summary>
         private void LoadSettings()
         {
-            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting); // 상수 사용
+            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting); 
             if (settings != null)
             {
-                //_inactivityLimit = settings.inactivityTime;
                 _fadeTime = settings.fadeTime;
             }
             else
             {
-                // 로드 실패 시 기본값 설정 (안전장치)
                 _inactivityLimit = 60f;
                 _fadeTime = 1.0f;
+            }
+            
+            ApiConfig = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
+            if (ApiConfig == null)
+            {
+                Debug.LogError("[GameManager] API.json 설정 파일을 로드하지 못했습니다.");
             }
         }
 
@@ -105,14 +135,13 @@ namespace My.Scripts.Global
         /// <summary> 사용자 입력 부재 감지 </summary>
         private void HandleInactivity()
         {
-            // 현재 씬이 이미 Title이라면 비활성 타이머를 돌리지 않음
+            // 현재 씬이 Title이라면 비활성 타이머 작동 안함
             if (SceneManager.GetActiveScene().name == GameConstants.Scene.Title)
             {
                 _currentInactivityTimer = 0f;
                 return;
             }
 
-            // 입력 감지 시 타이머 초기화
             if (Input.anyKey || Input.touchCount > 0)
             {
                 _currentInactivityTimer = 0f;
@@ -140,7 +169,6 @@ namespace My.Scripts.Global
         /// <summary> 페이드 효과를 포함한 씬 전환 코루틴 </summary>
         private IEnumerator ChangeSceneRoutine(string sceneName)
         {
-            // 1. FadeManager 체크
             if (FadeManager.Instance == null)
             {
                 Debug.LogWarning("[GameManager] FadeManager instance not found. Loading immediately.");
@@ -149,17 +177,13 @@ namespace My.Scripts.Global
                 yield break;
             }
 
-            // 2. 페이드 아웃
             bool fadeDone = false;
             FadeManager.Instance.FadeOut(_fadeTime, () => { fadeDone = true; });
             while (!fadeDone) yield return null;
 
-            // 3. 비동기 씬 로드
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
-            // 씬 로딩 완료 대기
             while (asyncLoad != null && !asyncLoad.isDone) yield return null;
 
-            // 4. 페이드 인
             FadeManager.Instance.FadeIn(_fadeTime);
             _isTransitioning = false;
         }
@@ -169,72 +193,30 @@ namespace My.Scripts.Global
         {
             if (_isTransitioning) return;
             
-            Debug.Log("[GameManager] Inactivity Detected: Returning to Title...");
+            Debug.Log("[GameManager] Returning to Title...");
 
             // 상태 초기화
             firstTaggedPlayer = 0; 
             _currentInactivityTimer = 0f;
 
-            // 공통 메서드 호출
             ChangeScene(GameConstants.Scene.Title);
         }
 
-        /// <summary> 타이틀 복귀 코루틴 (별도 구현) </summary>
-        private IEnumerator ReturnToTitleRoutine()
-        {
-            if (FadeManager.Instance == null)
-            {
-                Debug.LogError("[GameManager] FadeManager instance not found. Force loading Title.");
-                SceneManager.LoadScene(GameConstants.Scene.Title);
-                _isTransitioning = false;
-                yield break;
-            }
-
-            // 1. 페이드 아웃 시작
-            bool fadeDone = false;
-            FadeManager.Instance.FadeOut(_fadeTime, () => { fadeDone = true; });
-
-            // 페이드 아웃 완료 대기
-            while (!fadeDone) yield return null;
-
-            // 2. 게임 상태 초기화 (중요)
-            firstTaggedPlayer = 0; // 태그 정보 리셋
-            _currentInactivityTimer = 0f;
-
-            // 3. 타이틀 씬 비동기 로드
-            // GameConstants.Scene.Title 사용 ("Title")
-            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(GameConstants.Scene.Title);
-
-            // 씬 로딩 완료 대기
-            while (asyncLoad != null && !asyncLoad.isDone) yield return null;
-
-            Debug.Log("[GameManager] Title Scene Loaded.");
-
-            // 4. 페이드 인 및 상태 복구
-            FadeManager.Instance.FadeIn(_fadeTime);
-            _isTransitioning = false;
-        }
-        
-        /// <summary>
-        /// 질문 번호와 현재 유저 타입에 따라 적용될 Suffix(_A, _B 등)를 반환
-        /// </summary>
+        /// <summary> 질문 번호와 현재 유저 타입에 따라 적용될 Suffix(_A, _B 등) 반환 </summary>
         public string GetLevelSuffix(int questionNumber)
         {
-            // 튜토리얼이나 그 이전은 분기 없음 (빈 문자열 or 기본 처리)
             if (questionNumber <= 0) return ""; 
 
             switch (currentUserType)
             {
                 case UserType.A:
-                    return "_A"; // A는 전부 A
+                    return "_A"; 
 
                 case UserType.B:
-                    // B는 4번만 B, 나머지는 A
                     if (questionNumber == 4) return "_B";
                     return "_A";
 
                 case UserType.C:
-                    // C는 4, 10, 11, 13, 14, 15번만 C, 나머지는 A
                     if (questionNumber == 4 || questionNumber == 10 || questionNumber == 11 || 
                         questionNumber == 13 || questionNumber == 14 || questionNumber == 15)
                     {
@@ -243,16 +225,82 @@ namespace My.Scripts.Global
                     return "_A";
 
                 case UserType.D:
-                    return "_D"; // D는 전부 D
-
-                case UserType.E: // 추후 구현 (우선 D와 동일하게 처리하거나 기본값)
                     return "_D"; 
-                case UserType.F: // 추후 구현
+
+                case UserType.E: 
+                    return "_D"; 
+                case UserType.F: 
                     return "_D";
 
                 default:
                     return "_A";
             }
         }
+
+       #region API 호출 로직 (시간 및 값 기록)
+
+        /// <summary> 콘텐츠 시작/종료 시간을 서버에 기록합니다. </summary>
+        public void SendTimeUpdateAPI(string option)
+        {
+            if (CurrentUserId == 0)
+            {
+                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. {option} API 호출을 건너뜁니다.");
+                return;
+            }
+            StartCoroutine(TimeUpdateRoutine(option));
+        }
+
+        private IEnumerator TimeUpdateRoutine(string option)
+        {
+            if (ApiConfig == null) yield break;
+
+            // ApiConfig.UpdateTimeUrl 사용
+            string urlLeft = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option={option}&side=left&code=a1";
+            string urlRight = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option={option}&side=right&code=a1";
+
+            // Left 통신
+            using (UnityWebRequest reqLeft = UnityWebRequest.Get(urlLeft))
+            {
+                yield return reqLeft.SendWebRequest();
+                if (reqLeft.result != UnityWebRequest.Result.Success) Debug.LogError($"[Time API Left] 에러: {reqLeft.error}");
+                else Debug.Log($"[Time API Left] {option} 업데이트 성공!");
+            }
+
+            // Right 통신
+            using (UnityWebRequest reqRight = UnityWebRequest.Get(urlRight))
+            {
+                yield return reqRight.SendWebRequest();
+                if (reqRight.result != UnityWebRequest.Result.Success) Debug.LogError($"[Time API Right] 에러: {reqRight.error}");
+                else Debug.Log($"[Time API Right] {option} 업데이트 성공!");
+            }
+        }
+
+        /// <summary> 사용자의 질문 응답 값을 서버에 업데이트합니다. </summary>
+        public void SendValueUpdateAPI(int qNo, string side, int value)
+        {
+            if (CurrentUserId == 0)
+            {
+                Debug.LogWarning("[GameManager] CurrentUserId가 0입니다. Value 업데이트를 건너뜁니다.");
+                return;
+            }
+            StartCoroutine(ValueUpdateRoutine(qNo, side, value));
+        }
+
+        private IEnumerator ValueUpdateRoutine(int qNo, string side, int value)
+        {
+            if (ApiConfig == null) yield break; // 안전장치
+
+            // ApiConfig.UpdateValueUrl 사용
+            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={CurrentUserId}&q_no={qNo}&side={side}&code=a1&value={value}";
+            
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success) Debug.LogError($"[Value API] 통신 에러: {req.error}");
+                else Debug.Log($"[Value API] {side} Q{qNo} 값({value}) 업데이트 성공!");
+            }
+        }
+
+        #endregion
     }
 }
