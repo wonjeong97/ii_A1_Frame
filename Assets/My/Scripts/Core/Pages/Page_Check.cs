@@ -58,6 +58,15 @@ namespace My.Scripts.Core.Pages
             SetImgAlpha(imgBackB, 1f);
             SetImgAlpha(imgLightB, 0f);
             if (imgLightB) imgLightB.gameObject.SetActive(false);
+            
+            if (GameManager.Instance)
+            {
+                Sprite spriteA = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerAColor);
+                if (spriteA && imgLightA) imgLightA.sprite = spriteA;
+
+                Sprite spriteB = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerBColor);
+                if (spriteB && imgLightB) imgLightB.sprite = spriteB;
+            }
         }
         
         /// <summary>  매 프레임 업데이트 </summary>

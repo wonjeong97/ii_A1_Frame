@@ -13,10 +13,6 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core
 {
-    /// <summary> 
-    /// 레벨 설정 데이터의 공통 인터페이스입니다.
-    /// 일반 레벨과 튜토리얼 레벨이 서로 다른 페이지 구성을 가지더라도, 공통된 페이지(1,2,3,4,6)에 접근하기 위해 사용합니다.
-    /// </summary>
     public interface ILevelSetting
     {
         GridPageData Page1 { get; set; }
@@ -26,10 +22,6 @@ namespace My.Scripts.Core
         TransitionPageData Page6 { get; set; }
     }
 
-    /// <summary> 
-    /// 일반 레벨(Q1 ~ Q15)의 설정 데이터 구조입니다.
-    /// JSON 파일과 1:1로 매핑됩니다.
-    /// </summary>
     [Serializable]
     public class StandardLevelSetting : ILevelSetting
     {
@@ -46,10 +38,6 @@ namespace My.Scripts.Core
         public TransitionPageData Page6 { get => page6; set => page6 = value; }
     }
 
-    /// <summary> 
-    /// 튜토리얼 레벨의 설정 데이터 구조입니다.
-    /// 일반 레벨보다 페이지 수가 더 많고 구조가 다르므로 별도 클래스로 관리합니다.
-    /// </summary>
     [Serializable]
     public class TutorialLevelSetting : ILevelSetting
     {
@@ -57,7 +45,6 @@ namespace My.Scripts.Core
         public QnAPageData page2;
         public CheckPageData page3;
         public TransitionPageData page4;
-        // 미사용 필드 page5 제거 (index 4는 CameraPage로 예약됨)
         public TransitionPageData page6;
         public TransitionPageData page7;
         public TutorialPage8Data page8;
@@ -71,25 +58,18 @@ namespace My.Scripts.Core
         public TutorialPage8Data Page8 { get => page8; set => page8 = value; }
     }
 
-    /// <summary> 
-    /// 개별 레벨(Q1~Q15 및 튜토리얼)의 전체 흐름을 관리하는 매니저입니다.
-    /// JSON 데이터 로드, 페이지 간의 특수 전환 연출, 그리고 최종 영상 변환 트리거를 담당합니다.
-    /// </summary>
     public class LevelManager : BaseFlowManager
     {   
         public static LevelManager Instance { get; private set; }
         
         [Header("Level Settings")]
         [SerializeField] private UserType levelType = UserType.A;
-        [Tooltip("현재 레벨의 ID (예: Q1, Q2...). 숫자 파싱 및 JSON 로드에 사용됩니다.")]
         [SerializeField] private string levelID = "Q1"; 
-        
-        [Tooltip("페이드 효과 사용 여부")]
         [SerializeField] private bool useFadeTransition = true; 
 
         [Header("Global Backgrounds")] 
-        [SerializeField] private CanvasGroup globalBlackCanvasGroup; // 전환 연출용 전역 검은 배경
-        [SerializeField] private Image globalWhiteBackground; // 전환 연출용 전역 흰 배경
+        [SerializeField] private CanvasGroup globalBlackCanvasGroup; 
+        [SerializeField] private Image globalWhiteBackground; 
 
         [Header("Camera Config")] 
         [SerializeField] private Material cameraMaskMaterial; 
@@ -118,25 +98,29 @@ namespace My.Scripts.Core
         {
             InitializeGlobals();
             
-            // 1. 현재 레벨의 숫자 파싱 (Q1 -> 1)
             _currentQuestionNumber = ParseLevelNumber(levelID);
 
-            // 2. 현재 레벨에 맞는 접미사 가져오기 (예: _A, _B)
             string suffix = "";
             if (!_isTutorialMode && GameManager.Instance != null)
             {
                 suffix = GameManager.Instance.GetLevelSuffix(_currentQuestionNumber);
             }
 
-            // 3. 공통 데이터 로드
             var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
             
-            // 4. 경로 생성 및 로드
+            // [추가] GameManager에서 동적 이름 가져오기
+            string nameA = "PlayerA";
+            string nameB = "PlayerB";
+            if (GameManager.Instance != null)
+            {
+                nameA = GameManager.Instance.PlayerALastName;
+                nameB = GameManager.Instance.PlayerBLastName;
+            }
+
             string path;
             if (_isTutorialMode)
             {
                 path = "JSON/PlayTutorial"; 
-                
                 var tSetting = JsonLoader.Load<TutorialLevelSetting>(path);
                 
                 if (tSetting == null)
@@ -146,10 +130,23 @@ namespace My.Scripts.Core
                 }
 
                 MergeCommonData(tSetting, commonData);
+
+                // [추가] 튜토리얼 7페이지 (TransitionPageData) 이름 치환
+                if (tSetting.Page7 != null)
+                {
+                    if (tSetting.Page7.playerAName != null && !string.IsNullOrEmpty(tSetting.Page7.playerAName.text))
+                        tSetting.Page7.playerAName.text = tSetting.Page7.playerAName.text.Replace("{nameA}", nameA);
+                        
+                    if (tSetting.Page7.playerBName != null && !string.IsNullOrEmpty(tSetting.Page7.playerBName.text))
+                        tSetting.Page7.playerBName.text = tSetting.Page7.playerBName.text.Replace("{nameB}", nameB);
+                }
+
+                // [추가] 공통 3페이지 (CheckPageData) 이름 치환
+                ReplaceNamesInCheckPage(tSetting.Page3, nameA, nameB);
+
                 SetCameraFileName(tSetting.Page3);
                 ConfigureCameraPage(false);
 
-                // SetupPageData ... (생략)
                 SetupPageData(0, tSetting.Page1);
                 SetupPageData(1, tSetting.Page2);
                 SetupPageData(2, tSetting.Page3);
@@ -160,7 +157,7 @@ namespace My.Scripts.Core
             }
             else
             {
-                string typeStr = levelType.ToString(); // "A", "B"...
+                string typeStr = levelType.ToString(); 
                 path = $"JSON/{typeStr}/Play{levelID}_{typeStr}";
                 
                 var sSetting = JsonLoader.Load<StandardLevelSetting>(path);
@@ -172,6 +169,10 @@ namespace My.Scripts.Core
                 }
 
                 MergeCommonData(sSetting, commonData);
+
+                // [추가] 공통 3페이지 (CheckPageData) 이름 치환
+                ReplaceNamesInCheckPage(sSetting.Page3, nameA, nameB);
+
                 SetCameraFileName(sSetting.Page3);
                 ConfigureCameraPage(true);
 
@@ -182,8 +183,22 @@ namespace My.Scripts.Core
                 SetupPageData(5, sSetting.Page6);
             }
         }
+
+        private void ReplaceNamesInCheckPage(CheckPageData page3, string nameA, string nameB)
+        {
+            if (page3 == null) return;
+    
+            if (page3.nicknamePlayerA != null && !string.IsNullOrEmpty(page3.nicknamePlayerA.text))
+            {
+                page3.nicknamePlayerA.text = page3.nicknamePlayerA.text.Replace("{nameA}", nameA);
+            }
+    
+            if (page3.nicknamePlayerB != null && !string.IsNullOrEmpty(page3.nicknamePlayerB.text))
+            {
+                page3.nicknamePlayerB.text = page3.nicknamePlayerB.text.Replace("{nameB}", nameB);
+            }
+        }
         
-        /// <summary> 레벨 ID 문자열에서 숫자만 추출 </summary>
         private int ParseLevelNumber(string id)
         {
             if (string.IsNullOrEmpty(id)) return 0;
@@ -205,7 +220,6 @@ namespace My.Scripts.Core
 
             _isTutorialMode = string.Equals(levelID, "Tutorial", StringComparison.OrdinalIgnoreCase);
 
-            // 첫 번째 질문(Q1) 시작 시, 이전 플레이의 잔여 타임랩스 데이터가 있다면 정리합니다.
             if (string.Equals(levelID, "Q1", StringComparison.OrdinalIgnoreCase))
             {
                 if (TimeLapseRecorder.Instance != null) TimeLapseRecorder.Instance.ClearRecordingData();
@@ -220,13 +234,8 @@ namespace My.Scripts.Core
             }
         }
 
-        /// <summary>
-        /// 레벨별 고유 설정이 없는 경우 공통 설정(PlayCommon)값으로 덮어씁니다.
-        /// 데이터 입력 작업의 효율성을 높이기 위함입니다.
-        /// </summary>
         private void MergeCommonData(ILevelSetting specific, StandardLevelSetting common)
         {
-            // [Page 1: Grid]
             if (specific.Page1 == null) specific.Page1 = new GridPageData();
             if (common.Page1 != null)
             {
@@ -243,9 +252,7 @@ namespace My.Scripts.Core
                 if (string.IsNullOrEmpty(specific.Page1.resetMessage)) specific.Page1.resetMessage = common.Page1.resetMessage;
             }
 
-            // [Page 2: QnA]
             if (specific.Page2 == null) specific.Page2 = new QnAPageData();
-            
             if (common.Page2 != null)
             {
                 if (specific.Page2.descriptionText == null || string.IsNullOrEmpty(specific.Page2.descriptionText.text)) specific.Page2.descriptionText = common.Page2.descriptionText;
@@ -255,7 +262,6 @@ namespace My.Scripts.Core
                 if (string.IsNullOrEmpty(specific.Page2.resetMessage)) specific.Page2.resetMessage = common.Page2.resetMessage;
             }
 
-            // [Page 3: Check]
             if (specific.Page3 == null) specific.Page3 = new CheckPageData();
             if (common.Page3 != null)
             {
@@ -267,17 +273,14 @@ namespace My.Scripts.Core
                 if (string.IsNullOrEmpty(specific.Page3.resetMessage)) specific.Page3.resetMessage = common.Page3.resetMessage;
             }
 
-            // [Page 4: Transition]
             if (specific.Page4 == null) specific.Page4 = new TransitionPageData();
             if (common.Page4 != null)
             {
                 if (specific.Page4.descriptionText == null) specific.Page4.descriptionText = common.Page4.descriptionText;
-                
                 if (string.IsNullOrEmpty(specific.Page4.warningMessage)) specific.Page4.warningMessage = common.Page4.warningMessage;
                 if (string.IsNullOrEmpty(specific.Page4.resetMessage)) specific.Page4.resetMessage = common.Page4.resetMessage;
             }
 
-            // [Page 6: Transition]
             if (specific.Page6 == null) specific.Page6 = new TransitionPageData();
             if (common.Page6 != null)
             {
@@ -285,13 +288,8 @@ namespace My.Scripts.Core
             }
         }
         
-        /// <summary>
-        /// 모든 페이지(단계)가 끝났을 때 호출됩니다.
-        /// </summary>
         protected override void OnAllFinished()
         {
-            // 마지막 레벨(Q15)이 끝나면 영상 변환 후 엔딩으로 이동
-            // 그 외에는 계산된 다음 레벨로 이동
             if (string.Equals(levelID, "Q15", StringComparison.OrdinalIgnoreCase))
             {
                 StartCoroutine(ProcessVideoAndFinish());
@@ -302,10 +300,6 @@ namespace My.Scripts.Core
             }
         }
 
-        // ... (TransitionRoutine, ConfigureCameraPage, SetCameraFileName, SanitizeString 등은 기존과 동일) ...
-        /// <summary>
-        /// 현재 페이지에서 다음 페이지로 넘어갈 때의 연출을 제어합니다.
-        /// </summary>
         protected override IEnumerator TransitionRoutine(int targetIndex, int info)
         {
             isTransitioning = true;
@@ -317,7 +311,6 @@ namespace My.Scripts.Core
                 yield break;
             }
             
-            // Page 4(안내) 진입 시, 곧 나올 Page 5(카메라)를 미리 예열
             if (targetIndex == 3)
             {
                 if (pages.Length > 4 && pages[4] is Page_Camera camPage)
@@ -414,12 +407,19 @@ namespace My.Scripts.Core
 
         private void SetCameraFileName(CheckPageData checkPageData)
         {
-            if (checkPageData == null || pages.Length <= 4) return;
-            var cameraPage = pages[4] as Page_Camera;
+            if (pages.Length <= 4) return;
+            Page_Camera cameraPage = pages[4] as Page_Camera;
             if (cameraPage == null) return;
             
-            string nameA = !string.IsNullOrEmpty(checkPageData.nicknamePlayerA?.text) ? checkPageData.nicknamePlayerA.text : "PlayerA";
-            string nameB = !string.IsNullOrEmpty(checkPageData.nicknamePlayerB?.text) ? checkPageData.nicknamePlayerB.text : "PlayerB";
+            string nameA = "PlayerA";
+            string nameB = "PlayerB";
+
+            if (GameManager.Instance != null)
+            {
+                nameA = GameManager.Instance.PlayerALastName;
+                nameB = GameManager.Instance.PlayerBLastName;
+            }
+            
             nameA = SanitizeString(nameA);
             nameB = SanitizeString(nameB);
             
@@ -429,16 +429,13 @@ namespace My.Scripts.Core
         private string SanitizeString(string input)
         {
             if (string.IsNullOrEmpty(input)) return "";
-            string clean = input.Replace("\n", "").Replace("\r", "").Replace("님", "").Trim();
+            
+            string clean = input.Replace("\n", "").Replace("\r", "").Trim();
             string invalidChars = Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
             return Regex.Replace(clean, invalidRegStr, "");
         }
 
-        /// <summary> 
-        /// 모든 레벨 종료 후 리얼타임 영상 변환을 기다린 뒤 다음 씬으로 넘어갑니다.
-        /// (Q15 종료 시 호출됨)
-        /// </summary>
         private IEnumerator ProcessVideoAndFinish()
         {
             if (TimeLapseRecorder.Instance != null)
@@ -473,15 +470,10 @@ namespace My.Scripts.Core
             MoveToNextLevelDynamic();
         }
 
-        /// <summary>
-        /// 현재 상태(튜토리얼 여부, 현재 질문 번호)와 유저 타입을 고려하여 다음 씬으로 이동합니다.
-        /// </summary>
         private void MoveToNextLevelDynamic()
         {
             if (_isTutorialMode)
             {
-                // 튜토리얼 종료 -> Q1 시작
-                // Q1은 타입 분기가 없거나 A타입을 따르므로 GetNextSceneName(1) 호출
                 string firstScene = GetNextSceneName(1); 
                 
                 if (useFadeTransition && GameManager.Instance != null) 
@@ -492,10 +484,7 @@ namespace My.Scripts.Core
                 return;
             }
 
-            // 현재가 Q1이면 다음은 Q2
             int nextNum = _currentQuestionNumber + 1;
-            
-            // 다음 씬 이름 계산 (PlayQ2_A, PlayQ4_B 등)
             string nextScene = GetNextSceneName(nextNum);
             
             Debug.Log($"[LevelManager] Moving to next level: {nextScene}");
@@ -506,28 +495,19 @@ namespace My.Scripts.Core
                 SceneManager.LoadScene(nextScene);
         }
 
-        /// <summary> 
-        /// 질문 번호와 유저 타입에 기반해 씬 이름 생성 
-        /// <para>GameManager.GetLevelSuffix를 통해 _A, _B, _C 등을 받아옵니다.</para>
-        /// </summary>
         private string GetNextSceneName(int qNum)
         {
-            // 질문 번호가 15를 넘어가면 엔딩으로
             if (qNum > 15) return GameConstants.Scene.Ending;
 
-            // GameManager에서 현재 유저 타입과 질문 번호에 맞는 접미사 획득
-            // 예: B유형이면서 4번 질문이면 "_B" 반환
             string suffix = "";
             if (GameManager.Instance != null)
             {
                 suffix = GameManager.Instance.GetLevelSuffix(qNum);
             }
 
-            // [수정] 씬 이름 포맷을 "Play_Q{n}{suffix}"로 변경 (예: Play_Q1_A)
             return $"Play_Q{qNum}{suffix}"; 
         }
         
-        // ... (나머지 헬퍼 함수들: HandleTrigger, CoverTransition 등은 기존 코드 그대로 유지) ...
         private void HandleTrigger(GamePage page, int info)
         {
             if (info != 0 && page is Page_Check checkPage) checkPage.ActivatePlayerCheck(info == 1);

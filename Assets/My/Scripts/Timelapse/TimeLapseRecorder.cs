@@ -6,7 +6,8 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Rendering; 
-using Cysharp.Threading.Tasks; 
+using Cysharp.Threading.Tasks;
+using My.Scripts.Global;
 using Debug = UnityEngine.Debug;
 
 namespace My.Scripts.Timelapse
@@ -263,7 +264,7 @@ namespace My.Scripts.Timelapse
 
                     if (request.hasError) continue;
 
-                    if (encodeTexture != null)
+                    if (encodeTexture)
                     {
                         encodeTexture.LoadRawTextureData(request.GetData<byte>());
                         encodeTexture.Apply();
@@ -363,10 +364,11 @@ namespace My.Scripts.Timelapse
             {
                 fps = (float)_globalFrameIndex / timelapseDuration;
             }
-            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2})");
             
-            // isRealtime = false 전달
-            ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, "Test_Timelapse", fps, false).Forget();
+            string fileName = $"{GetCombinedPlayerNames()}_Timelapse";
+            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
+            
+            ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, fileName, fps, false).Forget();
         }
 
         public void ConvertToRealtimeVideo()
@@ -398,10 +400,11 @@ namespace My.Scripts.Timelapse
             {
                 fps = (float)_realtimeFrameIndex / realtimeDuration;
             }
-            Debug.Log($"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2})");
+            
+            string fileName = $"{GetCombinedPlayerNames()}_Realtime";
+            Debug.Log($"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
 
-            // isRealtime = true 전달
-            ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, "Test_Realtime", fps, true).Forget();
+            ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, fileName, fps, true).Forget();
         }
 
         /// <summary>
@@ -538,6 +541,26 @@ namespace My.Scripts.Timelapse
                 if (isRealtime) IsRealtimeProcessing = false;
                 else IsTimelapseProcessing = false;
             }
+        }
+        
+        private string GetCombinedPlayerNames()
+        {
+            string nameA = "PlayerA";
+            string nameB = "PlayerB";
+
+            if (GameManager.Instance != null)
+            {
+                nameA = GameManager.Instance.PlayerALastName;
+                nameB = GameManager.Instance.PlayerBLastName;
+            }
+
+            string combined = $"{nameA}{nameB}";
+            string clean = combined.Replace("\n", "").Replace("\r", "").Trim();
+            
+            // 윈도우 파일명에 쓸 수 없는 특수문자 제거
+            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+            return Regex.Replace(clean, invalidRegStr, "");
         }
 
         private void OnDestroy()

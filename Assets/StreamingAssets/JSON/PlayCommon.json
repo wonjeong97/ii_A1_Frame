@@ -97,7 +97,7 @@
     "nicknamePlayerA": {
       "name": "Text_PlayerA",
       "position": {"x": 748.4, "y": -330},
-      "text": "아영님",
+      "text": "{nameA}님",
       "fontName": "font8",
       "fontSize": 55,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
@@ -106,7 +106,7 @@
     "nicknamePlayerB": {
       "name": "Text_PlayerB",
       "position": {"x": 1198, "y": -330},
-      "text": "길동님",
+      "text": "{nameB}님",
       "fontName": "font8",
       "fontSize": 55,
       "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
