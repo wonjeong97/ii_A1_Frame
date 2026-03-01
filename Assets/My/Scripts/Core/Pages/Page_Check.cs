@@ -62,10 +62,10 @@ namespace My.Scripts.Core.Pages
             if (GameManager.Instance)
             {
                 Sprite spriteA = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerAColor);
-                if (spriteA && imgLightA) imgLightA.sprite = spriteA;
+                if (imgLightA) imgLightA.sprite = spriteA;
 
                 Sprite spriteB = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerBColor);
-                if (spriteB && imgLightB) imgLightB.sprite = spriteB;
+                if (imgLightB) imgLightB.sprite = spriteB;
             }
         }
         

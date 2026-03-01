@@ -170,7 +170,7 @@ namespace My.Scripts._18_Ending.Pages
             string nameA = "PlayerA";
             string nameB = "PlayerB";
 
-            if (GameManager.Instance != null)
+            if (GameManager.Instance)
             {
                 nameA = GameManager.Instance.PlayerALastName;
                 nameB = GameManager.Instance.PlayerBLastName;
@@ -182,6 +182,9 @@ namespace My.Scripts._18_Ending.Pages
             string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
             string safeName = Regex.Replace(clean, invalidRegStr, "");
+
+            // Fallback for empty names
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = "UnknownPlayers";
 
             string dynamicVideoFileName = $"{safeName}_Realtime.mp4";
             

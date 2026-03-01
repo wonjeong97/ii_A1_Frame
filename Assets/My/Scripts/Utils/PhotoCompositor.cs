@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace My.Scripts.Utils
@@ -47,6 +48,16 @@ namespace My.Scripts.Utils
                 Debug.LogError("[PhotoCompositor] 배경 이미지 누락");
                 return;
             }
+            
+            string clean = baseName.Replace("\n", "").Replace("\r", "").Trim();
+            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+            string sanitizedName = Regex.Replace(clean, invalidRegStr, "");
+            
+            if (string.IsNullOrWhiteSpace(sanitizedName))
+            {
+                sanitizedName = "UnknownPlayers";
+            }
 
             // 1. 경로 설정 (날짜 폴더 포함) - 한 번만 계산하여 로드/저장에 동일하게 사용
             string rootPath = GetRootPath();
@@ -91,10 +102,6 @@ namespace My.Scripts.Utils
                         
                         Destroy(photoTex);
                     }
-                }
-                else
-                {
-                    // Debug.Log($"[PhotoCompositor] 파일 없음(건너뜀): {targetPath}");
                 }
             }
 

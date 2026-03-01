@@ -108,9 +108,8 @@ namespace My.Scripts.Core
 
             var commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
             
-            // [추가] GameManager에서 동적 이름 가져오기
-            string nameA = "PlayerA";
-            string nameB = "PlayerB";
+            string nameA = GetPlayerNameOrDefault(true);
+            string nameB = GetPlayerNameOrDefault(false);
             if (GameManager.Instance != null)
             {
                 nameA = GameManager.Instance.PlayerALastName;
@@ -182,6 +181,15 @@ namespace My.Scripts.Core
                 SetupPageData(3, sSetting.Page4);
                 SetupPageData(5, sSetting.Page6);
             }
+        }
+        
+        private string GetPlayerNameOrDefault(bool isPlayerA)
+        {
+            if (GameManager.Instance != null)
+            {
+                return isPlayerA ? GameManager.Instance.PlayerALastName : GameManager.Instance.PlayerBLastName;
+            }
+            return isPlayerA ? "PlayerA" : "PlayerB";
         }
 
         private void ReplaceNamesInCheckPage(CheckPageData page3, string nameA, string nameB)
@@ -411,8 +419,8 @@ namespace My.Scripts.Core
             Page_Camera cameraPage = pages[4] as Page_Camera;
             if (cameraPage == null) return;
             
-            string nameA = "PlayerA";
-            string nameB = "PlayerB";
+            string nameA = GetPlayerNameOrDefault(true);
+            string nameB = GetPlayerNameOrDefault(false);
 
             if (GameManager.Instance != null)
             {

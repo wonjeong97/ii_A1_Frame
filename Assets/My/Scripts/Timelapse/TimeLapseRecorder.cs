@@ -427,7 +427,7 @@ namespace My.Scripts.Timelapse
                 {
                     UpdatePaths();
                     
-                    if (filePrefix.Contains("Realtime"))
+                   if (isRealtime)
                     {
                         sourceFolder = _realtimeSourcePath;
                         outputFolder = _realtimeVideoPath;
