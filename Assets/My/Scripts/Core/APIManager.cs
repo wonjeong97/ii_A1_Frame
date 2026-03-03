@@ -156,7 +156,14 @@ namespace My.Scripts.Core
                     if (GameManager.Instance)
                     {   
                         GameManager.Instance.CurrentUserId = userData.IDX_USER;
-                        GameManager.Instance.CurrentLanguage = userData.LANG;
+                        if (!string.IsNullOrWhiteSpace(userData.LANG))
+                        {
+                            GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[APIManager] LANG 값이 비어 있어 기본 언어 설정을 유지합니다.");
+                        }
 
                         switch (userData.RELATION)
                         {

@@ -318,6 +318,11 @@ namespace My.Scripts.Global
         /// <summary> 획득한 마음 조각 개수를 서버에 업데이트합니다. </summary>
         public void SendPieceUpdateAPI(int value)
         {
+            if (value < 0)
+            {
+                Debug.LogWarning($"[GameManager] 유효하지 않은 Piece 값입니다: {value}");
+                return;
+            }
             if (CurrentUserId == 0)
             {
                 Debug.LogWarning("[GameManager] CurrentUserId가 0입니다. Piece 업데이트를 건너뜁니다.");

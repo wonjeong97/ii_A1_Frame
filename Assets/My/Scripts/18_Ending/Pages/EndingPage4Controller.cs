@@ -27,8 +27,9 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text descriptionText;
         [SerializeField] private Image redLineImage;
 
-        private bool _isAllFinished = false; // 특별 엔딩(붉은 실) 활성화 여부
-
+        private bool _isAllFinished; // 특별 엔딩(붉은 실) 활성화 여부
+        private bool _hasSentEndTime;
+        
         protected override void SetupData(EndingPage4Data data)
         {
             // 엔딩의 다양성을 위해 50% 확률로 일반 엔딩과 특별 엔딩(Red Line)을 분기합니다.
@@ -62,9 +63,10 @@ namespace My.Scripts._18_Ending.Pages
                 redLineImage.fillAmount = 0f;
             }
 
-            if (GameManager.Instance)
+            if (!_hasSentEndTime && GameManager.Instance)
             {
                 Debug.Log("[EndingPage4] 엔딩 최종 페이지 진입. 종료(end) 시간 업데이트 호출");
+                _hasSentEndTime = true;
                 GameManager.Instance.SendTimeUpdateAPI();
             }
             StartCoroutine(SequenceRoutine());
