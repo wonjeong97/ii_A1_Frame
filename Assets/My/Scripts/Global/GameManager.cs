@@ -39,10 +39,33 @@ namespace My.Scripts.Global
         
         public ApiSettings ApiConfig { get; private set; }
         public int CurrentUserId { get; set; } = 0; 
+        
+        public string CurrentLanguage { get; set; } = "ko";
+
         public string PlayerALastName { get; set; } = "NoNameA";
         public string PlayerBLastName { get; set; } = "NoNameB";
         public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
         public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
+
+        // 각 타입/질문별 얻은 마음 조각(Piece) 데이터
+        public int PieceA1 { get; set; }
+        public int PieceA2 { get; set; }
+        public int PieceA3 { get; set; }
+        public int PieceB1 { get; set; }
+        public int PieceB2 { get; set; }
+        public int PieceB3 { get; set; }
+        public int PieceC1 { get; set; }
+        public int PieceC2 { get; set; }
+        public int PieceC3 { get; set; }
+        public int PieceD1 { get; set; }
+        public int PieceD2 { get; set; }
+        public int PieceD3 { get; set; }
+
+        // 모든 마음 조각의 합계를 반환하는 프로퍼티
+        public int TotalPieces => PieceA2 + PieceA3 + 
+                                  PieceB1 + PieceB2 + PieceB3 + 
+                                  PieceC1 + PieceC2 + PieceC3 + 
+                                  PieceD1 + PieceD2 + PieceD3;  // A1은 해당 컨텐츠이므로 계산에서 제외함.
 
         [Header("Player Color Sprites")]
         [Tooltip("인덱스 순서대로 등록하세요. 0:Cyan, 1:Pink, 2:Orange, 3:Green, 4:Red, 5:Yellow")]
@@ -73,7 +96,7 @@ namespace My.Scripts.Global
         {
             Cursor.visible = false;
             LoadSettings();
-
+            
             if (reporter != null && reporter.show)
             {
                 reporter.show = false;
@@ -239,39 +262,31 @@ namespace My.Scripts.Global
 
        #region API 호출 로직 (시간 및 값 기록)
 
-        /// <summary> 콘텐츠 시작/종료 시간을 서버에 기록합니다. </summary>
-        public void SendTimeUpdateAPI(string option)
+        /// <summary> 콘텐츠 종료(end) 시간을 서버에 기록합니다. </summary>
+        public void SendTimeUpdateAPI()
         {
             if (CurrentUserId == 0)
             {
-                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. {option} API 호출을 건너뜁니다.");
+                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. end API 호출을 건너뜁니다.");
                 return;
             }
-            StartCoroutine(TimeUpdateRoutine(option));
+            StartCoroutine(TimeUpdateRoutine());
         }
 
-        private IEnumerator TimeUpdateRoutine(string option)
+        private IEnumerator TimeUpdateRoutine()
         {
             if (ApiConfig == null) yield break;
 
-            // ApiConfig.UpdateTimeUrl 사용
-            string urlLeft = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option={option}&side=left&code=a1";
-            string urlRight = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option={option}&side=right&code=a1";
+            // option=end 로 완전히 고정합니다.
+            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option=end&code=a1";
 
-            // Left 통신
-            using (UnityWebRequest reqLeft = UnityWebRequest.Get(urlLeft))
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
-                yield return reqLeft.SendWebRequest();
-                if (reqLeft.result != UnityWebRequest.Result.Success) Debug.LogError($"[Time API Left] 에러: {reqLeft.error}");
-                else Debug.Log($"[Time API Left] {option} 업데이트 성공!");
-            }
-
-            // Right 통신
-            using (UnityWebRequest reqRight = UnityWebRequest.Get(urlRight))
-            {
-                yield return reqRight.SendWebRequest();
-                if (reqRight.result != UnityWebRequest.Result.Success) Debug.LogError($"[Time API Right] 에러: {reqRight.error}");
-                else Debug.Log($"[Time API Right] {option} 업데이트 성공!");
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success) 
+                    Debug.LogError($"[Time API] 에러: {req.error}");
+                else 
+                    Debug.Log($"[Time API] end 업데이트 성공! (URL: {url})");
             }
         }
 
@@ -290,7 +305,6 @@ namespace My.Scripts.Global
         {
             if (ApiConfig == null) yield break; // 안전장치
 
-            // ApiConfig.UpdateValueUrl 사용
             string url = $"{ApiConfig.UpdateValueUrl}?idx_user={CurrentUserId}&q_no={qNo}&side={side}&code=a1&value={value}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
@@ -298,6 +312,33 @@ namespace My.Scripts.Global
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) Debug.LogError($"[Value API] 통신 에러: {req.error}");
                 else Debug.Log($"[Value API] {side} Q{qNo} 값({value}) 업데이트 성공!");
+            }
+        }
+
+        /// <summary> 획득한 마음 조각 개수를 서버에 업데이트합니다. </summary>
+        public void SendPieceUpdateAPI(int value)
+        {
+            if (CurrentUserId == 0)
+            {
+                Debug.LogWarning("[GameManager] CurrentUserId가 0입니다. Piece 업데이트를 건너뜁니다.");
+                return;
+            }
+            StartCoroutine(PieceUpdateRoutine(value));
+        }
+
+        private IEnumerator PieceUpdateRoutine(int value)
+        {
+            if (ApiConfig == null) yield break;
+
+            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={CurrentUserId}&code=a1&value={value}";
+            
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success) 
+                    Debug.LogError($"[Piece API] 에러: {req.error}");
+                else 
+                    Debug.Log($"[Piece API] 마음 조각({value}개) 업데이트 성공! (URL: {url})");
             }
         }
 

@@ -10,10 +10,12 @@ namespace My.Scripts.Core.Data
         public string getUser;
         public string updateTime;
         public string updateValue;
+        public string updatePiece;
 
         // URL 조합을 쉽게 해주는 헬퍼 프로퍼티
         public string GetUserUrl => $"{baseUrl}{getUser}";
         public string UpdateTimeUrl => $"{baseUrl}{updateTime}";
         public string UpdateValueUrl => $"{baseUrl}{updateValue}";
+        public string UpdatePieceUrl => $"{baseUrl}{(string.IsNullOrEmpty(updatePiece) ? "/updatePiece.cfm" : updatePiece)}";
     }
 }

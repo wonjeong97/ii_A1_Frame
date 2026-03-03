@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
+using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -61,6 +62,11 @@ namespace My.Scripts._18_Ending.Pages
                 redLineImage.fillAmount = 0f;
             }
 
+            if (GameManager.Instance)
+            {
+                Debug.Log("[EndingPage4] 엔딩 최종 페이지 진입. 종료(end) 시간 업데이트 호출");
+                GameManager.Instance.SendTimeUpdateAPI();
+            }
             StartCoroutine(SequenceRoutine());
         }
 

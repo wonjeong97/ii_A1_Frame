@@ -30,7 +30,6 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private VideoPlayer videoPlayer; 
         [SerializeField] private Text descriptionText; 
         
-        // 영상 길이에 맞춰 타이머를 30초 -> 15초로 변경
         private const float FixedDuration = 15f; 
         
         protected override void SetupData(EndingPage2Data data)
