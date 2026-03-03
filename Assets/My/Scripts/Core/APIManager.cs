@@ -190,18 +190,18 @@ namespace My.Scripts.Core
                         GameManager.Instance.PlayerAColor = userData.COLOR_LEFT;
                         GameManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
                         
-                        GameManager.Instance.PieceA1 = userData.PIECE_A1;
-                        GameManager.Instance.PieceA2 = userData.PIECE_A2;
-                        GameManager.Instance.PieceA3 = userData.PIECE_A3;
-                        GameManager.Instance.PieceB1 = userData.PIECE_B1;
-                        GameManager.Instance.PieceB2 = userData.PIECE_B2;
-                        GameManager.Instance.PieceB3 = userData.PIECE_B3;
-                        GameManager.Instance.PieceC1 = userData.PIECE_C1;
-                        GameManager.Instance.PieceC2 = userData.PIECE_C2;
-                        GameManager.Instance.PieceC3 = userData.PIECE_C3;
-                        GameManager.Instance.PieceD1 = userData.PIECE_D1;
-                        GameManager.Instance.PieceD2 = userData.PIECE_D2;
-                        GameManager.Instance.PieceD3 = userData.PIECE_D3;
+                        GameManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
+                        GameManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
+                        GameManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
+                        GameManager.Instance.PieceB1 = Mathf.Max(0, userData.PIECE_B1);
+                        GameManager.Instance.PieceB2 = Mathf.Max(0, userData.PIECE_B2);
+                        GameManager.Instance.PieceB3 = Mathf.Max(0, userData.PIECE_B3);
+                        GameManager.Instance.PieceC1 = Mathf.Max(0, userData.PIECE_C1);
+                        GameManager.Instance.PieceC2 = Mathf.Max(0, userData.PIECE_C2);
+                        GameManager.Instance.PieceC3 = Mathf.Max(0, userData.PIECE_C3);
+                        GameManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
+                        GameManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
+                        GameManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
                     }
                 }
                 else

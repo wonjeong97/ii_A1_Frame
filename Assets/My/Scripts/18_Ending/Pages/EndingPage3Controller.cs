@@ -69,16 +69,10 @@ namespace My.Scripts._18_Ending.Pages
         {
             if (text2 && _data?.descriptionText2 != null)
             {
-                int totalPieces = 0;
-                int existingPieces = 0;
-                
-                if (GameManager.Instance)
-                {
-                    existingPieces = GameManager.Instance.TotalPieces;
-                    totalPieces = existingPieces + 5; // 기존 조각 + 이번 판 5개
-                    
-                    Debug.Log($"[EndingPage3] 텍스트 갱신 완료! (API 로드: {existingPieces}개 + 추가 5개 = 총 {totalPieces}개)");
-                }
+                if (!GameManager.Instance) return;
+                int existingPieces = GameManager.Instance.TotalPieces;
+                int totalPieces = existingPieces + 5; // 기존 조각 + 이번 판 5개
+                Debug.Log($"[EndingPage3] 텍스트 갱신 완료! (API 로드: {existingPieces}개 + 추가 5개 = 총 {totalPieces}개)");
 
                 string originalText = _data.descriptionText2.text;
                 if (!string.IsNullOrEmpty(originalText))
