@@ -54,7 +54,6 @@ namespace My.Scripts._18_Ending.Pages
             // [수정] _hasSentPieceUpdate가 false일 때만 서버 업데이트 호출
             if (GameManager.Instance && !_hasSentPieceUpdate)
             {
-                Debug.Log("[EndingPage3] 진입: 마음 조각 업데이트 호출 (고정값: 5)");
                 GameManager.Instance.SendPieceUpdateAPI(5);
                 _hasSentPieceUpdate = true; // 호출 후 true로 변경하여 중복 방지
             }

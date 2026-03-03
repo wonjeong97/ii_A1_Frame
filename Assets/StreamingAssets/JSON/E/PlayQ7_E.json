@@ -1,0 +1,106 @@
+{
+  "page1": {
+    "questions": [
+        {
+          "name": "01_상대방의",
+          "position": {"x": 1200, "y": -85},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "상대방의",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "02_표정이나",
+          "position": {"x": 1440, "y": -540},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "표정이나",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "03_말투가",
+          "position": {"x": 120, "y": -75},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "말투가",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "04_평소와",
+          "position": {"x": 120, "y": -940},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "평소와",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "05_다를 때,",
+          "position": {"x": 1560, "y": -885},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "다를 때",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "06_그 변화가",
+          "position": {"x": 480, "y": -345},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "그 변화가",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "07_먼저 눈에",
+          "position": {"x": 960, "y": -745},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "먼저 눈에",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        },
+        {
+          "name": "08_들어온다.",
+          "position": {"x": 1560, "y": -210},
+          "scale": {"x": 1, "y": 1, "z": 1},
+          "text": "들어온다.",
+          "fontName": "font7",
+          "fontSize": 55,
+          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+        }
+    ],
+    "questionSpots": [
+      { "x": 4, "y": 0 },
+      { "x": 5, "y": 0 },
+      { "x": 5, "y": 3 },
+      { "x": 5, "y": 4 },
+      { "x": 6, "y": 3 },
+      { "x": 6, "y": 4 },
+      { "x": 0, "y": 0 },
+      { "x": 0, "y": 6 },
+      { "x": 0, "y": 7 },
+      { "x": 6, "y": 6 },
+      { "x": 1, "y": 2 },
+      { "x": 2, "y": 2 },
+      { "x": 3, "y": 5 },
+      { "x": 4, "y": 5 },
+      { "x": 6, "y": 1 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.상대방의 표정이나 말투가 평소와 다를 때, 그 변화가 눈에 먼저 들어온다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

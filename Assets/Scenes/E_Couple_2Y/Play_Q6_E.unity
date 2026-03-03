@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 59174631}
   - component: {fileID: 59174630}
   m_Layer: 5
-  m_Name: "02_\uC870\uC6A9\uD588\uB358"
+  m_Name: "05_\uADF8 \uC758\uBBF8\uB97C"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -192,7 +192,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC870\uC6A9\uD588\uB358"
+  m_Text: "\uADF8 \uC758\uBBF8\uB97C"
 --- !u!222 &59174631
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -235,7 +235,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1675, y: -563.5}
+  m_AnchoredPosition: {x: 480, y: -435}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &79185288
@@ -422,32 +422,32 @@ PrefabInstance:
         type: 3}
       propertyPath: questionTexts.Array.data[0]
       value: 
-      objectReference: {fileID: 1991124024}
+      objectReference: {fileID: 1901595396}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.data[1]
       value: 
-      objectReference: {fileID: 59174630}
+      objectReference: {fileID: 1983339942}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.data[2]
       value: 
-      objectReference: {fileID: 1983339942}
+      objectReference: {fileID: 759894513}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.data[3]
       value: 
-      objectReference: {fileID: 1901595396}
+      objectReference: {fileID: 1344581415}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.data[4]
       value: 
-      objectReference: {fileID: 1344581415}
+      objectReference: {fileID: 59174630}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.data[5]
       value: 
-      objectReference: {fileID: 759894513}
+      objectReference: {fileID: 1991124024}
     - target: {fileID: 7928054169819106954, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Name
@@ -459,11 +459,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1991124023}
-    - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 59174629}
+      addedObject: {fileID: 1901595395}
     - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
@@ -471,7 +467,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1901595395}
+      addedObject: {fileID: 759894512}
     - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
@@ -479,7 +475,11 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 759894512}
+      addedObject: {fileID: 59174629}
+    - targetCorrespondingSourceObject: {fileID: 3098474930955532944, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1991124023}
     - targetCorrespondingSourceObject: {fileID: 3969086949991664397, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       insertIndex: -1
@@ -630,7 +630,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1442, y: -165}
+  m_AnchoredPosition: {x: 1560, y: -560}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &656819224
@@ -687,7 +687,7 @@ GameObject:
   - component: {fileID: 759894514}
   - component: {fileID: 759894513}
   m_Layer: 5
-  m_Name: "06_\uD55C\uB2E4."
+  m_Name: "03_\uB2E4\uB978"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -745,7 +745,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uD55C\uB2E4."
+  m_Text: "\uB2E4\uB978"
 --- !u!222 &759894514
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -788,7 +788,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 482.5, y: -431.4}
+  m_AnchoredPosition: {x: 240, y: -27.8}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &834556831
@@ -884,7 +884,7 @@ MonoBehaviour:
   - {fileID: 242438217}
   - {fileID: 242438216}
   - {fileID: 242438215}
-  levelType: 3
+  levelType: 4
   levelID: Q6
   useFadeTransition: 1
   globalBlackCanvasGroup: {fileID: 242438214}
@@ -924,7 +924,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 839, y: -350}
+  m_AnchoredPosition: {x: 240, y: -839.5}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1231663648
@@ -1003,7 +1003,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 238, y: -31.6}
+  m_AnchoredPosition: {x: 840, y: -349}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1343750594
@@ -1060,7 +1060,7 @@ GameObject:
   - component: {fileID: 1344581416}
   - component: {fileID: 1344581415}
   m_Layer: 5
-  m_Name: "05_\uC0DD\uAC01\uD574 \uBCF4\uACE4"
+  m_Name: "04_\uBC18\uC751\uC744 \uBCF4\uC774\uBA74,"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1118,7 +1118,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC0DD\uAC01\uD574 \uBCF4\uACE4"
+  m_Text: "\uBC18\uC751\uC744 \uBCF4\uC774\uBA74,"
 --- !u!222 &1344581416
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1344,7 +1344,7 @@ GameObject:
   - component: {fileID: 1901595397}
   - component: {fileID: 1901595396}
   m_Layer: 5
-  m_Name: "04_\uC758\uBBF8\uC5D0 \uB300\uD574"
+  m_Name: "01_\uC0C1\uB300\uAC00"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1366,7 +1366,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1680, y: -605}
+  m_AnchoredPosition: {x: 1560, y: -605}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1901595396
@@ -1402,7 +1402,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC758\uBBF8\uC5D0 \uB300\uD574"
+  m_Text: "\uC0C1\uB300\uAC00"
 --- !u!222 &1901595397
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1445,7 +1445,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 241.8, y: -838.1}
+  m_AnchoredPosition: {x: 1200, y: -890.7}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1933400739
@@ -1502,7 +1502,7 @@ GameObject:
   - component: {fileID: 1983339943}
   - component: {fileID: 1983339942}
   m_Layer: 5
-  m_Name: "03_\uC21C\uAC04\uC758"
+  m_Name: "02_\uD3C9\uC18C\uC640"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1560,7 +1560,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC21C\uAC04\uC758"
+  m_Text: "\uD3C9\uC18C\uC640"
 --- !u!222 &1983339943
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1581,7 +1581,7 @@ GameObject:
   - component: {fileID: 1991124025}
   - component: {fileID: 1991124024}
   m_Layer: 5
-  m_Name: "01_\uC0C1\uB300\uBC29\uC774"
+  m_Name: "06_\uACF1\uC539\uAC8C \uB41C\uB2E4."
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1603,7 +1603,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1440, y: -210}
+  m_AnchoredPosition: {x: 1200, y: -945}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1991124024
@@ -1639,7 +1639,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC0C1\uB300\uBC29\uC774"
+  m_Text: "\uACF1\uC539\uAC8C \uB41C\uB2E4."
 --- !u!222 &1991124025
 CanvasRenderer:
   m_ObjectHideFlags: 0
