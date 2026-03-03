@@ -26,6 +26,8 @@ namespace My.Scripts.Core
         public int IDX_USER; 
         public string UID_LEFT;
         public string UID_RIGHT;
+        public string LANG;
+        public int RELATION;
         
         public ColorData COLOR_LEFT; 
         public ColorData COLOR_RIGHT;
@@ -47,9 +49,8 @@ namespace My.Scripts.Core
         public int PIECE_D1;
         public int PIECE_D2;
         public int PIECE_D3;
-
-        public int[] VALUE_LEFT_A1;
-        public int[] VALUE_RIGHT_A1;
+        
+        // VALUE_LEFT_A1, VALUE_RIGHT_A1 배열은 불필요하여 삭제되었습니다.
     }
 
     public class ApiTableResponse
@@ -75,7 +76,6 @@ namespace My.Scripts.Core
         [ContextMenu("Fetch API Data")]
         public void FetchData()
         {
-            // 1. API 설정 파일 가져오기 (GameManager가 없으면 직접 로드)
             ApiSettings config = null;
             if (GameManager.Instance != null) config = GameManager.Instance.ApiConfig;
             if (config == null) config = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
@@ -86,22 +86,18 @@ namespace My.Scripts.Core
                 return;
             }
 
-            // 2. 설정된 베이스 URL + GetUser URL + 입력된 uid 조합
             string requestUrl = $"{config.GetUserUrl}?uid={userUid}";
             StartCoroutine(GetApiDataRoutine(requestUrl));
         }
 
-        /// <summary> API 서버에 GET 요청을 보내고 JSON을 받아오는 코루틴 </summary>
         private IEnumerator GetApiDataRoutine(string url)
         {
             Debug.Log($"[APIManager] API 요청 시작: {url}");
 
             using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
             {
-                // 통신 대기
                 yield return webRequest.SendWebRequest();
 
-                // 네트워크 에러 또는 HTTP 에러(404, 500 등) 체크
                 if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
                     webRequest.result == UnityWebRequest.Result.ProtocolError)
                 {
@@ -109,11 +105,8 @@ namespace My.Scripts.Core
                 }
                 else
                 {
-                    // 성공적으로 JSON 텍스트를 받아옴
                     string jsonResult = webRequest.downloadHandler.text;
                     Debug.Log("[APIManager] 데이터 수신 성공! 파싱을 시작합니다.");
-                    
-                    // 수신받은 JSON 텍스트를 파싱 함수로 전달
                     ParseAndProcessData(jsonResult);
                 }
             }
@@ -134,6 +127,9 @@ namespace My.Scripts.Core
                     userData.UID_LEFT = ParseStringSafe(response, firstRow, "UID_LEFT");
                     userData.UID_RIGHT = ParseStringSafe(response, firstRow, "UID_RIGHT");
                     
+                    userData.LANG = ParseStringSafe(response, firstRow, "LANG");
+                    userData.RELATION = ParseIntSafe(response, firstRow, "RELATION");
+
                     userData.RESERVATION_FIRST_NAME_LEFT = ParseStringSafe(response, firstRow, "RESERVATION_FIRST_NAME_LEFT");
                     userData.RESERVATION_LAST_NAME_LEFT = ParseStringSafe(response, firstRow, "RESERVATION_LAST_NAME_LEFT");
                     userData.RESERVATION_FIRST_NAME_RIGHT = ParseStringSafe(response, firstRow, "RESERVATION_FIRST_NAME_RIGHT");
@@ -155,19 +151,36 @@ namespace My.Scripts.Core
                     userData.PIECE_D2 = ParseIntSafe(response, firstRow, "PIECE_D2");
                     userData.PIECE_D3 = ParseIntSafe(response, firstRow, "PIECE_D3");
 
-                    userData.VALUE_LEFT_A1 = new int[10];
-                    userData.VALUE_RIGHT_A1 = new int[10];
-
-                    for (int i = 1; i <= 10; i++)
-                    {
-                        userData.VALUE_LEFT_A1[i - 1] = ParseIntSafe(response, firstRow, $"VALUE_{i}_LEFT_A1");
-                        userData.VALUE_RIGHT_A1[i - 1] = ParseIntSafe(response, firstRow, $"VALUE_{i}_RIGHT_A1");
-                    }
+                    // 불필요한 VALUE 데이터 파싱 for문 삭제됨
 
                     if (GameManager.Instance)
                     {   
                         GameManager.Instance.CurrentUserId = userData.IDX_USER;
-                        
+                        if (!string.IsNullOrWhiteSpace(userData.LANG))
+                        {
+                            GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[APIManager] LANG 값이 비어 있어 기본 언어 설정을 유지합니다.");
+                        }
+
+                        switch (userData.RELATION)
+                        {
+                            case 1: GameManager.Instance.currentUserType = UserType.A; break;
+                            case 2: GameManager.Instance.currentUserType = UserType.B; break;
+                            case 3: GameManager.Instance.currentUserType = UserType.C; break;
+                            case 4: GameManager.Instance.currentUserType = UserType.D; break;
+                            case 5: GameManager.Instance.currentUserType = UserType.E; break;
+                            case 6: GameManager.Instance.currentUserType = UserType.F; break;
+                            default: 
+                                GameManager.Instance.currentUserType = UserType.A; 
+                                Debug.LogWarning($"[APIManager] 알 수 없는 RELATION 값({userData.RELATION})입니다. UserType.A로 기본 설정됩니다.");
+                                break;
+                        }
+
+                        Debug.Log($"[APIManager] 언어: {userData.LANG}, 관계: {userData.RELATION} -> 설정된 UserType: {GameManager.Instance.currentUserType}");
+
                         if (!string.IsNullOrEmpty(userData.RESERVATION_LAST_NAME_LEFT))
                             GameManager.Instance.PlayerALastName = userData.RESERVATION_LAST_NAME_LEFT;
                             
@@ -176,6 +189,19 @@ namespace My.Scripts.Core
                         
                         GameManager.Instance.PlayerAColor = userData.COLOR_LEFT;
                         GameManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
+                        
+                        GameManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
+                        GameManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
+                        GameManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
+                        GameManager.Instance.PieceB1 = Mathf.Max(0, userData.PIECE_B1);
+                        GameManager.Instance.PieceB2 = Mathf.Max(0, userData.PIECE_B2);
+                        GameManager.Instance.PieceB3 = Mathf.Max(0, userData.PIECE_B3);
+                        GameManager.Instance.PieceC1 = Mathf.Max(0, userData.PIECE_C1);
+                        GameManager.Instance.PieceC2 = Mathf.Max(0, userData.PIECE_C2);
+                        GameManager.Instance.PieceC3 = Mathf.Max(0, userData.PIECE_C3);
+                        GameManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
+                        GameManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
+                        GameManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
                     }
                 }
                 else
@@ -196,7 +222,13 @@ namespace My.Scripts.Core
             int index = response.COLUMNS.IndexOf(colName);
             if (index != -1 && row.Count > index && row[index] != null)
             {
-                if (int.TryParse(row[index].ToString(), out int val)) return val;
+                string valStr = row[index].ToString().Trim();
+                if (string.IsNullOrEmpty(valStr)) return 0;
+                
+                if (int.TryParse(valStr, out int val)) return val;
+                
+                if (float.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fVal)) 
+                    return (int)fVal;
             }
             return 0; 
         }

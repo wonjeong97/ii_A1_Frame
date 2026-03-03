@@ -1,6 +1,7 @@
 {
-  "baseUrl": "http://192.168.0.254:8500/api",
+  "baseUrl": "http://192.168.0.252:8500/api",
   "getUser": "/getUser.cfm",
   "updateTime": "/updateTime.cfm",
-  "updateValue": "/updateValue.cfm"
+  "updateValue": "/updateValue.cfm",
+  "updatePiece": "/updatePiece.cfm"
 }
