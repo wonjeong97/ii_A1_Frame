@@ -27,13 +27,12 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text descriptionText;
         [SerializeField] private Image redLineImage;
 
-        private bool _isAllFinished; // 특별 엔딩(붉은 실) 활성화 여부
+        private bool _isAllFinished;
         private bool _hasSentEndTime;
         
         protected override void SetupData(EndingPage4Data data)
         {
             // 엔딩의 다양성을 위해 50% 확률로 일반 엔딩과 특별 엔딩(Red Line)을 분기합니다.
-            // # TODO: 현재는 완전 랜덤이지만, 추후 API에 따라 변경
             int randomValue = UnityEngine.Random.Range(0, 2);
             TextSetting textToUse = data.descriptionText;
 
@@ -65,16 +64,21 @@ namespace My.Scripts._18_Ending.Pages
 
             if (!_hasSentEndTime && GameManager.Instance)
             {
-                Debug.Log("[EndingPage4] 엔딩 최종 페이지 진입. 종료(end) 시간 업데이트 호출");
-                _hasSentEndTime = true;
-                GameManager.Instance.SendTimeUpdateAPI();
+                if (GameManager.Instance.CurrentUserId == 0)
+                {
+                    Debug.LogWarning("[EndingPage4] CurrentUserId가 없어 API 전송을 보류합니다.");
+                }
+                else
+                {
+                    GameManager.Instance.SendTimeUpdateAPI();
+                    GameManager.Instance.SendExitRoomAPI();
+                    _hasSentEndTime = true;
+                }
             }
             StartCoroutine(SequenceRoutine());
         }
 
-        /// <summary>
-        /// 엔딩 시퀀스 루틴입니다. 분기된 엔딩 타입에 따라 다른 연출과 대기 시간을 가집니다.
-        /// </summary>
+        /// <summary> 엔딩 시퀀스 루틴입니다. 분기된 엔딩 타입에 따라 다른 연출과 대기 시간을 가집니다. </summary>
         private IEnumerator SequenceRoutine()
         {   
             yield return CoroutineData.GetWaitForSeconds(1.0f);
@@ -94,9 +98,7 @@ namespace My.Scripts._18_Ending.Pages
             CompleteStep();
         }
 
-        /// <summary>
-        /// 이미지의 FillAmount를 조절하여 게이지가 차오르는 듯한 연출을 수행합니다. (붉은 실 연출용)
-        /// </summary>
+        /// <summary> 이미지의 FillAmount를 조절하여 게이지가 차오르는 듯한 연출을 수행합니다. (붉은 실 연출용) </summary>
         private IEnumerator FillImageRoutine(Image t, float s, float e, float d)
         {
             if (!t) yield break;

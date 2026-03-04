@@ -1,8 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Networking; 
+using My.Scripts.Global;      
 
 namespace My.Scripts.Utils
 {
@@ -60,7 +63,7 @@ namespace My.Scripts.Utils
                 sanitizedName = "UnknownPlayers";
             }
 
-            // 1. 경로 설정 (날짜 폴더 포함) - 한 번만 계산하여 로드/저장에 동일하게 사용
+            // 1. 경로 설정 (날짜 폴더 포함)
             string rootPath = GetRootPath();
             if (!Directory.Exists(rootPath))
             {
@@ -85,6 +88,7 @@ namespace My.Scripts.Utils
             // 5. 사진 합성 (해당 날짜 폴더에서 파일 로드)
             foreach (var slot in slots)
             {
+                // 원본 소스 파일은 PNG이므로 확장자 유지
                 string targetPath = Path.Combine(rootPath, $"{sanitizedName}{slot.fileSuffix}.png");
                 
                 if (File.Exists(targetPath))
@@ -115,11 +119,87 @@ namespace My.Scripts.Utils
             RenderTexture.active = prevActive;
             RenderTexture.ReleaseTemporary(rt);
 
-            // 7. 저장 (동일한 rootPath 사용)
-            SaveToFile(resultTex, $"{sanitizedName}_{outputFileName}.png", rootPath);
+            // 7. JPG 인코딩 (Quality 85) - 로컬 저장과 업로드에 공통 사용
+            byte[] jpgBytes = resultTex.EncodeToJPG(85);
+            if (jpgBytes == null || jpgBytes.Length == 0)
+            {
+                Debug.LogError("[PhotoCompositor] JPG 인코딩 실패로 저장/업로드를 중단합니다.");
+                Destroy(resultTex);
+                return;
+            }
+            string finalFileName = $"{sanitizedName}_{outputFileName}.jpg";
+
+            // 8. 로컬 저장 (JPG 원본 보존)
+            SaveToFile(jpgBytes, finalFileName, rootPath);
+
+            // 9. 서버 업로드 진행
+            StartCoroutine(UploadImageRoutine(jpgBytes, finalFileName));
+
+            // 결과 텍스처 메모리 해제
             Destroy(resultTex);
 
-            Debug.Log($"[PhotoCompositor] 합성 완료 및 저장됨: {Path.Combine(rootPath, $"{sanitizedName}_{outputFileName}.png")}");
+            Debug.Log($"[PhotoCompositor] 합성 완료 및 로컬 저장됨: {Path.Combine(rootPath, finalFileName)}");
+        }
+
+        /// <summary>
+        /// 합성된 사진 데이터를 UploadHandlerRaw를 사용하여 서버로 전송하는 코루틴
+        /// </summary>
+        private IEnumerator UploadImageRoutine(byte[] imageBytes, string fileName)
+        {
+            int idxUser = 0;
+            string uid = "";
+            string baseUrl = "";
+
+            if (GameManager.Instance)
+            {
+                idxUser = GameManager.Instance.CurrentUserId;
+                uid = GameManager.Instance.PlayerAUid; 
+                
+                if (GameManager.Instance.ApiConfig != null)
+                {
+                    baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
+                }
+            }
+
+            // API.json 설정을 불러오지 못한 경우 방어 로직
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                Debug.LogWarning("[PhotoCompositor] API 설정(baseUrl)이 없어 업로드를 건너뜁니다.");
+                yield break;
+            }
+
+            if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid))
+            {
+                Debug.LogWarning("[PhotoCompositor] idx_user/uid가 유효하지 않아 업로드를 건너뜁니다.");
+                yield break;
+            }
+            
+            string encodedUid = UnityWebRequest.EscapeURL(uid);
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code=a1&type=jpg";
+            Debug.Log("[PhotoCompositor] 사진 업로드 시도 중...");
+
+            using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
+            {
+                UploadHandlerRaw uploadHandler = new UploadHandlerRaw(imageBytes);
+                uploadHandler.contentType = "image/jpeg"; 
+                
+                webRequest.uploadHandler = uploadHandler;
+                webRequest.downloadHandler = new DownloadHandlerBuffer();
+                webRequest.timeout = 10;
+
+                yield return webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
+                    webRequest.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"[PhotoCompositor] 업로드 실패: {webRequest.error}");
+                }
+                else
+                {
+                    string responseJson = webRequest.downloadHandler.text;
+                    Debug.Log($"[PhotoCompositor] 업로드 성공! status={webRequest.responseCode}");
+                }
+            }
         }
 
         private Texture2D LoadTextureFromFile(string path)
@@ -134,25 +214,20 @@ namespace My.Scripts.Utils
             catch { return null; }
         }
 
-        // rootPath를 인자로 받도록 시그니처 변경 및 내부 GetRootPath 호출 제거
-        private void SaveToFile(Texture2D tex, string fileName, string rootPath)
+        private void SaveToFile(byte[] bytes, string fileName, string rootPath)
         {
-            // 폴더가 없으면 생성
             if (!Directory.Exists(rootPath)) Directory.CreateDirectory(rootPath);
 
             string path = Path.Combine(rootPath, fileName);
-            byte[] bytes = tex.EncodeToPNG();
             File.WriteAllBytes(path, bytes);
         }
 
-        /// <summary> 루트 경로 반환 (날짜 폴더 포함) </summary>
         private string GetRootPath()
         {
             string dataPath = Application.dataPath;
             DirectoryInfo parentDir = Directory.GetParent(dataPath);
-            string rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
+            string rootPath = parentDir != null ? parentDir.FullName : dataPath;
             
-            // 날짜 폴더 추가 (예: Pictures/2026-02-06)
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
             
             return Path.Combine(rootPath, saveFolderName, dateFolder);
