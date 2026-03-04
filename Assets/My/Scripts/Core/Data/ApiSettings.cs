@@ -16,14 +16,23 @@ namespace My.Scripts.Core.Data
         public string uploadFile;
         public string exitRoom;
 
+        private static string BuildUrl(string baseUrl, string path, string fallbackPath = null)
+        {
+            string finalPath = string.IsNullOrWhiteSpace(path) ? fallbackPath : path;
+            if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(finalPath))
+                return string.Empty;
+
+            return $"{baseUrl.TrimEnd('/')}/{finalPath.TrimStart('/')}";
+        }
+
         // URL 조합을 쉽게 해주는 헬퍼 프로퍼티
         public string GetUserUrl => $"{baseUrl}{getUser}";
         public string UpdateTimeUrl => $"{baseUrl}{updateTime}";
         public string UpdateValueUrl => $"{baseUrl}{updateValue}";
-        public string UpdatePieceUrl => $"{baseUrl}{updatePiece}";
-        public string CheckRoomStateUrl => $"{baseUrl}{checkRoomState}";
-        public string GetCurrentRoomUserUrl => $"{baseUrl}{getCurrentRoomUser}";
-        public string UploadFileUrl => $"{baseUrl}{uploadFile}";
-        public string ExitRoomUrl => $"{baseUrl}{exitRoom}";
+        public string UpdatePieceUrl => BuildUrl(baseUrl, updatePiece, "/updatePiece.cfm");
+        public string CheckRoomStateUrl => BuildUrl(baseUrl, checkRoomState, "/checkRoomState.cfm");
+        public string GetCurrentRoomUserUrl => BuildUrl(baseUrl, getCurrentRoomUser, "/getCurrentRoomUser.cfm");
+        public string UploadFileUrl => BuildUrl(baseUrl, uploadFile, "/uploadFile.cfm");
+        public string ExitRoomUrl => BuildUrl(baseUrl, exitRoom, "/exitRoom.cfm");
     }
 }

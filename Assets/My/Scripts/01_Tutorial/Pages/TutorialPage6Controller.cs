@@ -285,6 +285,13 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator ProcessStageSequence()
         {
+            if (_data == null)
+            {
+                Debug.LogError("[TutorialPage6] 데이터가 없습니다.");
+                _stageSequenceRoutine = null;
+                yield break;
+            }
+            
             yield return CoroutineData.GetWaitForSeconds(5.0f); 
 
             _isInputBlocked = true; 

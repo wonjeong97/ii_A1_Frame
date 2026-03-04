@@ -161,9 +161,15 @@ namespace My.Scripts.Utils
                 Debug.LogWarning("[PhotoCompositor] API 설정(baseUrl)이 없어 업로드를 건너뜁니다.");
                 yield break;
             }
+
+            if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid))
+            {
+                Debug.LogWarning("[PhotoCompositor] idx_user/uid가 유효하지 않아 업로드를 건너뜁니다.");
+                yield break;
+            }
             
             string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=jpg";
-            Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중... URL: {url}");
+            Debug.Log("[PhotoCompositor] 사진 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {

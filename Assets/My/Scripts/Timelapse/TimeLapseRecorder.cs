@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -54,6 +55,7 @@ namespace My.Scripts.Timelapse
         private RenderTexture _captureRT;
         
         private string _currentLevelID; 
+        private readonly HashSet<string> _uploadedTimelapsePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         // 디스크 쓰기 루프 태스크 추적용 (OnDestroy 시 안전한 종료 대기 위함)
         private UniTask _diskWriteTask;
@@ -457,8 +459,8 @@ namespace My.Scripts.Timelapse
                         LastVideoPath = outputPath;
                         if (isRealtime) LastRealtimeVideoPath = outputPath;
                         
-                        // 타임랩스 영상(!isRealtime)일 때만 서버로 업로드
-                        if (!isRealtime)
+                        // 타임랩스 영상일 때만 서버로 업로드
+                        if (!isRealtime && _uploadedTimelapsePaths.Add(outputPath))
                         {
                             StartCoroutine(UploadVideoRoutine(outputPath));
                         }
@@ -530,8 +532,8 @@ namespace My.Scripts.Timelapse
                     Debug.Log($"[TimeLapseRecorder] 변환 성공: {outputPath}");
                     ClearFolder(sourceFolder); // 소스 이미지 정리
                     
-                    // 타임랩스 영상(!isRealtime)일 때만 서버로 업로드
-                    if (!isRealtime)
+                    // 타임랩스 영상일 때만 서버로 업로드
+                    if (!isRealtime && _uploadedTimelapsePaths.Add(outputPath))
                     {
                         StartCoroutine(UploadVideoRoutine(outputPath));
                     }
@@ -585,6 +587,12 @@ namespace My.Scripts.Timelapse
                 Debug.LogWarning("[TimeLapseRecorder] API 설정(baseUrl)이 없어 영상 업로드를 건너뜁니다.");
                 yield break;
             }
+
+            if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid))
+            {
+                Debug.LogWarning("[TimeLapseRecorder] idx_user/uid가 유효하지 않아 업로드를 건너뜁니다.");
+                yield break;
+            }
             
             // 영상 데이터를 바이트 배열로 변환
             byte[] videoBytes = null;
@@ -600,7 +608,7 @@ namespace My.Scripts.Timelapse
 
             // URL 조합 (영상 데이터이므로 type=mp4 고정)
             string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=mp4";
-            Debug.Log($"[TimeLapseRecorder] 타임랩스 영상 업로드 시도 중... URL: {url}");
+            Debug.Log("[TimeLapseRecorder] 타임랩스 영상 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {

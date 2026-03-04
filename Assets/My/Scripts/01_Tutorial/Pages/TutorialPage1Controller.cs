@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using My.Scripts.Core; // APIManager 참조용
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
+using TMPro;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -27,6 +28,9 @@ namespace My.Scripts._01_Tutorial.Pages
     {
         [Header("Page 1 UI")]
         [SerializeField] private Text descriptionText;
+        
+        [Header("API Manager")]
+        [SerializeField] private APIManager apiManager;
         
         private float pollInterval = 1.0f; // 폴링 간격 (1초)
         private readonly float fadeTime = 1f;
@@ -189,17 +193,22 @@ namespace My.Scripts._01_Tutorial.Pages
                                     }
 
                                     // APIManager에 추출한 UID 전달
-                                    APIManager apiManager = FindObjectOfType<APIManager>();
                                     if (apiManager)
                                     {
                                         apiManager.FetchData(uidLeft);
+                                        float timeoutAt = Time.time + 5f;
+                                        while (GameManager.Instance &&
+                                               GameManager.Instance.CurrentUserId == 0 &&
+                                               Time.time < timeoutAt)
+                                        {
+                                            yield return null;
+                                        }
                                     }
                                     else
                                     {
                                         Debug.LogWarning("[TutorialPage1] APIManager를 씬에서 찾을 수 없습니다.");
                                     }
                                 }
-
                                 CompleteStep(); 
                                 yield break; 
                             }

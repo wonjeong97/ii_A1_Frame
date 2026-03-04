@@ -64,12 +64,16 @@ namespace My.Scripts._18_Ending.Pages
 
             if (!_hasSentEndTime && GameManager.Instance)
             {
-                Debug.Log("[EndingPage4] 엔딩 최종 페이지 진입. 종료(end) 시간 및 퇴장(exitRoom) 업데이트 호출");
-                _hasSentEndTime = true;
-                
-                // 시간과 방 퇴장 여부를 모두 서버로 전송합니다.
-                GameManager.Instance.SendTimeUpdateAPI();
-                GameManager.Instance.SendExitRoomAPI();
+                if (GameManager.Instance.CurrentUserId == 0)
+                {
+                    Debug.LogWarning("[EndingPage4] CurrentUserId가 없어 API 전송을 보류합니다.");
+                }
+                else
+                {
+                    GameManager.Instance.SendTimeUpdateAPI();
+                    GameManager.Instance.SendExitRoomAPI();
+                    _hasSentEndTime = true;
+                }
             }
             StartCoroutine(SequenceRoutine());
         }
