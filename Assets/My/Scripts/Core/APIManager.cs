@@ -49,8 +49,6 @@ namespace My.Scripts.Core
         public int PIECE_D1;
         public int PIECE_D2;
         public int PIECE_D3;
-        
-        // VALUE_LEFT_A1, VALUE_RIGHT_A1 배열은 불필요하여 삭제되었습니다.
     }
 
     public class ApiTableResponse
@@ -61,16 +59,13 @@ namespace My.Scripts.Core
 
     public class APIManager : MonoBehaviour
     {
-        [Header("API Settings")]
-        [Tooltip("조회할 유저의 UID를 입력하세요.")]
-        [SerializeField] private string userUid = "2270AE4A-ABFC-E349-1A0A5A69999CC1A8";
+        private string userUid;
 
-        void Start()
+        /// <summary> 외부에서 직접 UID를 주입하며 데이터를 요청할 때 사용합니다. </summary>
+        public void FetchData(string uid)
         {
-            if (!string.IsNullOrEmpty(userUid))
-            {
-                FetchData();
-            }
+            userUid = uid;
+            FetchData();
         }
         
         [ContextMenu("Fetch API Data")]
@@ -96,6 +91,8 @@ namespace My.Scripts.Core
 
             using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
             {
+                webRequest.timeout = 10; // 타임아웃 적용
+
                 yield return webRequest.SendWebRequest();
 
                 if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
@@ -151,18 +148,16 @@ namespace My.Scripts.Core
                     userData.PIECE_D2 = ParseIntSafe(response, firstRow, "PIECE_D2");
                     userData.PIECE_D3 = ParseIntSafe(response, firstRow, "PIECE_D3");
 
-                    // 불필요한 VALUE 데이터 파싱 for문 삭제됨
-
                     if (GameManager.Instance)
                     {   
                         GameManager.Instance.CurrentUserId = userData.IDX_USER;
+                        
+                        GameManager.Instance.PlayerAUid = userData.UID_LEFT;
+                        GameManager.Instance.PlayerBUid = userData.UID_RIGHT;
+
                         if (!string.IsNullOrWhiteSpace(userData.LANG))
                         {
                             GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[APIManager] LANG 값이 비어 있어 기본 언어 설정을 유지합니다.");
                         }
 
                         switch (userData.RELATION)

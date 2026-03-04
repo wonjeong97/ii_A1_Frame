@@ -17,7 +17,7 @@ namespace My.Scripts.Global
         B, // 친구
         C, // 동료
         D, // 부모-성인자녀
-        E, // 부모-사춘기자녀 (추후)
+        E, // 2년 이상 커플
         F  // 부부사이 (추후)
     }
 
@@ -38,8 +38,12 @@ namespace My.Scripts.Global
         public UserType currentUserType = UserType.A;
         
         public ApiSettings ApiConfig { get; private set; }
-        public int CurrentUserId { get; set; } = 0; 
         
+        // --- API 연동 데이터 캐싱 ---
+        public int CurrentUserId { get; set; } = 0; 
+        public string PlayerAUid { get; set; } = string.Empty;
+        public string PlayerBUid { get; set; } = string.Empty;
+
         public string CurrentLanguage { get; set; } = "ko";
 
         public string PlayerALastName { get; set; } = "NoNameA";
@@ -232,13 +236,10 @@ namespace My.Scripts.Global
 
             switch (currentUserType)
             {
-                case UserType.A:
-                    return "_A"; 
-
+                case UserType.A: return "_A"; 
                 case UserType.B:
                     if (questionNumber == 4) return "_B";
                     return "_A";
-
                 case UserType.C:
                     if (questionNumber == 4 || questionNumber == 10 || questionNumber == 11 || 
                         questionNumber == 13 || questionNumber == 14 || questionNumber == 15)
@@ -246,17 +247,10 @@ namespace My.Scripts.Global
                         return "_C";
                     }
                     return "_A";
-
-                case UserType.D:
-                    return "_D"; 
-
-                case UserType.E: 
-                    return "_D"; 
-                case UserType.F: 
-                    return "_D";
-
-                default:
-                    return "_A";
+                case UserType.D: return "_D"; 
+                case UserType.E: return "_E"; 
+                case UserType.F: return "_F";
+                default: return "_A";
             }
         }
 
@@ -276,17 +270,45 @@ namespace My.Scripts.Global
         private IEnumerator TimeUpdateRoutine()
         {
             if (ApiConfig == null) yield break;
-
-            // option=end 로 완전히 고정합니다.
+            
             string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option=end&code=a1";
 
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
+                req.timeout = 10;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) 
                     Debug.LogError($"[Time API] 에러: {req.error}");
                 else 
                     Debug.Log($"[Time API] end 업데이트 성공! (URL: {url})");
+            }
+        }
+
+        /// <summary> 방 퇴장(exitRoom) 상태를 서버에 업데이트합니다. </summary>
+        public void SendExitRoomAPI()
+        {
+            if (CurrentUserId == 0)
+            {
+                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. ExitRoom API 호출을 건너뜁니다.");
+                return;
+            }
+            StartCoroutine(ExitRoomRoutine());
+        }
+
+        private IEnumerator ExitRoomRoutine()
+        {
+            if (ApiConfig == null) yield break;
+            
+            string url = $"{ApiConfig.ExitRoomUrl}?code=a1&idx_user={CurrentUserId}";
+
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                req.timeout = 10;
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success) 
+                    Debug.LogError($"[ExitRoom API] 에러: {req.error}");
+                else 
+                    Debug.Log($"[ExitRoom API] 방 퇴장 업데이트 성공! (URL: {url})");
             }
         }
 
@@ -303,12 +325,13 @@ namespace My.Scripts.Global
 
         private IEnumerator ValueUpdateRoutine(int qNo, string side, int value)
         {
-            if (ApiConfig == null) yield break; // 안전장치
+            if (ApiConfig == null) yield break; 
 
             string url = $"{ApiConfig.UpdateValueUrl}?idx_user={CurrentUserId}&q_no={qNo}&side={side}&code=a1&value={value}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
+                req.timeout = 10;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) Debug.LogError($"[Value API] 통신 에러: {req.error}");
                 else Debug.Log($"[Value API] {side} Q{qNo} 값({value}) 업데이트 성공!");
@@ -339,6 +362,7 @@ namespace My.Scripts.Global
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
+                req.timeout = 10;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) 
                     Debug.LogError($"[Piece API] 에러: {req.error}");

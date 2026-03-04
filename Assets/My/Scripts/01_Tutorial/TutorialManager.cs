@@ -35,45 +35,6 @@ namespace My.Scripts._01_Tutorial
                 return;
             }
 
-            // GameManager에서 이름을 가져와 JSON 플레이스홀더({nameA}, {nameB})를 교체.
-            if (GameManager.Instance != null)
-            {
-                string nameA = GameManager.Instance.PlayerALastName;
-                string nameB = GameManager.Instance.PlayerBLastName;
-
-                // 3페이지(체크)
-                if (setting.page3 != null)
-                {
-                    if (setting.page3.nicknamePlayerA != null && !string.IsNullOrEmpty(setting.page3.nicknamePlayerA.text)) 
-                        setting.page3.nicknamePlayerA.text = setting.page3.nicknamePlayerA.text.Replace("{nameA}", nameA);
-                    if (setting.page3.nicknamePlayerB != null && !string.IsNullOrEmpty(setting.page3.nicknamePlayerB.text)) 
-                        setting.page3.nicknamePlayerB.text = setting.page3.nicknamePlayerB.text.Replace("{nameB}", nameB);
-                }
-                
-                // 4페이지(체크)
-                if (setting.page4 != null)
-                {
-                    if (setting.page4.nicknamePlayerA != null && !string.IsNullOrEmpty(setting.page4.nicknamePlayerA.text)) 
-                        setting.page4.nicknamePlayerA.text = setting.page4.nicknamePlayerA.text.Replace("{nameA}", nameA);
-                    if (setting.page4.nicknamePlayerB != null && !string.IsNullOrEmpty(setting.page4.nicknamePlayerB.text)) 
-                        setting.page4.nicknamePlayerB.text = setting.page4.nicknamePlayerB.text.Replace("{nameB}", nameB);
-                }
-                
-                // 6페이지(이동 설명) 
-                if (setting.page6 != null)
-                {
-                    if (setting.page6.txtA_Start != null && !string.IsNullOrEmpty(setting.page6.txtA_Start.text)) 
-                        setting.page6.txtA_Start.text = setting.page6.txtA_Start.text.Replace("{nameA}", nameA);
-                    if (setting.page6.txtA_Info != null && !string.IsNullOrEmpty(setting.page6.txtA_Info.text)) 
-                        setting.page6.txtA_Info.text = setting.page6.txtA_Info.text.Replace("{nameA}", nameA);
-                    
-                    if (setting.page6.txtB_Start != null && !string.IsNullOrEmpty(setting.page6.txtB_Start.text)) 
-                        setting.page6.txtB_Start.text = setting.page6.txtB_Start.text.Replace("{nameB}", nameB);
-                    if (setting.page6.txtB_Info != null && !string.IsNullOrEmpty(setting.page6.txtB_Info.text)) 
-                        setting.page6.txtB_Info.text = setting.page6.txtB_Info.text.Replace("{nameB}", nameB);
-                }
-            }
-
             // 각 페이지에 데이터 주입
             if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(setting.page1);
             if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(setting.page2);

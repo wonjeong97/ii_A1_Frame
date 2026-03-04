@@ -11,11 +11,19 @@ namespace My.Scripts.Core.Data
         public string updateTime;
         public string updateValue;
         public string updatePiece;
+        public string checkRoomState;
+        public string getCurrentRoomUser;
+        public string uploadFile;
+        public string exitRoom;
 
         // URL 조합을 쉽게 해주는 헬퍼 프로퍼티
         public string GetUserUrl => $"{baseUrl}{getUser}";
         public string UpdateTimeUrl => $"{baseUrl}{updateTime}";
         public string UpdateValueUrl => $"{baseUrl}{updateValue}";
-        public string UpdatePieceUrl => $"{baseUrl}{(string.IsNullOrEmpty(updatePiece) ? "/updatePiece.cfm" : updatePiece)}";
+        public string UpdatePieceUrl => $"{baseUrl}{updatePiece}";
+        public string CheckRoomStateUrl => $"{baseUrl}{checkRoomState}";
+        public string GetCurrentRoomUserUrl => $"{baseUrl}{getCurrentRoomUser}";
+        public string UploadFileUrl => $"{baseUrl}{uploadFile}";
+        public string ExitRoomUrl => $"{baseUrl}{exitRoom}";
     }
 }

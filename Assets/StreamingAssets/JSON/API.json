@@ -3,5 +3,9 @@
   "getUser": "/getUser.cfm",
   "updateTime": "/updateTime.cfm",
   "updateValue": "/updateValue.cfm",
-  "updatePiece": "/updatePiece.cfm"
+  "updatePiece": "/updatePiece.cfm",
+  "checkRoomState": "/checkRoomState.cfm",
+  "getCurrentRoomUser": "/getCurrentRoomUser.cfm",
+  "uploadFile": "/uploadFile.cfm",
+  "exitRoom": "/exitRoom.cfm"
 }

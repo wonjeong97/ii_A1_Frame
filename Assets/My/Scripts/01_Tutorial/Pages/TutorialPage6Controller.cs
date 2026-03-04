@@ -3,31 +3,28 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Pages;
+using My.Scripts.Global;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
-    /// <summary>
-    /// 튜토리얼 6페이지 데이터 클래스
-    /// </summary>
     [Serializable]
     public class TutorialPage6Data
     {
         [Header("Player A")]
-        public TextSetting txtA_Start; // A 시작 텍스트
-        public TextSetting txtA_Info;  // A 정보 텍스트
+        public TextSetting txtA_Start; 
+        public TextSetting txtA_Info;  
 
         [Header("Player B")]
-        public TextSetting txtB_Start; // B 시작 텍스트
-        public TextSetting txtB_Info;  // B 정보 텍스트
+        public TextSetting txtB_Start; 
+        public TextSetting txtB_Info;  
         
-        public string warningMessage; // 1차 경고 메시지
-        public string resetMessage;   // 2차 초기화 메시지
+        public string warningMessage; 
+        public string resetMessage;   
     }
 
-    /// <summary> 튜토리얼 6페이지 컨트롤러 </summary>
     public class TutorialPage6Controller : PopupGamePage<TutorialPage6Data>
     {
         [Header("Page 6 UI")]
@@ -35,57 +32,56 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private Image imageFocus;
 
         [Header("Settings")]
-        [SerializeField] private float stepDistance = 50f; // 휠 1클릭당 이동 거리
-        [SerializeField] private float smoothTime = 0.1f;  // 부드러운 이동 시간
+        [SerializeField] private float stepDistance = 50f; 
+        [SerializeField] private float smoothTime = 0.1f;  
         [SerializeField] private float minX = -400;
         [SerializeField] private float maxX = 400f;
         [SerializeField] private float minY = -200f;
         [SerializeField] private float maxY = 250f;
         
         private readonly float fadeDuration = 1.0f;
-        private readonly float centerMoveTime = 0.5f;
 
         private Vector2 _initialPos;
-        private Vector2 _targetPos; // 목표 위치 
-        private Vector2 _currentVelocity; // SmoothDamp용 속도 변수
+        private Vector2 _targetPos; 
+        private Vector2 _currentVelocity; 
 
         private bool _isInitialized;
         private bool _hasStarted;
         private bool _isInputBlocked;
         private int _currentStage; 
 
-        private TextSetting _dataA_Info;
-        private TextSetting _dataB_Start;
-        private TextSetting _dataB_Info;
-        
+        private TutorialPage6Data _data; // 데이터를 보관
         private Coroutine _stageSequenceRoutine;
 
-        // 휠 입력 추적 변수
         private int _lastP1Key = -1;
-        private int _p1StepCount = 0; // [추가] P1 연속 이동 카운트
+        private int _p1StepCount = 0; 
         private float _p1LastTime;
         private int _p1LastDir;
 
         private int _lastP2Key = -1;
-        private int _p2StepCount = 0; // [추가] P2 연속 이동 카운트
+        private int _p2StepCount = 0; 
         private float _p2LastTime;
         private int _p2LastDir;
 
-        private const int StepsForFullRotation = 3; // [추가] 360도 회전을 위해 3칸 이동 시 한 바퀴 판정
-        private const float FastInputThreshold = 0.2f; // 빠른 입력 임계값
+        private const int StepsForFullRotation = 3; 
+        private const float FastInputThreshold = 0.2f; 
 
         protected override void SetupData(TutorialPage6Data data)
         {
+            _data = data;
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
-            _dataA_Info = data.txtA_Info;
-            _dataB_Start = data.txtB_Start;
-            _dataB_Info = data.txtB_Info;
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
+
+            if (_data != null && descriptionText)
+            {
+                UIManager.Instance.SetText(descriptionText.gameObject, _data.txtA_Start);
+                ApplyDynamicNames(descriptionText);
+            }
             
             if (!_isInitialized && imageFocus)
             {
@@ -98,7 +94,6 @@ namespace My.Scripts._01_Tutorial.Pages
             _currentStage = 0; 
             _stageSequenceRoutine = null; 
             
-            // 휠 상태 초기화
             _lastP1Key = -1; _p1StepCount = 0; _p1LastDir = 0; _p1LastTime = 0f;
             _lastP2Key = -1; _p2StepCount = 0; _p2LastDir = 0; _p2LastTime = 0f;
             
@@ -107,11 +102,21 @@ namespace My.Scripts._01_Tutorial.Pages
             if (imageFocus) 
             {
                 imageFocus.rectTransform.anchoredPosition = _initialPos;
-                _targetPos = _initialPos; // 목표 위치 초기화
+                _targetPos = _initialPos; 
                 _currentVelocity = Vector2.zero;
             }
             SetAlpha(1f);
             SetTextAlpha(1f);
+        }
+
+        // 텍스트 안에 있는 {nameA}, {nameB}를 현재 이름으로 변경하는 헬퍼 함수
+        private void ApplyDynamicNames(Text txt)
+        {
+            if (txt && GameManager.Instance)
+            {
+                txt.text = txt.text.Replace("{nameA}", GameManager.Instance.PlayerALastName)
+                                   .Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+            }
         }
         
         public override void OnExit()
@@ -131,7 +136,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 HandleWheelInput();
             }
 
-            // 부드러운 이동 처리
             if (imageFocus)
             {
                 imageFocus.rectTransform.anchoredPosition = Vector2.SmoothDamp(
@@ -142,7 +146,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 );
             }
 
-            // 입력 감지 및 비활성 체크
             if (Input.anyKey || Input.touchCount > 0)
             {
                 ResetIdleState(false);
@@ -153,15 +156,13 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary> 휠 시퀀스 입력 처리 (관성 보정 포함) </summary>
         private void HandleWheelInput()
         {
             if (!imageFocus) return;
 
-            int direction = 0; // 0:None, 1:Positive(Down/Right), -1:Negative(Up/Left)
+            int direction = 0; 
             float now = Time.time;
 
-            // Stage A: P1 (1~4) -> Vertical
             if (_currentStage == 0)
             {
                 int currentKey = GetPressedKeyIndex(1, 4);
@@ -172,10 +173,9 @@ namespace My.Scripts._01_Tutorial.Pages
                         int diff = (currentKey - _lastP1Key + 4) % 4;
                         int dir = 0;
 
-                        if (diff == 1) dir = 1;       // CW (Down)
-                        else if (diff == 3) dir = -1; // CCW (Up)
+                        if (diff == 1) dir = 1;       
+                        else if (diff == 3) dir = -1; 
 
-                        // [관성 보정]
                         if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
                         {
                             if (diff == 2 || (dir != 0 && dir != _p1LastDir))
@@ -186,27 +186,24 @@ namespace My.Scripts._01_Tutorial.Pages
 
                         if (dir != 0)
                         {
-                            direction = dir; // UI 이동을 위한 방향 전달
+                            direction = dir; 
                             
-                            // [추가] 회전 카운트 누적
                             if (dir == _p1LastDir) _p1StepCount++;
                             else _p1StepCount = 1;
 
                             _p1LastDir = dir;
                             _p1LastTime = now;
 
-                            // 한 바퀴를 돌렸을 때만 사운드 출력
                             if (_p1StepCount >= StepsForFullRotation)
                             {
                                 SoundManager.Instance?.PlaySFX("카메라_1");
-                                _p1StepCount = 0; // 초기화
+                                _p1StepCount = 0; 
                             }
                         }
                     }
                     _lastP1Key = currentKey;
                 }
             }
-            // Stage B: P2 (5~8) -> Horizontal
             else
             {
                 int currentKey = GetPressedKeyIndex(5, 8);
@@ -214,16 +211,14 @@ namespace My.Scripts._01_Tutorial.Pages
                 {
                     if (_lastP2Key != -1)
                     {
-                        // 5~8을 0~3으로 매핑
                         int currIdx = currentKey - 5;
                         int lastIdx = _lastP2Key - 5;
                         int diff = (currIdx - lastIdx + 4) % 4;
                         int dir = 0;
                         
-                        if (diff == 1) dir = 1;       // CW (Right)
-                        else if (diff == 3) dir = -1; // CCW (Left)
+                        if (diff == 1) dir = 1;       
+                        else if (diff == 3) dir = -1; 
 
-                        // [관성 보정]
                         if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0)
                         {
                             if (diff == 2 || (dir != 0 && dir != _p2LastDir))
@@ -234,20 +229,18 @@ namespace My.Scripts._01_Tutorial.Pages
 
                         if (dir != 0)
                         {
-                            direction = dir; // UI 이동을 위한 방향 전달
+                            direction = dir; 
 
-                            // [추가] 회전 카운트 누적
                             if (dir == _p2LastDir) _p2StepCount++;
                             else _p2StepCount = 1;
 
                             _p2LastDir = dir;
                             _p2LastTime = now;
 
-                            // 한 바퀴를 돌렸을 때만 사운드 출력
                             if (_p2StepCount >= StepsForFullRotation)
                             {
                                 SoundManager.Instance?.PlaySFX("카메라_1");
-                                _p2StepCount = 0; // 초기화
+                                _p2StepCount = 0; 
                             }
                         }
                     }
@@ -255,7 +248,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 }
             }
 
-            // 이동 적용 (이동은 휠 1틱마다 동작함)
             if (direction != 0)
             {
                 if (!_hasStarted)
@@ -264,29 +256,23 @@ namespace My.Scripts._01_Tutorial.Pages
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
-                if (_currentStage == 0) // Vertical
+                if (_currentStage == 0) 
                 {
-                    // 방향: 1(Down/Y-), -1(Up/Y+) -- 좌표계 주의
-                    // CW(Down) -> y값 감소, CCW(Up) -> y값 증가
                     float moveY = (direction == 1) ? -stepDistance : stepDistance;
-                    
                     _targetPos.y += moveY;
                     _targetPos.y = Mathf.Clamp(_targetPos.y, _initialPos.y + minY, _initialPos.y + maxY);
-                    _targetPos.x = _initialPos.x; // 축 고정
+                    _targetPos.x = _initialPos.x; 
                 }
-                else // Horizontal
+                else 
                 {
-                    // CW(Right) -> x값 증가, CCW(Left) -> x값 감소
                     float moveX = (direction == 1) ? stepDistance : -stepDistance;
-                    
                     _targetPos.x += moveX;
                     _targetPos.x = Mathf.Clamp(_targetPos.x, _initialPos.x + minX, _initialPos.x + maxX);
-                    _targetPos.y = _initialPos.y; // 축 고정
+                    _targetPos.y = _initialPos.y; 
                 }
             }
         }
 
-        /// <summary> 지정된 범위의 숫자 키 중 눌린 키 반환 (없으면 -1) </summary>
         private int GetPressedKeyIndex(int start, int end)
         {
             for (int i = start; i <= end; i++)
@@ -297,28 +283,24 @@ namespace My.Scripts._01_Tutorial.Pages
             return -1;
         }
 
-        /// <summary> 조작 후 대기 및 다음 단계 자동 전환 </summary>
         private IEnumerator ProcessStageSequence()
         {
             yield return CoroutineData.GetWaitForSeconds(5.0f); 
 
             _isInputBlocked = true; 
-            
-            // 코루틴 대신 메서드 직접 호출 (Update의 SmoothDamp가 이동 처리)
             MoveFocusToCenter(); 
 
             if (_currentStage == 0)
             {
-                yield return StartCoroutine(TextChangeSequence(_dataA_Info));
+                yield return StartCoroutine(TextChangeSequence(_data.txtA_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
-                yield return StartCoroutine(TextChangeSequence(_dataB_Start));
+                yield return StartCoroutine(TextChangeSequence(_data.txtB_Start));
 
                 _currentStage = 1;
                 _hasStarted = false;
                 _isInputBlocked = false;
                 _stageSequenceRoutine = null;
                 
-                // P2 입력 초기화
                 _lastP2Key = -1;
                 _p2StepCount = 0;
                 _p2LastDir = 0;
@@ -326,18 +308,17 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             else
             {
-                yield return StartCoroutine(TextChangeSequence(_dataB_Info));
+                yield return StartCoroutine(TextChangeSequence(_data.txtB_Info));
                 yield return CoroutineData.GetWaitForSeconds(4.0f);
                 CompleteStep(); 
                 _stageSequenceRoutine = null;
             }
         }
 
-        // 직접 Lerp를 돌리지 않고 TargetPos만 설정하여 Update와 충돌 방지
         private void MoveFocusToCenter()
         {
             if (!imageFocus) return;
-            _targetPos = _initialPos; // 목표 위치를 중앙(초기 위치)으로 설정
+            _targetPos = _initialPos; 
         }
         
         private IEnumerator TextChangeSequence(TextSetting newTextData)
@@ -346,6 +327,8 @@ namespace My.Scripts._01_Tutorial.Pages
             if (newTextData != null && descriptionText)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, newTextData);
+                // 텍스트가 바뀔 때마다 이름 동적 적용
+                ApplyDynamicNames(descriptionText);
             }
             yield return StartCoroutine(FadeTextRoutine(0f, 1f));
         }
