@@ -1,0 +1,95 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01_우리는",
+        "position": {"x": 1080, "y": -410},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "우리는",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_함께",
+        "position": {"x": 1440, "y": -210},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "함께",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_있을 때",
+        "position": {"x": 120, "y": -540},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "있을 때",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_자연스럽게",
+        "position": {"x": 720, "y": -745},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "자연스럽게",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_감정과",
+        "position": {"x": 600, "y": -210},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "생각해서,",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_생각을",
+        "position": {"x": 1560, "y": -535},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "생각을",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "07_주고 받는다.",
+        "position": {"x": 1680, "y": -885},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "주고 받는다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 4, "y": 2 },
+      { "x": 4, "y": 3 },
+      { "x": 5, "y": 1 },
+      { "x": 6, "y": 1 },
+      { "x": 0, "y": 3 },
+      { "x": 0, "y": 4 },
+      { "x": 2, "y": 5 },
+      { "x": 3, "y": 5 },
+      { "x": 2, "y": 1 },
+      { "x": 6, "y": 3 },
+      { "x": 6, "y": 4 },
+      { "x": 6, "y": 6 },
+      { "x": 7, "y": 6 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.우리는 함께 있을 때 자연스럽게 감정과 생각을 주고 받는다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

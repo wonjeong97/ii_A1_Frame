@@ -1,0 +1,86 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01_상대가",
+        "position": {"x": 1560, "y": -605},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대가",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "02_평소와",
+        "position": {"x": 840, "y": -400},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "평소와",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "03_다른",
+        "position": {"x": 240, "y": -885},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "다른",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "04_반응을 보이면,",
+        "position": {"x": 480, "y": -485},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "반응을 보이면,",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "05_그 의미를",
+        "position": {"x": 240, "y": -75},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "그 의미를",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      },
+      {
+        "name": "06_곱씹게 된다.",
+        "position": {"x": 1200, "y": -945},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "곱씹게 된다.",
+        "fontName": "font7",
+        "fontSize": 55,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 6, "y": 4 },
+      { "x": 3, "y": 2 },
+      { "x": 3, "y": 3 },
+      { "x": 0, "y": 6 },
+      { "x": 1, "y": 6 },
+      { "x": 1, "y": 3 },
+      { "x": 2, "y": 3 },
+      { "x": 0, "y": 0 },
+      { "x": 1, "y": 0 },
+      { "x": 4, "y": 6 },
+      { "x": 4, "y": 7 },
+      { "x": 5, "y": 6 },
+      { "x": 5, "y": 7 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.상대가 평소와 다른 반응을 보이면, 그 의미를 곱씹게 된다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}
