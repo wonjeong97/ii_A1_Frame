@@ -121,6 +121,12 @@ namespace My.Scripts.Utils
 
             // 7. JPG 인코딩 (Quality 85) - 로컬 저장과 업로드에 공통 사용
             byte[] jpgBytes = resultTex.EncodeToJPG(85);
+            if (jpgBytes == null || jpgBytes.Length == 0)
+            {
+                Debug.LogError("[PhotoCompositor] JPG 인코딩 실패로 저장/업로드를 중단합니다.");
+                Destroy(resultTex);
+                return;
+            }
             string finalFileName = $"{sanitizedName}_{outputFileName}.jpg";
 
             // 8. 로컬 저장 (JPG 원본 보존)
@@ -168,7 +174,8 @@ namespace My.Scripts.Utils
                 yield break;
             }
             
-            string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=jpg";
+            string encodedUid = UnityWebRequest.EscapeURL(uid);
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code=a1&type=jpg";
             Debug.Log("[PhotoCompositor] 사진 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
@@ -190,7 +197,7 @@ namespace My.Scripts.Utils
                 else
                 {
                     string responseJson = webRequest.downloadHandler.text;
-                    Debug.Log($"[PhotoCompositor] 업로드 성공! 서버 응답: {responseJson}");
+                    Debug.Log($"[PhotoCompositor] 업로드 성공! status={webRequest.responseCode}");
                 }
             }
         }

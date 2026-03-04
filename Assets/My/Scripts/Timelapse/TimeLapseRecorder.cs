@@ -161,6 +161,7 @@ namespace My.Scripts.Timelapse
         {
             _globalFrameIndex = 0;
             _realtimeFrameIndex = 0;
+            _uploadedTimelapsePaths.Clear();
             
             // 상태 플래그 초기화
             IsTimelapseProcessing = false;

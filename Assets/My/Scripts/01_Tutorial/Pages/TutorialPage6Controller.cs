@@ -69,8 +69,13 @@ namespace My.Scripts._01_Tutorial.Pages
         protected override void SetupData(TutorialPage6Data data)
         {
             _data = data;
-            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.txtA_Start);
-            SetupPopupMessage(data.warningMessage, data.resetMessage);
+            if (_data == null)
+            {
+                Debug.LogError("[TutorialPage6] SetupData에 전달된 데이터가 null입니다.");
+                return;
+            }
+            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, _data.txtA_Start);
+            SetupPopupMessage(_data.warningMessage, _data.resetMessage);
         }
 
         public override void OnEnter()
