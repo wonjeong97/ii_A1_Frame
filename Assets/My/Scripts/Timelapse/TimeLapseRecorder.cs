@@ -628,6 +628,8 @@ namespace My.Scripts.Timelapse
                     webRequest.result == UnityWebRequest.Result.ProtocolError)
                 {
                     Debug.LogError($"[TimeLapseRecorder] 타임랩스 영상 업로드 실패: {webRequest.error}");
+                    // 업로드 실패 시 Set에서 제거하여 재시도 허용
+                    _uploadedTimelapsePaths.Remove(filePath);
                 }
                 else
                 {
