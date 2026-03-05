@@ -38,6 +38,7 @@ namespace My.Scripts.Core.Pages
         private bool _isConfigured;
 
         private WebCamTexture _webCamTexture;
+        private WebCamDevice _selectedDevice; // [추가] 현재 선택된 웹캠 디바이스 정보
         private Texture2D _capturedPhoto;
         private string _photoFileName = "Default_Photo";
         
@@ -56,6 +57,19 @@ namespace My.Scripts.Core.Pages
             {
                 _currentMaskingMaterial = defaultMaskingMaterial;
                 _shouldSavePhoto = defaultSavePhoto;
+            }
+        }
+
+        /// <summary> 매 프레임 웹캠의 최신 속성(상하 반전, 회전, 전면 카메라 여부)을 확인하여 프리뷰 UI를 보정합니다. </summary>
+        private void Update()
+        {
+            if (_webCamTexture && _webCamTexture.isPlaying && cameraDisplay)
+            {
+                float sy = _webCamTexture.videoVerticallyMirrored ? -1f : 1f;
+                float sx = _selectedDevice.isFrontFacing ? -1f : 1f;
+
+                cameraDisplay.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_webCamTexture.videoRotationAngle);
+                cameraDisplay.rectTransform.localScale = new Vector3(sx, sy, 1f);
             }
         }
 
@@ -183,9 +197,7 @@ namespace My.Scripts.Core.Pages
             SetRawImageAlpha(cameraDisplay, 1f);
         }
 
-        /// <summary>
-        /// 3, 2, 1 카운트다운을 진행하고 촬영 시점을 잡습니다.
-        /// </summary>
+        /// <summary> 3, 2, 1 카운트다운을 진행하고 촬영 시점을 잡습니다. </summary>
         private IEnumerator CountdownRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
@@ -211,9 +223,7 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(FlashAndCaptureRoutine());
         }
 
-        /// <summary>
-        /// 플래시(하얀 화면) 연출과 함께 실제 사진을 캡처합니다.
-        /// </summary>
+        /// <summary> 플래시(하얀 화면) 연출과 함께 실제 사진을 캡처합니다. </summary>
         private IEnumerator FlashAndCaptureRoutine()
         {
             float maxAlpha = 0.8f;
@@ -297,9 +307,7 @@ namespace My.Scripts.Core.Pages
             }
         }
     
-        /// <summary>
-        /// 캡처된 텍스처를 PNG 파일로 로컬 경로에 저장합니다.
-        /// </summary>
+        /// <summary> 캡처된 텍스처를 PNG 파일로 로컬 경로에 저장합니다. </summary>
         private void SavePhotoToCustomFolder(Texture2D photo)
         {
             if (!photo) return;
@@ -336,9 +344,7 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 숫자 텍스트를 페이드 아웃 효과와 함께 표시합니다.
-        /// </summary>
+        /// <summary> 숫자 텍스트를 페이드 아웃 효과와 함께 표시합니다. </summary>
         private IEnumerator ShowAndFadeNumber(string n)
         {
             if (countdownText)
@@ -407,6 +413,7 @@ namespace My.Scripts.Core.Pages
                     if (devices[i].name == "USB Video")
                     {
                         selectedDeviceName = devices[i].name;
+                        _selectedDevice = devices[i]; // 디바이스 정보 캐싱
                         break;
                     }
                 }
@@ -415,6 +422,7 @@ namespace My.Scripts.Core.Pages
                 if (string.IsNullOrEmpty(selectedDeviceName) && devices.Length > 0)
                 {
                     selectedDeviceName = devices[0].name;
+                    _selectedDevice = devices[0]; // 디바이스 정보 캐싱
                 }
 
                 if (!string.IsNullOrEmpty(selectedDeviceName))
@@ -427,8 +435,6 @@ namespace My.Scripts.Core.Pages
                 }
 
                 cameraDisplay.texture = _webCamTexture;
-                cameraDisplay.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
-
                 _webCamTexture.Play();
             }
         }

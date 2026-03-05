@@ -474,7 +474,7 @@ namespace My.Scripts.Core.Pages
             _simultaneousWarningRoutine = StartCoroutine(SimultaneousWarningRoutine());
         }
 
-        /// DescriptionText2(기본 서브 텍스트)를 띄우고 빠른 속도로 2회 깜빡임 </summary>
+        /// <summary> DescriptionText2(기본 서브 텍스트)를 띄우고 빠른 속도로 2회 깜빡임 </summary>
         private IEnumerator SimultaneousWarningRoutine()
         {
             if (textSub)

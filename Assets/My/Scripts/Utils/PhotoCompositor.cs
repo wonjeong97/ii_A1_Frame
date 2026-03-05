@@ -31,6 +31,9 @@ namespace My.Scripts.Utils
         [Header("Config")]
         public string saveFolderName = "Pictures";
         public string outputFileName = "Composite";
+        
+        [Tooltip("서버 업로드 시 구분용 카운트 번호")]
+        public int uploadCount = 1;
 
         [Header("Layout")]
         public List<CompositeSlot> slots;
@@ -46,7 +49,7 @@ namespace My.Scripts.Utils
 
         public void ProcessAndSave(string baseName)
         {
-            if (baseFrame == null)
+            if (!baseFrame)
             {
                 Debug.LogError("[PhotoCompositor] 배경 이미지 누락");
                 return;
@@ -94,7 +97,7 @@ namespace My.Scripts.Utils
                 if (File.Exists(targetPath))
                 {
                     Texture2D photoTex = LoadTextureFromFile(targetPath);
-                    if (photoTex != null)
+                    if (photoTex)
                     {
                         // 크기 계산
                         float w = photoTex.width * slot.scale.x;
@@ -149,6 +152,7 @@ namespace My.Scripts.Utils
             int idxUser = 0;
             string uid = "";
             string baseUrl = "";
+            string moduleCode = "a1"; // 기본값
 
             if (GameManager.Instance)
             {
@@ -158,6 +162,11 @@ namespace My.Scripts.Utils
                 if (GameManager.Instance.ApiConfig != null)
                 {
                     baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
+                }
+
+                if (!string.IsNullOrEmpty(GameManager.Instance.CurrentModuleCode))
+                {
+                    moduleCode = GameManager.Instance.CurrentModuleCode.ToLower();
                 }
             }
 
@@ -175,8 +184,10 @@ namespace My.Scripts.Utils
             }
             
             string encodedUid = UnityWebRequest.EscapeURL(uid);
-            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code=a1&type=jpg";
-            Debug.Log("[PhotoCompositor] 사진 업로드 시도 중...");
+            
+            // [수정] URL 끝에 인스펙터에서 설정한 count 파라미터를 추가하여 전송합니다.
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={uploadCount}";
+            Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중... (URL: {url})");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
