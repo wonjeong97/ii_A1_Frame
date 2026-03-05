@@ -17,9 +17,9 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting allFinishedText; // 특별 엔딩 텍스트
     }
 
-    /// <summary> 
-    /// 엔딩 씬의 마지막 페이지 컨트롤러입니다.
-    /// 게임 초반에 조회해 둔 카트리지 완료 상태를 확인하고 연출을 분기합니다.
+    /// <summary>
+    /// 엔딩 씬의 마지막 페이지 컨트롤러.
+    /// 카트리지 내 다른 콘텐츠의 완료 여부에 따라 특별 엔딩 분기 처리.
     /// </summary>
     public class EndingPage4Controller : GamePage<EndingPage4Data>
     {
@@ -28,29 +28,23 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Image redLineImage;
 
         private bool _isAllFinished;
-        private bool _hasSentEndTime; // 중복 호출 방지 플래그
+        private bool _hasSentEndTime;
         
+        private EndingPage4Data _data;
+
+        /// <summary>
+        /// 페이지 데이터 캐싱.
+        /// 백그라운드 API 통신 지연을 고려하여 텍스트 갱신은 OnEnter로 지연 처리함.
+        /// </summary>
+        /// <param name="data">설정할 페이지 데이터</param>
         protected override void SetupData(EndingPage4Data data)
         {
-            _isAllFinished = false;
-
-            if (GameManager.Instance)
-            {
-                // 게임 시작 시 백그라운드로 조회해둔 값을 사용
-                _isAllFinished = GameManager.Instance.IsOtherCartridgeContentsCleared;
-            }
-
-            TextSetting textToUse = data.descriptionText;
-
-            // 모두 클리어했다면 특별 엔딩 텍스트 적용
-            if (_isAllFinished && data.allFinishedText != null)
-            {
-                textToUse = data.allFinishedText;
-            }
-
-            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, textToUse);
+            _data = data;
         }
 
+        /// <summary>
+        /// 페이지 진입 시 연출 시작 및 최신 데이터 갱신.
+        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -61,6 +55,30 @@ namespace My.Scripts._18_Ending.Pages
             {
                 redLineImage.type = Image.Type.Filled;
                 redLineImage.fillAmount = 0f;
+            }
+
+            _isAllFinished = false;
+
+            if (GameManager.Instance)
+            {
+                // 페이지 진입 시점의 최신 상태값을 평가
+                _isAllFinished = GameManager.Instance.IsOtherCartridgeContentsCleared;
+            }
+
+            if (_data != null)
+            {
+                TextSetting textToUse = _data.descriptionText;
+
+                if (_isAllFinished && _data.allFinishedText != null)
+                {
+                    textToUse = _data.allFinishedText;
+                }
+
+                if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, textToUse);
+            }
+            else
+            {
+                Debug.LogWarning("[EndingPage4Controller] _data 값이 null입니다.");
             }
 
             // 4페이지 진입 시 종료 시간 및 퇴장 업데이트
@@ -82,6 +100,9 @@ namespace My.Scripts._18_Ending.Pages
             StartCoroutine(SequenceRoutine());
         }
 
+        /// <summary>
+        /// 분기된 엔딩 타입에 따른 시퀀스 연출 루틴.
+        /// </summary>
         private IEnumerator SequenceRoutine()
         {   
             yield return CoroutineData.GetWaitForSeconds(1.0f);
@@ -89,19 +110,26 @@ namespace My.Scripts._18_Ending.Pages
             if (_isAllFinished && redLineImage)
             {
                 yield return StartCoroutine(FillImageRoutine(redLineImage, 0f, 1f, 2.0f));
-                SoundManager.Instance?.FadeOutBGM(5.0f);
+                if (SoundManager.Instance) SoundManager.Instance.FadeOutBGM(5.0f);
                 yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
             else
             {   
                 yield return CoroutineData.GetWaitForSeconds(2.0f);
-                SoundManager.Instance?.FadeOutBGM(5.0f);
+                if (SoundManager.Instance) SoundManager.Instance.FadeOutBGM(5.0f);
                 yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
             
             CompleteStep();
         }
 
+        /// <summary>
+        /// 이미지의 FillAmount를 조절하는 페이드 연출.
+        /// </summary>
+        /// <param name="t">대상 이미지</param>
+        /// <param name="s">시작 값</param>
+        /// <param name="e">목표 값</param>
+        /// <param name="d">진행 시간</param>
         private IEnumerator FillImageRoutine(Image t, float s, float e, float d)
         {
             if (!t) yield break;

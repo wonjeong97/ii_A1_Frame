@@ -171,7 +171,7 @@ namespace My.Scripts.Core
                         GameManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
                         GameManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
 
-                        // 초기화 시점에 현재 모듈을 제외한 나머지 카트리지 콘텐츠가 완료되었는지 검사
+                        GameManager.Instance.IsOtherCartridgeContentsCleared = false;
                         if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
                         {
                             StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE));
@@ -182,6 +182,7 @@ namespace My.Scripts.Core
             catch (Exception e)
             {
                 Debug.LogError($"[APIManager] 파싱 중 에러 발생: {e.Message}");
+                if (GameManager.Instance) GameManager.Instance.IsOtherCartridgeContentsCleared = false;
             }
         }
 

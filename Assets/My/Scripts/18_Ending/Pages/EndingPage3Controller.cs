@@ -24,7 +24,8 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text text2; 
         [SerializeField] private CanvasGroup imageCanvasGroup;
         [SerializeField] private CanvasGroup textCanvasGroup;
-
+        
+        private const int PagePieceReward = 5;
         private EndingPage3Data _data; 
         private bool _hasSentPieceUpdate;
 
@@ -46,7 +47,7 @@ namespace My.Scripts._18_Ending.Pages
 
             if (GameManager.Instance && !_hasSentPieceUpdate)
             {
-                GameManager.Instance.SendPieceUpdateAPI(5);
+                GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
                 _hasSentPieceUpdate = true; 
             }
             
@@ -59,7 +60,8 @@ namespace My.Scripts._18_Ending.Pages
             {
                 if (!GameManager.Instance) return;
                 int existingPieces = GameManager.Instance.TotalPieces;
-                int totalPieces = existingPieces + 5; 
+                int pendingReward = _hasSentPieceUpdate ? 0 : PagePieceReward;
+                int totalPieces = existingPieces + pendingReward;
 
                 string originalText = _data.descriptionText2.text;
                 if (!string.IsNullOrEmpty(originalText))

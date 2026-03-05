@@ -101,7 +101,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator PollRoomStateRoutine()
         {
-            float emptyDuration = 0f; // EMPTY 상태 지속 시간 추적
+            float emptyStartTime = -1f; // EMPTY 최초 감지 시점
 
             while (true)
             {
@@ -193,7 +193,8 @@ namespace My.Scripts._01_Tutorial.Pages
                                         }
 
                                         if (apiManager)
-                                        {
+                                        {   
+                                            if (GameManager.Instance) GameManager.Instance.CurrentUserId = 0;
                                             apiManager.FetchData(uidLeft);
                                             float timeoutAt = Time.time + 11f;
                                             while (GameManager.Instance &&
@@ -230,8 +231,8 @@ namespace My.Scripts._01_Tutorial.Pages
                 // =========================================================
                 if (isEmptyThisPoll)
                 {
-                    emptyDuration += pollInterval;
-                    if (emptyDuration >= 15f)
+                    if (emptyStartTime < 0f) emptyStartTime = Time.time;
+                    if (Time.time - emptyStartTime >= 15f)
                     {
                         Debug.LogWarning($"[TutorialPage1] 15초 연속 EMPTY 감지. 강제 초기화를 진행합니다.");
                         if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
@@ -241,8 +242,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 }
                 else
                 {
-                    // 상태가 정상이거나 다른 예외(네트워크 등) 상황이면 타이머 누적 리셋
-                    emptyDuration = 0f;
+                    emptyStartTime = -1f;
                 }
 
                 yield return CoroutineData.GetWaitForSeconds(pollInterval);
