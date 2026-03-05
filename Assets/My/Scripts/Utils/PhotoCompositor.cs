@@ -33,6 +33,7 @@ namespace My.Scripts.Utils
         public string outputFileName = "Composite";
         
         [Tooltip("서버 업로드 시 구분용 카운트 번호")]
+        [Min(1)]
         public int uploadCount = 1;
 
         [Header("Layout")]
@@ -186,7 +187,8 @@ namespace My.Scripts.Utils
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             
             // URL 끝에 인스펙터에서 설정한 count 파라미터를 추가하여 전송합니다.
-            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={uploadCount}";
+            int safeUploadCount = Mathf.Max(1, uploadCount);
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={safeUploadCount}";
             Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
