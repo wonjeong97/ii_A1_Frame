@@ -40,12 +40,10 @@ namespace My.Scripts.Global
         public ApiSettings ApiConfig { get; private set; }
         
         // --- API 연동 데이터 캐싱 ---
-        public int CurrentUserId { get; set; } = 0; 
+        public int CurrentUserId { get; set; } 
         public string PlayerAUid { get; set; } = string.Empty;
         public string PlayerBUid { get; set; } = string.Empty;
-
         public string CurrentLanguage { get; set; } = "ko";
-
         public string PlayerALastName { get; set; } = "NoNameA";
         public string PlayerBLastName { get; set; } = "NoNameB";
         public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
@@ -215,16 +213,21 @@ namespace My.Scripts.Global
             _isTransitioning = false;
         }
 
-        /// <summary> 타이틀 화면 복귀 </summary>
+        /// <summary> 타이틀 화면 복귀 및 초기화 처리 </summary>
         public void ReturnToTitle()
         {
             if (_isTransitioning) return;
             
-            Debug.Log("[GameManager] Returning to Title...");
+            Debug.Log("[GameManager] 타이틀로 돌아감");
+
+            // 강제 초기화 시 서버 측 상태(resetStart)와 방 점유(exitRoom)를 모두 리셋
+            SendResetStartAPI();
+            SendExitRoomAPI();
 
             // 상태 초기화
             firstTaggedPlayer = 0; 
             _currentInactivityTimer = 0f;
+            CurrentUserId = 0; 
 
             ChangeScene(GameConstants.Scene.Title);
         }
@@ -256,50 +259,52 @@ namespace My.Scripts.Global
 
        #region API 호출 로직 (시간 및 값 기록)
 
-        /// <summary> 콘텐츠 종료(end) 시간을 서버에 기록합니다. </summary>
-        public void SendTimeUpdateAPI()
+        /// <summary> 초기화(타임아웃 등) 시 서버 상태를 리셋 </summary>
+        public void SendResetStartAPI()
         {
-            if (CurrentUserId == 0)
+            int userId = CurrentUserId;
+            if (userId == 0)
             {
-                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. end API 호출을 건너뜁니다.");
+                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. ResetStart API 호출을 건너뜁니다.");
                 return;
             }
-            StartCoroutine(TimeUpdateRoutine());
+            StartCoroutine(ResetStartRoutine(userId));
         }
 
-        private IEnumerator TimeUpdateRoutine()
+        private IEnumerator ResetStartRoutine(int userId)
         {
             if (ApiConfig == null) yield break;
             
-            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={CurrentUserId}&option=end&code=a1";
+            string url = $"{ApiConfig.ResetStartUrl}?idx_user={userId}&code=a1";
 
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) 
-                    Debug.LogError($"[Time API] 에러: {req.error}");
+                    Debug.LogError($"[ResetStart API] 에러: {req.error}");
                 else 
-                    Debug.Log($"[Time API] end 업데이트 성공! (URL: {url})");
+                    Debug.Log($"[ResetStart API] 시작 상태 초기화 성공");
             }
         }
 
         /// <summary> 방 퇴장(exitRoom) 상태를 서버에 업데이트합니다. </summary>
         public void SendExitRoomAPI()
         {
-            if (CurrentUserId == 0)
+            int userId = CurrentUserId; // 캡처
+            if (userId == 0)
             {
                 Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. ExitRoom API 호출을 건너뜁니다.");
                 return;
             }
-            StartCoroutine(ExitRoomRoutine());
+            StartCoroutine(ExitRoomRoutine(userId));
         }
 
-        private IEnumerator ExitRoomRoutine()
+        private IEnumerator ExitRoomRoutine(int userId)
         {
             if (ApiConfig == null) yield break;
             
-            string url = $"{ApiConfig.ExitRoomUrl}?code=a1&idx_user={CurrentUserId}";
+            string url = $"{ApiConfig.ExitRoomUrl}?code=a1&idx_user={userId}";
 
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
@@ -308,57 +313,88 @@ namespace My.Scripts.Global
                 if (req.result != UnityWebRequest.Result.Success) 
                     Debug.LogError($"[ExitRoom API] 에러: {req.error}");
                 else 
-                    Debug.Log($"[ExitRoom API] 방 퇴장 업데이트 성공! (URL: {url})");
+                    Debug.Log($"[ExitRoom API] 방 퇴장 업데이트 성공");
+            }
+        }
+
+        /// <summary> 콘텐츠 종료(end) 시간을 서버에 기록합니다. </summary>
+        public void SendTimeUpdateAPI()
+        {
+            int userId = CurrentUserId;
+            if (userId == 0)
+            {
+                Debug.LogWarning($"[GameManager] CurrentUserId가 0입니다. end API 호출을 건너뜁니다.");
+                return;
+            }
+            StartCoroutine(TimeUpdateRoutine(userId));
+        }
+
+        private IEnumerator TimeUpdateRoutine(int userId)
+        {
+            if (ApiConfig == null) yield break;
+            
+            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={userId}&option=end&code=a1";
+
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                req.timeout = 10;
+                yield return req.SendWebRequest();
+                if (req.result != UnityWebRequest.Result.Success) 
+                    Debug.LogError($"[Time API] 에러: {req.error}");
+                else 
+                    Debug.Log($"[Time API] end 업데이트 성공");
             }
         }
 
         /// <summary> 사용자의 질문 응답 값을 서버에 업데이트합니다. </summary>
         public void SendValueUpdateAPI(int qNo, string side, int value)
         {
-            if (CurrentUserId == 0)
+            int userId = CurrentUserId;
+            if (userId == 0)
             {
                 Debug.LogWarning("[GameManager] CurrentUserId가 0입니다. Value 업데이트를 건너뜁니다.");
                 return;
             }
-            StartCoroutine(ValueUpdateRoutine(qNo, side, value));
+            StartCoroutine(ValueUpdateRoutine(userId, qNo, side, value));
         }
 
-        private IEnumerator ValueUpdateRoutine(int qNo, string side, int value)
+        private IEnumerator ValueUpdateRoutine(int userId, int qNo, string side, int value)
         {
             if (ApiConfig == null) yield break; 
 
-            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={CurrentUserId}&q_no={qNo}&side={side}&code=a1&value={value}";
+            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={userId}&q_no={qNo}&side={side}&code=a1&value={value}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
                 yield return req.SendWebRequest();
                 if (req.result != UnityWebRequest.Result.Success) Debug.LogError($"[Value API] 통신 에러: {req.error}");
-                else Debug.Log($"[Value API] {side} Q{qNo} 값({value}) 업데이트 성공!");
+                else Debug.Log($"[Value API] {side} Q{qNo} 값({value}) 업데이트 성공");
             }
         }
 
         /// <summary> 획득한 마음 조각 개수를 서버에 업데이트합니다. </summary>
         public void SendPieceUpdateAPI(int value)
         {
+            int userId = CurrentUserId;
             if (value < 0)
             {
                 Debug.LogWarning($"[GameManager] 유효하지 않은 Piece 값입니다: {value}");
                 return;
             }
-            if (CurrentUserId == 0)
+            if (userId == 0)
             {
                 Debug.LogWarning("[GameManager] CurrentUserId가 0입니다. Piece 업데이트를 건너뜁니다.");
                 return;
             }
-            StartCoroutine(PieceUpdateRoutine(value));
+            StartCoroutine(PieceUpdateRoutine(userId, value));
         }
 
-        private IEnumerator PieceUpdateRoutine(int value)
+        private IEnumerator PieceUpdateRoutine(int userId, int value)
         {
             if (ApiConfig == null) yield break;
 
-            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={CurrentUserId}&code=a1&value={value}";
+            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={userId}&code=a1&value={value}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
@@ -368,6 +404,42 @@ namespace My.Scripts.Global
                     Debug.LogError($"[Piece API] 에러: {req.error}");
                 else 
                     Debug.Log($"[Piece API] 마음 조각({value}개) 업데이트 성공! (URL: {url})");
+            }
+        }
+
+        #endregion
+
+        #region 프로그램 강제 종료 시 예외 처리
+
+        /// <summary> 앱이 비정상적으로 종료될 때(Alt+F4 등) 남은 세션 정리 </summary>
+        private void OnApplicationQuit()
+        {
+            if (CurrentUserId != 0 && ApiConfig != null)
+            {
+                // 1. 유저 Start 초기화
+                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={CurrentUserId}&code=a1";
+                using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
+                {
+                    req.SendWebRequest();
+                    // 꺼지는 찰나이므로 완료될 때까지 메인 스레드를 붙잡고 기다립니다.
+                    while (!req.isDone) 
+                    { 
+                        System.Threading.Thread.Sleep(10); 
+                    }
+                }
+
+                // 2. 방 점유 초기화
+                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code=a1&idx_user={CurrentUserId}";
+                using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
+                {
+                    req.SendWebRequest();
+                    while (!req.isDone) 
+                    { 
+                        System.Threading.Thread.Sleep(10); 
+                    }
+                }
+                
+                Debug.Log("[GameManager] OnApplicationQuit: API 통신 완료.");
             }
         }
 

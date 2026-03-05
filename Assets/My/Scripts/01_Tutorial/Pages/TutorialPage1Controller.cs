@@ -1,14 +1,12 @@
 using System;
 using System.Collections;
-using System.Text.RegularExpressions; 
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
-using My.Scripts.Core; // APIManager 참조용
+using My.Scripts.Core;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
-using TMPro;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -32,7 +30,7 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("API Manager")]
         [SerializeField] private APIManager apiManager;
         
-        private float pollInterval = 1.0f; // 폴링 간격 (1초)
+        private readonly float pollInterval = 1.0f; // 폴링 간격 (1초)
         private readonly float fadeTime = 1f;
         private Coroutine _pollCoroutine; 
 
@@ -89,7 +87,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 ResetIdleState(false); 
 
-                // 디버그용
+                // 디버그용 강제 스킵
                 if (Input.GetKeyDown(KeyCode.Return))
                 {
                     CompleteStep(); 
@@ -103,6 +101,8 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator PollRoomStateRoutine()
         {
+            float emptyDuration = 0f; // EMPTY 상태 지속 시간 추적
+
             while (true)
             {
                 // GameManager에서 API 설정이 로드될 때까지 대기
@@ -112,12 +112,13 @@ namespace My.Scripts._01_Tutorial.Pages
                     continue;
                 }
 
-                // API Settings에서 URL 동적 조합
                 string checkRoomStateUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code=a1";
                 string getCurrentUserUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code=a1";
 
+                bool isEmptyThisPoll = false;
+
                 // =========================================================
-                // 1. 방 상태가 EMPTY인지 확인 (타이틀로 복귀)
+                // 1. 방 상태가 EMPTY인지 1차 확인
                 // =========================================================
                 using (UnityWebRequest stateReq = UnityWebRequest.Get(checkRoomStateUrl))
                 {
@@ -132,88 +133,107 @@ namespace My.Scripts._01_Tutorial.Pages
                         
                         if (!string.IsNullOrEmpty(responseText) && responseText.IndexOf("EMPTY", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            Debug.Log($"[TutorialPage1] RoomState 'EMPTY' 감지. 타이틀 화면으로 돌아갑니다.");
-                            
-                            if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
-                            else SceneManager.LoadScene(GameConstants.Scene.Title);
-                            
-                            yield break; 
+                            isEmptyThisPoll = true;
                         }
                     }
                 }
 
                 // =========================================================
-                // 2. 현재 방의 유저 데이터가 있는지 확인 (파싱 및 다음 페이지 진행)
+                // 2. 방 상태가 EMPTY가 아니라면 유저 데이터 확인
                 // =========================================================
-                using (UnityWebRequest userReq = UnityWebRequest.Get(getCurrentUserUrl))
+                if (!isEmptyThisPoll)
                 {
-                    userReq.timeout = 10; 
-                    
-                    yield return userReq.SendWebRequest();
-
-                    if (userReq.result != UnityWebRequest.Result.ConnectionError && 
-                        userReq.result != UnityWebRequest.Result.ProtocolError)
+                    using (UnityWebRequest userReq = UnityWebRequest.Get(getCurrentUserUrl))
                     {
-                        string rawText = userReq.downloadHandler.text;
+                        userReq.timeout = 10; 
                         
-                        if (rawText.IndexOf("EMPTY", StringComparison.OrdinalIgnoreCase) >= 0)
+                        yield return userReq.SendWebRequest();
+
+                        if (userReq.result != UnityWebRequest.Result.ConnectionError && 
+                            userReq.result != UnityWebRequest.Result.ProtocolError)
                         {
-                            // 아직 유저 데이터가 없음. 무시하고 다음 폴링 대기
-                        }
-                        else if (rawText.Contains(","))
-                        {
-                            // 줄바꿈 기준으로 나누어서 진짜 데이터가 있는 줄만 추출
-                            string cleanData = "";
-                            string[] lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            string rawText = userReq.downloadHandler.text;
                             
-                            foreach (string line in lines)
+                            if (rawText.IndexOf("EMPTY", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
-                                string trimmed = line.Trim();
-                                // HTML 태그(<)로 시작하지 않고 콤마(,)가 있는 줄을 순수 데이터로 간주
-                                if (trimmed.Contains(",") && !trimmed.StartsWith("<"))
-                                {
-                                    cleanData = trimmed;
-                                    break;
-                                }
+                                // 방 상태는 정상이지만 아직 유저 데이터가 배정되지 않음
+                                isEmptyThisPoll = true;
                             }
-
-                            if (!string.IsNullOrEmpty(cleanData))
+                            else if (rawText.Contains(","))
                             {
-                                // 콤마(,)를 기준으로 데이터 파싱 (uid_left, uid_right, idx_user)
-                                string[] parts = cleanData.Split(',');
-                                if (parts.Length >= 1)
+                                // =========================================================
+                                // 정상 데이터 수신 시퀀스 진행
+                                // =========================================================
+                                emptyDuration = 0f; // 타이머 초기화
+
+                                string cleanData = "";
+                                string[] lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                
+                                foreach (string line in lines)
                                 {
-                                    string uidLeft = parts[0].Trim();
-
-                                    // GameManager에 UID 저장
-                                    if (parts.Length >= 2 && GameManager.Instance)
+                                    string trimmed = line.Trim();
+                                    if (trimmed.Contains(",") && !trimmed.StartsWith("<"))
                                     {
-                                        GameManager.Instance.PlayerAUid = uidLeft;
-                                        GameManager.Instance.PlayerBUid = parts[1].Trim();
+                                        cleanData = trimmed;
+                                        break;
                                     }
+                                }
 
-                                    // APIManager에 추출한 UID 전달
-                                    if (apiManager)
+                                if (!string.IsNullOrEmpty(cleanData))
+                                {
+                                    string[] parts = cleanData.Split(',');
+                                    if (parts.Length >= 1)
                                     {
-                                        apiManager.FetchData(uidLeft);
-                                        float timeoutAt = Time.time + 5f;
-                                        while (GameManager.Instance &&
-                                               GameManager.Instance.CurrentUserId == 0 &&
-                                               Time.time < timeoutAt)
+                                        string uidLeft = parts[0].Trim();
+
+                                        if (parts.Length >= 2 && GameManager.Instance)
                                         {
-                                            yield return null;
+                                            GameManager.Instance.PlayerAUid = uidLeft;
+                                            GameManager.Instance.PlayerBUid = parts[1].Trim();
+                                        }
+
+                                        if (apiManager)
+                                        {
+                                            apiManager.FetchData(uidLeft);
+                                            float timeoutAt = Time.time + 5f;
+                                            while (GameManager.Instance &&
+                                                   GameManager.Instance.CurrentUserId == 0 &&
+                                                   Time.time < timeoutAt)
+                                            {
+                                                yield return null;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Debug.LogWarning("[TutorialPage1] APIManager를 씬에서 찾을 수 없습니다.");
                                         }
                                     }
-                                    else
-                                    {
-                                        Debug.LogWarning("[TutorialPage1] APIManager를 씬에서 찾을 수 없습니다.");
-                                    }
+                                    CompleteStep(); 
+                                    yield break; 
                                 }
-                                CompleteStep(); 
-                                yield break; 
                             }
                         }
                     }
+                }
+
+                // =========================================================
+                // 3. EMPTY 연속 지속 시간 검사 (15초 초과 시 초기화)
+                // =========================================================
+                if (isEmptyThisPoll)
+                {
+                    emptyDuration += pollInterval;
+                    if (emptyDuration >= 15f)
+                    {
+                        Debug.LogWarning($"[TutorialPage1] 15초 연속 EMPTY 감지. 강제 초기화를 진행합니다.");
+                        if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                        else SceneManager.LoadScene(GameConstants.Scene.Title);
+                        yield break;
+                    }
+                }
+                else
+                {
+                    // 상태가 정상이거나 다른 예외(네트워크 등) 상황이면 타이머 누적 리셋
+                    emptyDuration = 0f;
                 }
 
                 yield return CoroutineData.GetWaitForSeconds(pollInterval);

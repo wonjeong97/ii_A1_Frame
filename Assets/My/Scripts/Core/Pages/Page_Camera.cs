@@ -4,6 +4,7 @@ using System.IO;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement; // [추가] 씬 이름 확인용
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -135,9 +136,19 @@ namespace My.Scripts.Core.Pages
             StopAllCoroutines();
             base.OnExit();
             
-            // 페이지를 나갈 때 카메라는 꺼두어야 성능 부하를 줄일 수 있음
             StopWebCam();
             CleanupPhoto();
+
+            // 마지막 15번째 질문(Q15) 촬영이 끝나는 즉시 리얼타임 영상 변환 시작
+            string currentScene = SceneManager.GetActiveScene().name;
+            if (currentScene.Contains("Q15") && TimeLapseRecorder.Instance)
+            {
+                if (!TimeLapseRecorder.Instance.IsRealtimeProcessing)
+                {
+                    Debug.Log($"[Page_Camera] OnExit: 리얼타임 영상 변환 조기 시작 (Scene: {currentScene})");
+                    TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
+                }
+            }
         }
 
         private void OnDestroy()
@@ -222,13 +233,6 @@ namespace My.Scripts.Core.Pages
 
             // 실제 캡처 수행
             CapturePhoto();
-            
-            // Q15 등 마지막 단계에서 즉시 인코딩이 필요한 경우 트리거
-            if (_triggerEncodingOnCapture && TimeLapseRecorder.Instance)
-            {
-                // 현재는 LevelManager에서 일괄 처리하므로 주석 처리됨. 필요시 활성화.
-                // TimeLapseRecorder.Instance.ConvertToVideo(); 
-            }
 
             // 플래시 페이드 아웃
             if (flashImage)
@@ -264,11 +268,10 @@ namespace My.Scripts.Core.Pages
                 if (maskToUse) Graphics.Blit(_webCamTexture, rt, maskToUse);
                 else Graphics.Blit(_webCamTexture, rt);
 
-                // # TODO: 매번 텍스처를 새로 생성(new)하고 있음. 
-                // 빈번한 촬영이 일어난다면 멤버 변수 재사용을 통해 GC 할당을 줄이는 최적화 필요.
+                // 매번 텍스처를 새로 생성
                 _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
 
-                // RenderTexture -> Texture2D 데이터 전송 (ReadPixels는 메인 스레드 블로킹 유발하므로 주의)
+                // RenderTexture -> Texture2D 데이터 전송
                 RenderTexture prev = RenderTexture.active;
                 RenderTexture.active = rt;
                 _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);

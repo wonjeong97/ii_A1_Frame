@@ -61,15 +61,8 @@ namespace My.Scripts.Core.Pages
 
             PlaySFXOnEnter();
             
-            string currentSceneName = SceneManager.GetActiveScene().name;
-            if (gameObject.name.Contains("Page6") && currentSceneName.Contains("Q15"))
-            {
-                if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsProcessing)
-                {
-                    Debug.Log($"[{gameObject.name}] OnEnter: 리얼타임 영상 변환 시작 (Scene: {currentSceneName})");
-                    TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
-                }
-            }
+            // 기존 리얼타임 변환 시작 로직은 Page_Camera의 OnExit 시점으로 이동됨
+            
             StartCoroutine(SequenceRoutine());
         }
 

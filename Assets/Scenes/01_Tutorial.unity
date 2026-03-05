@@ -1917,9 +1917,7 @@ MonoBehaviour:
   warningDuration: 3
   resetPopupDuration: 3
   descriptionText: {fileID: 72155147}
-  checkRoomStateUrl: http://192.168.0.252:8500/api/checkRoomState.cfm?code=a1
-  getCurrentUserUrl: http://192.168.0.252:8500/api/getCurrentRoomUser.cfm?code=a1
-  pollInterval: 1
+  apiManager: {fileID: 1149758332}
 --- !u!1 &1173698246
 GameObject:
   m_ObjectHideFlags: 0
@@ -2471,7 +2469,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1381223467
 RectTransform:
   m_ObjectHideFlags: 0

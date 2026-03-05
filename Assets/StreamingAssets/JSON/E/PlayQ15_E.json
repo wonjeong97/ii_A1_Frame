@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01_우리는",
-        "position": {"x": 1800, "y": -30},
+        "position": {"x": 1800, "y": -75},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는",
         "fontName": "font7",

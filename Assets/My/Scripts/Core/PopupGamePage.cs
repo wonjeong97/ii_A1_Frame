@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Wonjeong.Data;
+using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
@@ -76,7 +77,6 @@ namespace My.Scripts.Core.Pages
             if (isResetSequenceActive)
             {
                 StopResetSequence(immediate);
-                if (!immediate) Debug.Log($"[{gameObject.name}] 리셋 취소");
             }
             // 팝업이 잔존하는 경우 처리
             else if (popupCanvasGroup && popupCanvasGroup.gameObject.activeSelf)
@@ -94,6 +94,8 @@ namespace My.Scripts.Core.Pages
 
         protected virtual void StopResetSequence(bool immediate = true)
         {
+            SoundManager.Instance?.StopSFX();
+
             isResetSequenceActive = false;
             currentIdleTime = 0f;
             
@@ -123,6 +125,10 @@ namespace My.Scripts.Core.Pages
 
             // 1. 경고
             ShowPopup(msgWarning);
+            
+            // 팝업 등장과 함께 사운드 재생
+            SoundManager.Instance?.PlaySFX("공통_23");
+
             yield return CoroutineData.GetWaitForSeconds(warningDuration); 
 
             // 2. 카운트다운
@@ -142,7 +148,7 @@ namespace My.Scripts.Core.Pages
             else SceneManager.LoadScene(GameConstants.Scene.Title);
         }
 
-        protected void ShowPopup(string message)
+        private void ShowPopup(string message)
         {
             if (!popupCanvasGroup) return;
             if (popupText) popupText.text = message;
@@ -158,7 +164,7 @@ namespace My.Scripts.Core.Pages
         }
 
         /// <summary> 공용 페이드 코루틴 (마지막 인자로 SetActive(false) 제어 가능) </summary>
-        protected IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration, bool activeAtEnd)
+        private IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration, bool activeAtEnd)
         {
             float t = 0f;
             cg.alpha = start;
