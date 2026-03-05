@@ -164,7 +164,7 @@ namespace My.Scripts._01_Tutorial.Pages
                                 // =========================================================
                                 // 정상 데이터 수신 시퀀스 진행
                                 // =========================================================
-                                emptyDuration = 0f; // 타이머 초기화
+                                emptyStartTime = -1f; // EMPTY 타이머 초기화
 
                                 string cleanData = "";
                                 string[] lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
