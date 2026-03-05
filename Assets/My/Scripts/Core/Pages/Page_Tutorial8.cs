@@ -86,6 +86,7 @@ namespace My.Scripts.Core.Pages
             // 3. 시작 텍스트 ("시작!")
             if (descriptionText && _data?.startText != null)
             {   
+                yield return CoroutineData.GetWaitForSeconds(0.3f); // 미세 타이밍 조절
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.startText);
                 SetTextAlpha(1f); // 스타일 적용 시 알파가 변경될 수 있으므로 확인
                 SoundManager.Instance?.PlaySFX("공통_14");
