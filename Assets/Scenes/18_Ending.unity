@@ -219,7 +219,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &181802047
 RectTransform:
   m_ObjectHideFlags: 0
@@ -502,8 +502,6 @@ MonoBehaviour:
   baseFrame: {fileID: 2800000, guid: b8074a6e6e71425468b3c1bc372f78d6, type: 3}
   saveFolderName: Pictures
   outputFileName: Composite_3
-  uploadApiUrl: http://192.168.0.252:8500/api/uploadFile.cfm
-  uploadCode: a1
   slots:
   - fileSuffix: _Q11
     position: {x: 0, y: 0}
@@ -759,8 +757,6 @@ MonoBehaviour:
   baseFrame: {fileID: 2800000, guid: bc56b75a19471ec45bd86b997c6318f9, type: 3}
   saveFolderName: Pictures
   outputFileName: Composite_2
-  uploadApiUrl: http://192.168.0.252:8500/api/uploadFile.cfm
-  uploadCode: a1
   slots:
   - fileSuffix: _Q6
     position: {x: -69, y: -57.5}
@@ -1612,8 +1608,6 @@ MonoBehaviour:
   baseFrame: {fileID: 2800000, guid: 634eece703ee7c54ba959a1c2aa51792, type: 3}
   saveFolderName: Pictures
   outputFileName: Composite_1
-  uploadApiUrl: http://192.168.0.252:8500/api/uploadFile.cfm
-  uploadCode: a1
   slots:
   - fileSuffix: _Q1
     position: {x: -298.7, y: 132.5}
@@ -1782,7 +1776,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcd7730499ea6af4fb7e755aabd7413e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  userUid: 2270AE4A-ABFC-E349-1A0A5A69999CC1A8
 --- !u!1 &1628474607
 GameObject:
   m_ObjectHideFlags: 0

@@ -7,5 +7,7 @@
   "checkRoomState": "/checkRoomState.cfm",
   "getCurrentRoomUser": "/getCurrentRoomUser.cfm",
   "uploadFile": "/uploadFile.cfm",
-  "exitRoom": "/exitRoom.cfm"
+  "exitRoom": "/exitRoom.cfm",
+  "resetStart": "/resetStart.cfm",
+  "getCartridgeContent": "/getCartridgeContent.cfm"
 }

@@ -223,14 +223,12 @@ namespace My.Scripts.Core.Pages
         /// <summary> 매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (Input.GetKeyDown(KeyCode.Space) && !_isStageCompleted)
             {
                 _isStageCompleted = true;
                 RevealAllQuestions();
                 StartCoroutine(ShowCompletionRoutine());
             }
-#endif
 
             // 1. 입력 감지
             if (Input.anyKey || Input.touchCount > 0)

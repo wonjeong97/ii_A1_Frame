@@ -1,16 +1,17 @@
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.Rendering; 
-using UnityEngine.Networking; 
+using UnityEngine.Rendering;
+using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
+using Unity.Collections;
 using Debug = UnityEngine.Debug;
 
 namespace My.Scripts.Timelapse
@@ -24,40 +25,38 @@ namespace My.Scripts.Timelapse
         public static TimeLapseRecorder Instance;
 
         [Header("Capture Settings")]
-        public int timelapseCaptureFPS = 10;
-        public int realtimeCaptureFPS = 30;
-        
-        [Header("Output Settings")]
-        public float timelapseDuration = 20f; 
-        public float realtimeDuration = 15f;  
-        
-        private readonly int captureWidth = 1920;     
-        private readonly int captureHeight = 1080;     
+        private readonly int timelapseCaptureFPS = 5;
+        private readonly int realtimeCaptureFPS = 30;
 
-        private WebCamTexture _webCam;      
-        private bool _isRecording;          
-        
-        private string _rootPath;               
-        private string _currentDateFolder;      
-        
-        private string _sourceImageFolderPath;  
-        private string _outputVideoFolderPath;  
+        [Header("Output Settings")]
+        private readonly float timelapseDuration = 20f;
+        private readonly float realtimeDuration = 15f;
+
+        private readonly int captureWidth = 1920;
+        private readonly int captureHeight = 1080;
+
+        private WebCamTexture _webCam;
+        private bool _isRecording;
+
+        private string _rootPath;
+        private string _currentDateFolder;
+
+        private string _sourceImageFolderPath;
+        private string _outputVideoFolderPath;
         private string _realtimeSourcePath;
         private string _realtimeVideoPath;
-        
-        private int _globalFrameIndex;      
-        private int _realtimeFrameIndex;    
-        
-        private float _timer;               
-        private float _baseInterval; 
-        
-        private Texture2D _encodeTexture; 
+
+        private int _globalFrameIndex;
+        private int _realtimeFrameIndex;
+
+        private float _timer;
+        private float _baseInterval;
+
+        private Texture2D _encodeTexture;
         private RenderTexture _captureRT;
-        
-        private string _currentLevelID; 
-        private readonly HashSet<string> _uploadedTimelapsePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        
-        // 디스크 쓰기 루프 태스크 추적용 (OnDestroy 시 안전한 종료 대기 위함)
+
+        private string _currentLevelID;
+
         private UniTask _diskWriteTask;
 
         private struct SaveTaskData
@@ -65,29 +64,25 @@ namespace My.Scripts.Timelapse
             public string path;
             public byte[] data;
         }
-        
-        // Thread-Safe한 큐를 사용하여 캡처 스레드와 파일 쓰기 스레드 간 데이터 전달
+
         private readonly ConcurrentQueue<SaveTaskData> _saveQueue = new ConcurrentQueue<SaveTaskData>();
         private CancellationTokenSource _cts;
 
         private float _realtimeRecordingStartTime;
         private float _realtimeTotalDuration;
         private bool _isRealtimeRecordingActive;
-        
-        private float _timelapseTimer = 0f;
 
-        // 타임랩스와 리얼타임 변환 상태를 분리하여 상호 데드락 방지
+        private float _timelapseTimer;
+
         public bool IsTimelapseProcessing { get; private set; }
         public bool IsRealtimeProcessing { get; private set; }
-        
-        // 호환성을 위해 하나라도 처리 중이면 true
-        public bool IsProcessing => IsTimelapseProcessing || IsRealtimeProcessing;  
-        public bool IsConverting => IsProcessing; 
-        
-        public bool IsConversionSuccessful { get; private set; } 
-        public int LastExitCode { get; private set; }   
-        
-        public string LastVideoPath { get; private set; } 
+        public bool IsProcessing => IsTimelapseProcessing || IsRealtimeProcessing;
+        public bool IsConverting => IsProcessing;
+
+        public bool IsConversionSuccessful { get; private set; }
+        public int LastExitCode { get; private set; }
+
+        public string LastVideoPath { get; private set; }
         public string LastRealtimeVideoPath { get; private set; }
 
         private void Awake()
@@ -96,11 +91,11 @@ namespace My.Scripts.Timelapse
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                
+
                 string dataPath = Application.dataPath;
                 DirectoryInfo parentDir = Directory.GetParent(dataPath);
                 _rootPath = (parentDir != null) ? parentDir.FullName : dataPath;
-                
+
                 _baseInterval = 1f / Mathf.Max(realtimeCaptureFPS, timelapseCaptureFPS);
             }
             else Destroy(gameObject);
@@ -117,7 +112,7 @@ namespace My.Scripts.Timelapse
         {
             _currentLevelID = levelID;
             bool isTarget = IsRealtimeTargetLevel(levelID);
-            
+
             // 리얼타임 녹화 대상 레벨에 진입하면 녹화 활성 상태로 전환
             if (isTarget && !_isRealtimeRecordingActive)
             {
@@ -143,16 +138,28 @@ namespace My.Scripts.Timelapse
 
         private void CreateDirectorySafe(string path)
         {
-            try { if (!Directory.Exists(path)) Directory.CreateDirectory(path); }
-            catch (Exception e) { Debug.LogError($"[TimeLapse] 폴더 생성 실패 ({path}): {e.Message}"); }
+            try
+            {
+                if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[TimeLapse] 폴더 생성 실패 ({path}): {e.Message}");
+            }
         }
-        
+
         private void ClearFolder(string path)
         {
             if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
             {
-                try { foreach (string file in Directory.GetFiles(path)) File.Delete(file); } 
-                catch (Exception e) { Debug.LogWarning($"[TimeLapse] 폴더 정리 중 오류 ({path}): {e.Message}"); }
+                try
+                {
+                    foreach (string file in Directory.GetFiles(path)) File.Delete(file);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[TimeLapse] 폴더 정리 중 오류 ({path}): {e.Message}");
+                }
             }
         }
 
@@ -161,21 +168,22 @@ namespace My.Scripts.Timelapse
         {
             _globalFrameIndex = 0;
             _realtimeFrameIndex = 0;
-            _uploadedTimelapsePaths.Clear();
-            
+
             // 상태 플래그 초기화
             IsTimelapseProcessing = false;
             IsRealtimeProcessing = false;
             IsConversionSuccessful = false;
-            
+
             LastVideoPath = string.Empty;
             LastRealtimeVideoPath = string.Empty;
             _realtimeTotalDuration = 0f;
             _isRealtimeRecordingActive = false;
-            
+
             // 큐 비우기
-            while (_saveQueue.TryDequeue(out _)) { }
-            
+            while (_saveQueue.TryDequeue(out _))
+            {
+            }
+
             ClearFolder(_sourceImageFolderPath);
             ClearFolder(_realtimeSourcePath);
         }
@@ -183,18 +191,19 @@ namespace My.Scripts.Timelapse
         public void StartCapture(WebCamTexture cam)
         {
             if (!enabled) return;
+
             UpdatePaths();
 
             _webCam = cam;
             _isRecording = true;
             _timer = 0f;
             _timelapseTimer = 0f;
-            
+
             _baseInterval = 1f / Mathf.Max(realtimeCaptureFPS, timelapseCaptureFPS);
 
             if (_captureRT) _captureRT.Release();
             _captureRT = new RenderTexture(captureWidth, captureHeight, 0, RenderTextureFormat.ARGB32);
-            
+
             if (_encodeTexture) Destroy(_encodeTexture);
             _encodeTexture = new Texture2D(captureWidth, captureHeight, TextureFormat.RGBA32, false);
 
@@ -204,8 +213,8 @@ namespace My.Scripts.Timelapse
         public void StopCapture()
         {
             _isRecording = false;
-            _webCam = null; 
-            
+            _webCam = null;
+
             if (_isRealtimeRecordingActive)
             {
                 float duration = Time.time - _realtimeRecordingStartTime;
@@ -215,21 +224,16 @@ namespace My.Scripts.Timelapse
             }
         }
 
-        /// <summary>
-        /// 웹캠 프레임을 비동기로 캡처하고 인코딩하여 저장 큐에 넣는 메인 루프입니다.
-        /// </summary>
+        /// <summary> 웹캠 프레임을 비동기로 캡처하고 인코딩하여 저장 큐에 넣는 메인 루프입니다. </summary>
         private async UniTaskVoid CaptureLoopRoutine()
         {
-            // 비동기 중 StartCapture 재호출로 리소스가 교체될 경우를 대비해 로컬 변수에 참조 캡처
-            var captureRT = _captureRT;
-            var encodeTexture = _encodeTexture;
+            RenderTexture captureRT = _captureRT;
 
-            float timelapseInterval = 1f / timelapseCaptureFPS; 
+            float timelapseInterval = 1f / timelapseCaptureFPS;
 
             while (_isRecording && _webCam && _webCam.isPlaying)
             {
-                // 리소스가 변경되었거나 해제되었으면 안전하게 루프 종료
-                if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
+                if (_captureRT != captureRT) break;
 
                 _timer += Time.deltaTime;
                 _timelapseTimer += Time.deltaTime;
@@ -251,39 +255,42 @@ namespace My.Scripts.Timelapse
 
                     await UniTask.WaitForEndOfFrame(this);
 
-                    // 대기 후 유효성 재확인 (비동기 사이 상태 변경 체크)
-                    if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
-                    if (!_webCam || !_webCam.isPlaying) break;
+                    if (_captureRT != captureRT || !_webCam || !_webCam.isPlaying) break;
 
                     // GPU Blit 및 비동기 Readback 요청
                     Graphics.Blit(_webCam, captureRT);
                     var request = AsyncGPUReadback.Request(captureRT);
                     await request.ToUniTask();
 
-                    // Readback 대기 후 유효성 재확인
-                    if (_captureRT != captureRT || _encodeTexture != encodeTexture) break;
-
+                    if (_captureRT != captureRT) break;
                     if (request.hasError) continue;
 
-                    if (encodeTexture)
+                    var nativeData = request.GetData<byte>();
+
+
+                    NativeArray<byte> encodedNativeData = ImageConversion.EncodeNativeArrayToJPG(
+                        nativeData,
+                        captureRT.graphicsFormat,
+                        (uint)captureWidth,
+                        (uint)captureHeight,
+                        0,
+                        70
+                    );
+
+                    // 파일 저장을 위해 일반 byte 배열로 복사
+                    byte[] bytes = encodedNativeData.ToArray();
+                    encodedNativeData.Dispose();
+
+                    if (saveToTimelapse)
                     {
-                        encodeTexture.LoadRawTextureData(request.GetData<byte>());
-                        encodeTexture.Apply();
+                        int globalIndex = Interlocked.Increment(ref _globalFrameIndex) - 1;
+                        EnqueueSave(bytes, _sourceImageFolderPath, globalIndex);
+                    }
 
-                        // JPG 인코딩 (메인 스레드 부하가 있지만 Texture2D 조작을 위해 필요)
-                        byte[] bytes = encodeTexture.EncodeToJPG(70);
-
-                        if (saveToTimelapse)
-                        {
-                            int globalIndex = Interlocked.Increment(ref _globalFrameIndex) - 1;
-                            EnqueueSave(bytes, _sourceImageFolderPath, globalIndex);
-                        }
-
-                        if (saveToRealtime)
-                        {
-                            int realtimeIndex = Interlocked.Increment(ref _realtimeFrameIndex) - 1;
-                            EnqueueSave(bytes, _realtimeSourcePath, realtimeIndex);
-                        }
+                    if (saveToRealtime)
+                    {
+                        int realtimeIndex = Interlocked.Increment(ref _realtimeFrameIndex) - 1;
+                        EnqueueSave(bytes, _realtimeSourcePath, realtimeIndex);
                     }
                 }
 
@@ -297,13 +304,11 @@ namespace My.Scripts.Timelapse
             _saveQueue.Enqueue(new SaveTaskData { path = path, data = data });
         }
 
-        /// <summary>
-        /// 별도 스레드에서 파일 저장을 처리하는 루프입니다.
-        /// </summary>
+        /// <summary> 별도 스레드에서 파일 저장을 처리하는 루프입니다. </summary>
         private async UniTask StartDiskWriteLoop()
         {
             _cts = new CancellationTokenSource();
-            await UniTask.SwitchToThreadPool(); 
+            await UniTask.SwitchToThreadPool();
 
             try
             {
@@ -311,11 +316,11 @@ namespace My.Scripts.Timelapse
                 {
                     if (_saveQueue.TryDequeue(out var task))
                     {
-                        try 
-                        { 
-                            File.WriteAllBytes(task.path, task.data); 
-                        } 
-                        catch (Exception e) 
+                        try
+                        {
+                            await File.WriteAllBytesAsync(task.path, task.data);
+                        }
+                        catch (Exception e)
                         {
                             // IO 예외 발생 시 로그 출력 후 계속 진행
                             Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패 ({task.path}): {e.Message}");
@@ -337,12 +342,14 @@ namespace My.Scripts.Timelapse
         private bool IsRealtimeTargetLevel(string levelID)
         {
             if (string.IsNullOrEmpty(levelID)) return false;
-            string numPart = Regex.Replace(levelID, "[^0-9]", ""); 
+
+            string numPart = Regex.Replace(levelID, "[^0-9]", "");
             if (int.TryParse(numPart, out int num))
             {
                 // Q11~Q15 레벨에서만 리얼타임 저장
                 if (num >= 11 && num <= 15) return true;
             }
+
             return false;
         }
 
@@ -351,7 +358,7 @@ namespace My.Scripts.Timelapse
         public void ConvertToVideo()
         {
             // 타임랩스 전용 플래그 체크
-            if (IsTimelapseProcessing) 
+            if (IsTimelapseProcessing)
             {
                 Debug.LogWarning("[TimeLapse] 이미 타임랩스 변환 작업 중입니다.");
                 return;
@@ -365,17 +372,18 @@ namespace My.Scripts.Timelapse
             {
                 fps = (float)_globalFrameIndex / timelapseDuration;
             }
-            
+
             string fileName = $"{GetCombinedPlayerNames()}_Timelapse";
-            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
-            
+            Debug.Log(
+                $"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
+
             ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, fileName, fps, false).Forget();
         }
 
         public void ConvertToRealtimeVideo()
         {
             // 리얼타임 전용 플래그 체크
-            if (IsRealtimeProcessing) 
+            if (IsRealtimeProcessing)
             {
                 Debug.LogWarning("[TimeLapse] 이미 리얼타임 변환 작업 중입니다.");
                 return;
@@ -386,7 +394,7 @@ namespace My.Scripts.Timelapse
                 // 녹화 대상 레벨이 아닌 경우(Q1~Q10 등), 데이터가 없는 것이 정상이므로 경고 없이 종료
                 if (!IsRealtimeTargetLevel(_currentLevelID))
                 {
-                    return; 
+                    return;
                 }
 
                 Debug.LogWarning($"[Realtime] 데이터 부족으로 변환 취소. (Frame: {_realtimeFrameIndex})");
@@ -401,22 +409,22 @@ namespace My.Scripts.Timelapse
             {
                 fps = (float)_realtimeFrameIndex / realtimeDuration;
             }
-            
+
             string fileName = $"{GetCombinedPlayerNames()}_Realtime";
-            Debug.Log($"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
+            Debug.Log(
+                $"[Realtime] 변환 시작: {_realtimeFrameIndex}장 / {realtimeDuration}초 목표 (FPS: {fps:F2}) -> 파일명: {fileName}.mp4");
 
             ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, fileName, fps, true).Forget();
         }
 
-        /// <summary>
-        /// 외부(LevelManager 등)에서 타임아웃 발생 시 리얼타임 변환 상태를 강제 초기화합니다.
-        /// </summary>
+        /// <summary> 외부(LevelManager 등)에서 타임아웃 발생 시 리얼타임 변환 상태를 강제 초기화합니다. </summary>
         public void ResetRealtimeProcessing()
         {
             IsRealtimeProcessing = false;
         }
 
-        private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix, float fps, bool isRealtime)
+        private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix,
+            float fps, bool isRealtime)
         {
             try
             {
@@ -427,8 +435,8 @@ namespace My.Scripts.Timelapse
                 if (string.IsNullOrEmpty(sourceFolder) || string.IsNullOrEmpty(outputFolder))
                 {
                     UpdatePaths();
-                    
-                   if (isRealtime)
+
+                    if (isRealtime)
                     {
                         sourceFolder = _realtimeSourcePath;
                         outputFolder = _realtimeVideoPath;
@@ -459,9 +467,9 @@ namespace My.Scripts.Timelapse
                         IsConversionSuccessful = true;
                         LastVideoPath = outputPath;
                         if (isRealtime) LastRealtimeVideoPath = outputPath;
-                        
-                        // 타임랩스 영상일 때만 서버로 업로드
-                        if (!isRealtime && _uploadedTimelapsePaths.Add(outputPath))
+
+                        // 타임랩스 영상(!isRealtime)일 때만 서버로 업로드
+                        if (!isRealtime)
                         {
                             StartCoroutine(UploadVideoRoutine(outputPath));
                         }
@@ -471,7 +479,8 @@ namespace My.Scripts.Timelapse
                         Debug.LogError($"[TimeLapseRecorder] 변환 실패: 소스 이미지가 없습니다. ({sourceFolder})");
                         IsConversionSuccessful = false;
                     }
-                    return; 
+
+                    return;
                 }
 
                 // 2. FFMPEG 변환 시작
@@ -484,11 +493,11 @@ namespace My.Scripts.Timelapse
                 if (File.Exists(outputPath)) File.Delete(outputPath);
 
                 if (fps < 1.0f) fps = 10f;
-                
-                // FPS 포맷팅 시 로케일 이슈(쉼표) 방지를 위해 InvariantCulture 사용
-                string fpsStr = fps.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -pix_fmt yuv420p \"{outputPath}\"";
-                
+
+                string fpsStr = fps.ToString("F2", CultureInfo.InvariantCulture);
+                string args =
+                    $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 \"{outputPath}\"";
+
                 await UniTask.SwitchToThreadPool();
 
                 using (Process process = new Process())
@@ -498,26 +507,27 @@ namespace My.Scripts.Timelapse
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.CreateNoWindow = true;
                     process.Start();
-                    
+
                     // 무한 대기 방지를 위해 타임아웃 설정 (60초)
                     // 변환이 60초 이상 걸리면 문제가 있는 것으로 간주하고 강제 종료합니다.
-                    if (process.WaitForExit(60000)) 
+                    if (process.WaitForExit(60000))
                     {
                         LastExitCode = process.ExitCode;
                     }
                     else
                     {
                         Debug.LogError($"[TimeLapseRecorder] FFMPEG 프로세스 타임아웃 (60초 초과). 강제 종료합니다.");
-                        try 
-                        { 
+                        try
+                        {
                             process.Kill();
                             // Kill 호출 후 프로세스 리소스 정리를 위해 잠시 대기
                             process.WaitForExit(1000);
-                        } 
-                        catch (Exception killEx) 
+                        }
+                        catch (Exception killEx)
                         {
                             Debug.LogWarning($"[TimeLapseRecorder] 프로세스 강제 종료 중 오류: {killEx.Message}");
                         }
+
                         LastExitCode = -1; // 실패 코드로 설정
                     }
                 }
@@ -529,12 +539,12 @@ namespace My.Scripts.Timelapse
                     IsConversionSuccessful = true;
                     LastVideoPath = outputPath;
                     if (isRealtime) LastRealtimeVideoPath = outputPath;
-                    
+
                     Debug.Log($"[TimeLapseRecorder] 변환 성공: {outputPath}");
                     ClearFolder(sourceFolder); // 소스 이미지 정리
-                    
-                    // 타임랩스 영상일 때만 서버로 업로드
-                    if (!isRealtime && _uploadedTimelapsePaths.Add(outputPath))
+
+                    // 타임랩스 영상(!isRealtime)일 때만 서버로 업로드
+                    if (!isRealtime)
                     {
                         StartCoroutine(UploadVideoRoutine(outputPath));
                     }
@@ -555,7 +565,7 @@ namespace My.Scripts.Timelapse
                 else IsTimelapseProcessing = false;
             }
         }
-        
+
         /// <summary>
         /// 생성된 타임랩스 MP4 파일을 읽어 UploadHandlerRaw를 통해 서버로 POST 전송합니다.
         /// </summary>
@@ -574,8 +584,8 @@ namespace My.Scripts.Timelapse
             if (GameManager.Instance)
             {
                 idxUser = GameManager.Instance.CurrentUserId;
-                uid = GameManager.Instance.PlayerAUid; 
-                
+                uid = GameManager.Instance.PlayerAUid;
+
                 if (GameManager.Instance.ApiConfig != null)
                 {
                     baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
@@ -589,12 +599,6 @@ namespace My.Scripts.Timelapse
                 yield break;
             }
 
-            if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid))
-            {
-                Debug.LogWarning("[TimeLapseRecorder] idx_user/uid가 유효하지 않아 업로드를 건너뜁니다.");
-                yield break;
-            }
-            
             // 영상 데이터를 바이트 배열로 변환
             byte[] videoBytes = null;
             try
@@ -609,36 +613,34 @@ namespace My.Scripts.Timelapse
 
             // URL 조합 (영상 데이터이므로 type=mp4 고정)
             string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=mp4";
-            Debug.Log("[TimeLapseRecorder] 타임랩스 영상 업로드 시도 중...");
+            Debug.Log($"[TimeLapseRecorder] 타임랩스 영상 업로드 시도 중... URL: {url}");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
                 UploadHandlerRaw uploadHandler = new UploadHandlerRaw(videoBytes);
                 uploadHandler.contentType = "video/mp4"; // 동영상 Content-Type 설정
-                
+
                 webRequest.uploadHandler = uploadHandler;
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
-                
+
                 // 영상은 용량이 크므로 타임아웃을 60초로 넉넉하게 설정
-                webRequest.timeout = 60; 
+                webRequest.timeout = 60;
 
                 yield return webRequest.SendWebRequest();
 
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError ||
                     webRequest.result == UnityWebRequest.Result.ProtocolError)
                 {
                     Debug.LogError($"[TimeLapseRecorder] 타임랩스 영상 업로드 실패: {webRequest.error}");
-                    // 업로드 실패 시 Set에서 제거하여 재시도 허용
-                    _uploadedTimelapsePaths.Remove(filePath);
                 }
                 else
                 {
                     string responseJson = webRequest.downloadHandler.text;
-                    Debug.Log($"[TimeLapseRecorder] 타임랩스 영상 업로드 성공! 서버 응답: {responseJson}");
+                    Debug.Log($"[TimeLapseRecorder] 타임랩스 영상 업로드 성공 서버 응답: {responseJson}");
                 }
             }
         }
-        
+
         private string GetCombinedPlayerNames()
         {
             string nameA = "PlayerA";
@@ -652,7 +654,7 @@ namespace My.Scripts.Timelapse
 
             string combined = $"{nameA}{nameB}";
             string clean = combined.Replace("\n", "").Replace("\r", "").Trim();
-            
+
             // 윈도우 파일명에 쓸 수 없는 특수문자 제거
             string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
@@ -664,7 +666,7 @@ namespace My.Scripts.Timelapse
             if (_cts != null)
             {
                 _cts.Cancel();
-                
+
                 // 백그라운드 태스크가 종료될 때까지 대기 (ObjectDisposedException 방지)
                 // OnDestroy는 동기 메서드이므로, 짧은 시간 동안 폴링하며 완료를 기다립니다.
                 long timeoutTicks = DateTime.Now.Ticks + 1000 * 10000; // 최대 1초 대기
@@ -675,7 +677,7 @@ namespace My.Scripts.Timelapse
 
                 _cts.Dispose();
             }
-            
+
             if (_captureRT != null) _captureRT.Release();
             if (_encodeTexture != null) Destroy(_encodeTexture);
         }

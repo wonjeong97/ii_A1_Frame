@@ -34,6 +34,7 @@
     {"key": "공통_12", "clipPath": "Sound/Anous_Sound_공통_12.mp3", "volume": 1.0},
     {"key": "공통_13", "clipPath": "Sound/Anous_Sound_공통_13.mp3", "volume": 1.0},
     {"key": "공통_14", "clipPath": "Sound/Anous_Sound_공통_14.mp3", "volume": 1.0},
-    {"key": "공통_22", "clipPath": "Sound/Anous_Sound_공통_22.mp3", "volume": 1.0}
+    {"key": "공통_22", "clipPath": "Sound/Anous_Sound_공통_22.mp3", "volume": 1.0},
+    {"key": "공통_23", "clipPath": "Sound/Anous_Sound_공통_23.mp3", "volume": 1.0}
   ]
 }
