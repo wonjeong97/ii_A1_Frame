@@ -141,9 +141,9 @@ namespace My.Scripts.Core.Pages
 
             // 마지막 15번째 질문(Q15) 촬영이 끝나는 즉시 리얼타임 영상 변환 시작
             string currentScene = SceneManager.GetActiveScene().name;
-            if (currentScene.Contains("Q15") && TimeLapseRecorder.Instance)
+            if (TimeLapseRecorder.Instance && string.Equals(_levelID, "Q15", StringComparison.OrdinalIgnoreCase))
             {
-                if (!TimeLapseRecorder.Instance.IsRealtimeProcessing)
+                if (!TimeLapseRecorder.Instance.IsRealtimeProcessing && string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastRealtimeVideoPath))
                 {
                     Debug.Log($"[Page_Camera] OnExit: 리얼타임 영상 변환 조기 시작 (Scene: {currentScene})");
                     TimeLapseRecorder.Instance.ConvertToRealtimeVideo();

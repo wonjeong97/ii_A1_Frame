@@ -13,13 +13,13 @@ namespace My.Scripts._18_Ending.Pages
     [Serializable]
     public class EndingPage4Data
     {
-        public TextSetting descriptionText;
-        public TextSetting allFinishedText;
+        public TextSetting descriptionText; // 일반 엔딩 텍스트
+        public TextSetting allFinishedText; // 특별 엔딩 텍스트
     }
 
     /// <summary> 
     /// 엔딩 씬의 마지막 페이지 컨트롤러입니다.
-    /// 플레이어에게 최종 메시지를 전달하며, 50% 확률로 '붉은 실(Red Line)' 연출을 포함한 특별 엔딩을 보여줍니다.
+    /// 게임 초반에 조회해 둔 카트리지 완료 상태를 확인하고 연출을 분기합니다.
     /// </summary>
     public class EndingPage4Controller : GamePage<EndingPage4Data>
     {
@@ -28,23 +28,24 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Image redLineImage;
 
         private bool _isAllFinished;
-        private bool _hasSentEndTime;
+        private bool _hasSentEndTime; // 중복 호출 방지 플래그
         
         protected override void SetupData(EndingPage4Data data)
         {
-            // 엔딩의 다양성을 위해 50% 확률로 일반 엔딩과 특별 엔딩(Red Line)을 분기합니다.
-            int randomValue = UnityEngine.Random.Range(0, 2);
+            _isAllFinished = false;
+
+            if (GameManager.Instance)
+            {
+                // 게임 시작 시 백그라운드로 조회해둔 값을 사용
+                _isAllFinished = GameManager.Instance.IsOtherCartridgeContentsCleared;
+            }
+
             TextSetting textToUse = data.descriptionText;
 
-            if (randomValue == 1 && data.allFinishedText != null)
+            // 모두 클리어했다면 특별 엔딩 텍스트 적용
+            if (_isAllFinished && data.allFinishedText != null)
             {
                 textToUse = data.allFinishedText;
-                _isAllFinished = true;
-            }
-            else
-            {
-                textToUse = data.descriptionText;
-                _isAllFinished = false;
             }
 
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, textToUse);
@@ -62,6 +63,7 @@ namespace My.Scripts._18_Ending.Pages
                 redLineImage.fillAmount = 0f;
             }
 
+            // 4페이지 진입 시 종료 시간 및 퇴장 업데이트
             if (!_hasSentEndTime && GameManager.Instance)
             {
                 if (GameManager.Instance.CurrentUserId == 0)
@@ -70,15 +72,16 @@ namespace My.Scripts._18_Ending.Pages
                 }
                 else
                 {
+                    Debug.Log("[EndingPage4] OnEnter: 종료(end) 시간 및 퇴장(exitRoom) 업데이트 호출");
                     GameManager.Instance.SendTimeUpdateAPI();
                     GameManager.Instance.SendExitRoomAPI();
                     _hasSentEndTime = true;
                 }
             }
+
             StartCoroutine(SequenceRoutine());
         }
 
-        /// <summary> 엔딩 시퀀스 루틴입니다. 분기된 엔딩 타입에 따라 다른 연출과 대기 시간을 가집니다. </summary>
         private IEnumerator SequenceRoutine()
         {   
             yield return CoroutineData.GetWaitForSeconds(1.0f);
@@ -95,10 +98,10 @@ namespace My.Scripts._18_Ending.Pages
                 SoundManager.Instance?.FadeOutBGM(5.0f);
                 yield return CoroutineData.GetWaitForSeconds(5.0f);
             }
+            
             CompleteStep();
         }
 
-        /// <summary> 이미지의 FillAmount를 조절하여 게이지가 차오르는 듯한 연출을 수행합니다. (붉은 실 연출용) </summary>
         private IEnumerator FillImageRoutine(Image t, float s, float e, float d)
         {
             if (!t) yield break;

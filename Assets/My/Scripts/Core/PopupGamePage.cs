@@ -94,10 +94,13 @@ namespace My.Scripts.Core.Pages
 
         protected virtual void StopResetSequence(bool immediate = true)
         {
-            SoundManager.Instance?.StopSFX();
-
+            bool wasResetSequenceActive = isResetSequenceActive;
             isResetSequenceActive = false;
             currentIdleTime = 0f;
+            if (wasResetSequenceActive)
+            {
+                SoundManager.Instance?.StopSFX();
+            }
             
             if (resetSequenceRoutine != null) StopCoroutine(resetSequenceRoutine);
             

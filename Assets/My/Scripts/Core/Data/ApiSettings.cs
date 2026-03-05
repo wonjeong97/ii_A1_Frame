@@ -16,6 +16,7 @@ namespace My.Scripts.Core.Data
         public string uploadFile;
         public string exitRoom;
         public string resetStart;
+        public string getCartridgeContent;
 
         private static string BuildUrl(string baseUrl, string path, string fallbackPath = null)
         {
@@ -26,7 +27,6 @@ namespace My.Scripts.Core.Data
             return $"{baseUrl.TrimEnd('/')}/{finalPath.TrimStart('/')}";
         }
 
-        // URL 조합을 쉽게 해주는 헬퍼 프로퍼티 (모두 BuildUrl을 거치도록 통일)
         public string GetUserUrl => BuildUrl(baseUrl, getUser, "/getUser.cfm");
         public string UpdateTimeUrl => BuildUrl(baseUrl, updateTime, "/updateTime.cfm");
         public string UpdateValueUrl => BuildUrl(baseUrl, updateValue, "/updateValue.cfm");
@@ -36,5 +36,6 @@ namespace My.Scripts.Core.Data
         public string UploadFileUrl => BuildUrl(baseUrl, uploadFile, "/uploadFile.cfm");
         public string ExitRoomUrl => BuildUrl(baseUrl, exitRoom, "/exitRoom.cfm");
         public string ResetStartUrl => BuildUrl(baseUrl, resetStart, "/resetStart.cfm");
+        public string GetCartridgeContentUrl => BuildUrl(baseUrl, getCartridgeContent, "/getCartridgeContent.cfm");
     }
 }

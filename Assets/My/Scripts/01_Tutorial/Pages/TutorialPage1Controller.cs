@@ -195,17 +195,26 @@ namespace My.Scripts._01_Tutorial.Pages
                                         if (apiManager)
                                         {
                                             apiManager.FetchData(uidLeft);
-                                            float timeoutAt = Time.time + 5f;
+                                            float timeoutAt = Time.time + 11f;
                                             while (GameManager.Instance &&
                                                    GameManager.Instance.CurrentUserId == 0 &&
                                                    Time.time < timeoutAt)
                                             {
                                                 yield return null;
                                             }
+
+                                            if (!GameManager.Instance || GameManager.Instance.CurrentUserId == 0)
+                                            {
+                                                Debug.LogWarning("[TutorialPage1] CurrentUserId 확정 실패. 다음 폴링에서 재시도합니다.");
+                                                yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                                                continue;
+                                            }
                                         }
                                         else
                                         {
                                             Debug.LogWarning("[TutorialPage1] APIManager를 씬에서 찾을 수 없습니다.");
+                                            yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                                            continue;
                                         }
                                     }
                                     CompleteStep(); 

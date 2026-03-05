@@ -13,16 +13,12 @@ namespace My.Scripts.Core
     public enum ColorData
     {   
         NotSet = -1,
-        Cyan = 0,
-        Pink = 1,
-        Orange = 2,
-        Green = 3,
-        Red = 4,
-        Yellow = 5
+        Cyan = 0, Pink = 1, Orange = 2, Green = 3, Red = 4, Yellow = 5
     }
     
     public struct UserData
     {
+        public string CARTRIDGE;
         public int IDX_USER; 
         public string UID_LEFT;
         public string UID_RIGHT;
@@ -37,18 +33,10 @@ namespace My.Scripts.Core
         public string RESERVATION_FIRST_NAME_RIGHT;
         public string RESERVATION_LAST_NAME_RIGHT;
         
-        public int PIECE_A1;
-        public int PIECE_A2;  
-        public int PIECE_A3;
-        public int PIECE_B1;
-        public int PIECE_B2;  
-        public int PIECE_B3;
-        public int PIECE_C1;
-        public int PIECE_C2;
-        public int PIECE_C3;
-        public int PIECE_D1;
-        public int PIECE_D2;
-        public int PIECE_D3;
+        public int PIECE_A1; public int PIECE_A2; public int PIECE_A3;
+        public int PIECE_B1; public int PIECE_B2; public int PIECE_B3;
+        public int PIECE_C1; public int PIECE_C2; public int PIECE_C3;
+        public int PIECE_D1; public int PIECE_D2; public int PIECE_D3;
     }
 
     public class ApiTableResponse
@@ -61,7 +49,6 @@ namespace My.Scripts.Core
     {
         private string userUid;
 
-        /// <summary> 외부에서 직접 UID를 주입하며 데이터를 요청할 때 사용합니다. </summary>
         public void FetchData(string uid)
         {
             userUid = uid;
@@ -72,7 +59,7 @@ namespace My.Scripts.Core
         public void FetchData()
         {
             ApiSettings config = null;
-            if (GameManager.Instance != null) config = GameManager.Instance.ApiConfig;
+            if (GameManager.Instance) config = GameManager.Instance.ApiConfig;
             if (config == null) config = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
 
             if (config == null)
@@ -87,12 +74,9 @@ namespace My.Scripts.Core
 
         private IEnumerator GetApiDataRoutine(string url)
         {
-            Debug.Log($"[APIManager] API 요청 시작: {url}");
-
             using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
             {
-                webRequest.timeout = 10; // 타임아웃 적용
-
+                webRequest.timeout = 10; 
                 yield return webRequest.SendWebRequest();
 
                 if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
@@ -102,9 +86,7 @@ namespace My.Scripts.Core
                 }
                 else
                 {
-                    string jsonResult = webRequest.downloadHandler.text;
-                    Debug.Log("[APIManager] 데이터 수신 성공! 파싱을 시작합니다.");
-                    ParseAndProcessData(jsonResult);
+                    ParseAndProcessData(webRequest.downloadHandler.text);
                 }
             }
         }
@@ -121,15 +103,14 @@ namespace My.Scripts.Core
                     UserData userData = new UserData();
 
                     userData.IDX_USER = ParseIntSafe(response, firstRow, "IDX_USER");
+                    userData.CARTRIDGE = ParseStringSafe(response, firstRow, "CARTRIDGE"); 
+                    
                     userData.UID_LEFT = ParseStringSafe(response, firstRow, "UID_LEFT");
                     userData.UID_RIGHT = ParseStringSafe(response, firstRow, "UID_RIGHT");
-                    
                     userData.LANG = ParseStringSafe(response, firstRow, "LANG");
                     userData.RELATION = ParseIntSafe(response, firstRow, "RELATION");
 
-                    userData.RESERVATION_FIRST_NAME_LEFT = ParseStringSafe(response, firstRow, "RESERVATION_FIRST_NAME_LEFT");
                     userData.RESERVATION_LAST_NAME_LEFT = ParseStringSafe(response, firstRow, "RESERVATION_LAST_NAME_LEFT");
-                    userData.RESERVATION_FIRST_NAME_RIGHT = ParseStringSafe(response, firstRow, "RESERVATION_FIRST_NAME_RIGHT");
                     userData.RESERVATION_LAST_NAME_RIGHT = ParseStringSafe(response, firstRow, "RESERVATION_LAST_NAME_RIGHT");
                     
                     userData.COLOR_LEFT = ParseColorSafe(response, firstRow, "COLOR_LEFT");
@@ -151,14 +132,12 @@ namespace My.Scripts.Core
                     if (GameManager.Instance)
                     {   
                         GameManager.Instance.CurrentUserId = userData.IDX_USER;
+                        GameManager.Instance.Cartridge = userData.CARTRIDGE; 
                         
                         GameManager.Instance.PlayerAUid = userData.UID_LEFT;
                         GameManager.Instance.PlayerBUid = userData.UID_RIGHT;
 
-                        if (!string.IsNullOrWhiteSpace(userData.LANG))
-                        {
-                            GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
-                        }
+                        if (!string.IsNullOrWhiteSpace(userData.LANG)) GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
 
                         switch (userData.RELATION)
                         {
@@ -168,17 +147,11 @@ namespace My.Scripts.Core
                             case 4: GameManager.Instance.currentUserType = UserType.D; break;
                             case 5: GameManager.Instance.currentUserType = UserType.E; break;
                             case 6: GameManager.Instance.currentUserType = UserType.F; break;
-                            default: 
-                                GameManager.Instance.currentUserType = UserType.A; 
-                                Debug.LogWarning($"[APIManager] 알 수 없는 RELATION 값({userData.RELATION})입니다. UserType.A로 기본 설정됩니다.");
-                                break;
+                            default: GameManager.Instance.currentUserType = UserType.A; break;
                         }
-
-                        Debug.Log($"[APIManager] 언어: {userData.LANG}, 관계: {userData.RELATION} -> 설정된 UserType: {GameManager.Instance.currentUserType}");
 
                         if (!string.IsNullOrEmpty(userData.RESERVATION_LAST_NAME_LEFT))
                             GameManager.Instance.PlayerALastName = userData.RESERVATION_LAST_NAME_LEFT;
-                            
                         if (!string.IsNullOrEmpty(userData.RESERVATION_LAST_NAME_RIGHT))
                             GameManager.Instance.PlayerBLastName = userData.RESERVATION_LAST_NAME_RIGHT;
                         
@@ -197,20 +170,81 @@ namespace My.Scripts.Core
                         GameManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
                         GameManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
                         GameManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
+
+                        // 초기화 시점에 현재 모듈을 제외한 나머지 카트리지 콘텐츠가 완료되었는지 검사
+                        if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
+                        {
+                            StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE));
+                        }
                     }
-                }
-                else
-                {
-                    Debug.LogWarning("[APIManager] JSON 응답에 데이터(DATA 배열)가 없습니다.");
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIManager] 파싱 중 에러 발생: {e.Message}\n수신된 JSON: {jsonString}");
+                Debug.LogError($"[APIManager] 파싱 중 에러 발생: {e.Message}");
             }
         }
 
-        #region 데이터 추출 헬퍼 메서드
+        //  카트리지 내용 조회 후 A1 제외 나머지 클리어 여부 확인 코루틴
+        private IEnumerator CheckOtherCartridgeContentsRoutine(string cartridgeStr)
+        {
+            ApiSettings config = GameManager.Instance.ApiConfig;
+            if (config == null) yield break;
+
+            string url = $"{config.GetCartridgeContentUrl}?cartridge={UnityWebRequest.EscapeURL(cartridgeStr)}";
+            
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                req.timeout = 10;
+                yield return req.SendWebRequest();
+
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    GameManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(req.downloadHandler.text, cartridgeStr);
+                }
+                else
+                {
+                    Debug.LogError($"[APIManager] 카트리지 조회 실패: {req.error}");
+                }
+            }
+        }
+
+        // A1(현재 모듈)을 제외하고 카트리지의 다른 내용들이 모두 End 값이 있는지 확인
+        private bool ParseOtherCartridgeClearState(string json, string cartridgeStr)
+        {
+            try
+            {
+                ApiTableResponse response = JsonConvert.DeserializeObject<ApiTableResponse>(json);
+                if (response != null && response.DATA != null && response.DATA.Count > 0)
+                {
+                    List<object> row = response.DATA[0];
+                    string[] codes = cartridgeStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    string currentModule = GameManager.Instance.CurrentModuleCode.ToUpper();
+
+                    foreach (var code in codes)
+                    {
+                        string c = code.Trim().ToUpper();
+                        
+                        // 현재 플레이 중인 모듈(A1)은 검사하지 않고 패스
+                        if (c == currentModule) continue; 
+
+                        string val = ParseStringSafe(response, row, $"END_{c}");
+                        
+                        // 현재 콘텐츠를 제외한 나머지 중 하나라도 완료(END) 안 된 게 있다면 바로 일반 엔딩 처리
+                        if (string.IsNullOrWhiteSpace(val) || val.Equals("null", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return false; 
+                        }
+                    }
+                    return true; // A1을 뺀 나머지 콘텐츠가 모두 완료됨
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[APIManager] 카트리지 상태 파싱 실패: {e.Message}");
+            }
+            return false;
+        }
 
         private int ParseIntSafe(ApiTableResponse response, List<object> row, string colName)
         {
@@ -219,11 +253,8 @@ namespace My.Scripts.Core
             {
                 string valStr = row[index].ToString().Trim();
                 if (string.IsNullOrEmpty(valStr)) return 0;
-                
                 if (int.TryParse(valStr, out int val)) return val;
-                
-                if (float.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fVal)) 
-                    return (int)fVal;
+                if (float.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fVal)) return (int)fVal;
             }
             return 0; 
         }
@@ -231,10 +262,7 @@ namespace My.Scripts.Core
         private string ParseStringSafe(ApiTableResponse response, List<object> row, string colName)
         {
             int index = response.COLUMNS.IndexOf(colName);
-            if (index != -1 && row.Count > index && row[index] != null)
-            {
-                return row[index].ToString();
-            }
+            if (index != -1 && row.Count > index && row[index] != null) return row[index].ToString();
             return string.Empty; 
         }
 
@@ -245,15 +273,10 @@ namespace My.Scripts.Core
             {
                 if (int.TryParse(row[index].ToString(), out int val))
                 {
-                    if (val >= (int)ColorData.NotSet && val <= (int)ColorData.Yellow)
-                    {
-                        return (ColorData)val;   
-                    }
+                    if (val >= (int)ColorData.NotSet && val <= (int)ColorData.Yellow) return (ColorData)val;   
                 }
             }
             return ColorData.NotSet; 
         }
-
-        #endregion
     }
 }
