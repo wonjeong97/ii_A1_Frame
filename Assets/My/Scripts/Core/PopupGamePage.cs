@@ -97,9 +97,10 @@ namespace My.Scripts.Core.Pages
             bool wasResetSequenceActive = isResetSequenceActive;
             isResetSequenceActive = false;
             currentIdleTime = 0f;
+            
             if (wasResetSequenceActive)
             {
-                SoundManager.Instance?.StopSFX();
+                if (SoundManager.Instance) SoundManager.Instance.StopSFX();
             }
             
             if (resetSequenceRoutine != null) StopCoroutine(resetSequenceRoutine);
@@ -126,15 +127,21 @@ namespace My.Scripts.Core.Pages
         {
             Debug.Log($"[{gameObject.name}] 리셋 시퀀스 시작");
 
-            // 1. 경고
+            // 1. 경고 팝업 띄움
             ShowPopup(msgWarning);
             
-            // 팝업 등장과 함께 사운드 재생
-            SoundManager.Instance?.PlaySFX("공통_23");
-
+            // 2. 3초 대기
             yield return CoroutineData.GetWaitForSeconds(warningDuration); 
 
-            // 2. 카운트다운
+            // 3. 팝업 페이드 아웃 + 사운드 재생
+            if (popupCanvasGroup && popupCanvasGroup.gameObject.activeSelf)
+            {
+                if (popupFadeRoutine != null) StopCoroutine(popupFadeRoutine);
+                popupFadeRoutine = StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 0f, 1.0f, false));
+            }
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_23");
+
+            // 4. 카운트 대기 (팝업이 안 보이는 상태로 카운트다운)
             float timer = countdownDuration;
             while (timer > 0f)
             {
@@ -142,16 +149,16 @@ namespace My.Scripts.Core.Pages
                 yield return CoroutineData.GetWaitForSeconds(1.0f);
             }
 
-            // 3. 초기화 안내
+            // 5. 초기화 확정 안내 팝업
             ShowPopup(msgReset);
             yield return CoroutineData.GetWaitForSeconds(resetPopupDuration);
 
-            // 4. 리셋
+            // 6. 리셋 실행
             if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
             else SceneManager.LoadScene(GameConstants.Scene.Title);
         }
 
-        private void ShowPopup(string message)
+        protected void ShowPopup(string message)
         {
             if (!popupCanvasGroup) return;
             if (popupText) popupText.text = message;
