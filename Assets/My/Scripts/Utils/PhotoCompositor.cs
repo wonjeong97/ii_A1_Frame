@@ -185,9 +185,9 @@ namespace My.Scripts.Utils
             
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             
-            // [수정] URL 끝에 인스펙터에서 설정한 count 파라미터를 추가하여 전송합니다.
+            // URL 끝에 인스펙터에서 설정한 count 파라미터를 추가하여 전송합니다.
             string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={uploadCount}";
-            Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중... (URL: {url})");
+            Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
