@@ -5,7 +5,11 @@ Shader "UI/GridLine"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Main Color", Color) = (1,1,1,0) 
         _LineColor ("Line Color", Color) = (0.627, 0.612, 0.584, 1) // #A09C95
-        _GridSize ("Grid Size", Float) = 10
+        
+        // Grid Size를 X(가로)와 Y(세로)로 분리
+        _GridSizeX ("Grid Size X", Float) = 6
+        _GridSizeY ("Grid Size Y", Float) = 5
+        
         _Thickness ("Line Thickness", Range(0, 0.5)) = 0.02
         
         // 점선 패턴의 반복 빈도 (높을수록 촘촘함)
@@ -75,12 +79,15 @@ Shader "UI/GridLine"
             
             fixed4 _Color;
             fixed4 _LineColor;
-            float _GridSize;
+            
+            // 선언부 분리
+            float _GridSizeX;
+            float _GridSizeY;
+            
             float _Thickness;
             float _DashFreq;
             sampler2D _MaskTex;
             
-
             v2f vert(appdata_t IN)
             {
                 v2f OUT;
@@ -94,31 +101,20 @@ Shader "UI/GridLine"
             fixed4 frag(v2f IN) : SV_Target
             {
                 float2 uv = IN.texcoord;
-
-                // 1. 그리드 좌표 계산
-                float2 gridPos = uv * _GridSize;
+                float2 gridPos = float2(uv.x * _GridSizeX, uv.y * _GridSizeY);
                 
-                // 2. 선 위치 계산 (0.5, 1.5... 반정수 위치에 선 그리기)
-                // (칸의 중앙을 가로지르는 선 -> 점을 네모 안에 가두는 형태 유지)
                 float2 dist = abs(frac(gridPos) - 0.5);
                 float2 lineAlpha = step(0.5 - dist, _Thickness);
                 
-                // 3. 점선 패턴 생성
-                // sin 함수를 이용해 주기적으로 0과 1을 오가는 패턴 생성
-                // 가로선(Horizontal)은 X축 좌표에 따라 패턴이 생김
                 float dashPatternX = step(0, sin(gridPos.x * _DashFreq));
-                // 세로선(Vertical)은 Y축 좌표에 따라 패턴이 생김
                 float dashPatternY = step(0, sin(gridPos.y * _DashFreq));
-
-                // 4. 선과 패턴 합성
-                // 세로선(lineAlpha.x)은 Y축 패턴(dashPatternY) 적용
+                
                 float showVertical = lineAlpha.x * dashPatternY;
-                // 가로선(lineAlpha.y)은 X축 패턴(dashPatternX) 적용
                 float showHorizontal = lineAlpha.y * dashPatternX;
 
                 float isLine = max(showVertical, showHorizontal);
 
-                // 색상 합성 (점 관련 로직은 삭제됨)
+                // 색상 합성
                 fixed4 finalColor = lerp(_Color, _LineColor, isLine);
                 finalColor.a *= IN.color.a;
                 
