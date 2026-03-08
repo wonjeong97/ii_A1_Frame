@@ -21,7 +21,6 @@ namespace My.Scripts.Core.Pages
         [Header("Interaction")] 
         [SerializeField] private Image imageBlack; 
         [SerializeField] private Image imageGrid; 
-        [SerializeField] private Image imageFocus; 
 
         [Header("Completion & Groups")] 
         [SerializeField] private List<CanvasGroup> completionCanvasGroups; 
@@ -29,9 +28,19 @@ namespace My.Scripts.Core.Pages
         
         [Header("Settings")]
         [SerializeField] private List<Vector2Int> questionSpots; 
-        [SerializeField] private int gridSize = 10; 
         
-        private readonly float cellFadeDuration = 0.5f; 
+        [SerializeField] private int gridSizeX = 6; 
+        [SerializeField] private int gridSizeY = 5; 
+        
+        private readonly float cellFadeDuration = 0.05f; 
+
+        [Header("Breathing Effect")]
+        [Tooltip("정답 칸에 있을 때 최소 투명도 (0: 완전 투명, 1: 까만 배경)")]
+        [SerializeField, Range(0f, 1f)] private float breathAlphaMin = 0.1f;
+        [Tooltip("정답 칸에 있을 때 최대 투명도 (0: 완전 투명, 1: 까만 배경)")]
+        [SerializeField, Range(0f, 1f)] private float breathAlphaMax = 0.3f;
+        [Tooltip("깜빡이는 속도 (높을수록 빠름)")]
+        [SerializeField] private float breathSpeed = 2.0f;
 
         // --- 내부 로직 변수 ---
         private RectTransform _blackRect; 
@@ -57,7 +66,6 @@ namespace My.Scripts.Core.Pages
         private const float BlinkThreshold = 10f; 
         private bool _is1stWarningDone = false; 
 
-        // [추가] 동시 입력 방지 및 경고 연출용 변수
         private float _p1InputTimer = 0f; 
         private float _p2InputTimer = 0f;
         private Coroutine _simultaneousWarningRoutine;
@@ -73,8 +81,10 @@ namespace My.Scripts.Core.Pages
         private int _p2LastDir; 
 
         private const float FastInputThreshold = 0.2f; 
-        
-        private int GetGridCenterIndex() => Mathf.Max(0, (gridSize - 1) / 2);
+        private const float BounceThreshold = 0.05f;    
+
+        private int GetGridCenterX() => Mathf.Max(0, (gridSizeX - 1) / 2);
+        private int GetGridCenterY() => Mathf.Max(0, (gridSizeY - 1) / 2);
 
         private class CellFadeInfo
         {
@@ -96,10 +106,10 @@ namespace My.Scripts.Core.Pages
 
             if (data.questionSpots != null && data.questionSpots.Count > 0)
             {
-                var filtered = new HashSet<Vector2Int>();
-                foreach (var spot in data.questionSpots)
+                HashSet<Vector2Int> filtered = new HashSet<Vector2Int>();
+                foreach (Vector2Int spot in data.questionSpots)
                 {
-                    if (spot.x >= 0 && spot.x < gridSize && spot.y >= 0 && spot.y < gridSize)
+                    if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
                         filtered.Add(spot);
                     }
@@ -143,43 +153,45 @@ namespace My.Scripts.Core.Pages
 
             if (!InitializeGame()) return;
 
-            int center = GetGridCenterIndex();
-            SetFocusToGrid(center, center, true);
+            int centerX = GetGridCenterX();
+            int centerY = GetGridCenterY();
+            SetFocusToGrid(centerX, centerY, true);
         }
 
         private bool InitializeGame()
         {
-            if (!imageBlack || !imageFocus) return false;
-
-            if (gridSize <= 0) return false;
+            if (!imageBlack) return false;
+            if (gridSizeX <= 0 || gridSizeY <= 0) return false;
             
             _blackRect = imageBlack.rectTransform;
-            _cellWidth = _blackRect.rect.width / gridSize;
-            _cellHeight = _blackRect.rect.height / gridSize;
+            _cellWidth = _blackRect.rect.width / gridSizeX;
+            _cellHeight = _blackRect.rect.height / gridSizeY;
+            
             _foundSpots.Clear();
             _isStageCompleted = false;
 
             if (completionCanvasGroups != null)
-                foreach (var cg in completionCanvasGroups)
+                foreach (CanvasGroup cg in completionCanvasGroups)
                     if (cg) { cg.alpha = 0f; cg.gameObject.SetActive(true); }
 
             if (textCanvasGroups != null)
-                foreach (var cg in textCanvasGroups)
+                foreach (CanvasGroup cg in textCanvasGroups)
                     if (cg) cg.alpha = 1f;
 
-            _questionMap = new bool[gridSize, gridSize];
+            _questionMap = new bool[gridSizeX, gridSizeY];
             if (questionSpots != null)
             {
-                foreach (var s in questionSpots)
-                    if (s.x >= 0 && s.x < gridSize && s.y >= 0 && s.y < gridSize)
+                foreach (Vector2Int s in questionSpots)
+                    if (s.x >= 0 && s.x < gridSizeX && s.y >= 0 && s.y < gridSizeY)
                         _questionMap[s.x, s.y] = true;
                 _totalQuestionCount = questionSpots.Count;
             }
 
             if (_totalQuestionCount == 0)
             {
-                int center = GetGridCenterIndex();
-                _questionMap[center, center] = true;
+                int centerX = GetGridCenterX();
+                int centerY = GetGridCenterY();
+                _questionMap[centerX, centerY] = true;
                 _totalQuestionCount = 1;
             }
 
@@ -189,8 +201,9 @@ namespace My.Scripts.Core.Pages
 
             _eraserMaterial = Instantiate(imageBlack.material);
             imageBlack.material = _eraserMaterial;
-            _maskTexture = new Texture2D(gridSize, gridSize, TextureFormat.R8, false) { filterMode = FilterMode.Point };
-            _maskTexture.SetPixels32(new Color32[gridSize * gridSize]);
+            
+            _maskTexture = new Texture2D(gridSizeX, gridSizeY, TextureFormat.R8, false) { filterMode = FilterMode.Point };
+            _maskTexture.SetPixels32(new Color32[gridSizeX * gridSizeY]);
             _maskTexture.Apply();
             _eraserMaterial.SetTexture(MaskTexID, _maskTexture);
 
@@ -214,7 +227,6 @@ namespace My.Scripts.Core.Pages
                 StartCoroutine(ShowCompletionRoutine());
             }
 
-            // [추가] 입력 독점 타이머 감소
             if (_p1InputTimer > 0f) _p1InputTimer -= Time.deltaTime;
             if (_p2InputTimer > 0f) _p2InputTimer -= Time.deltaTime;
 
@@ -324,22 +336,26 @@ namespace My.Scripts.Core.Pages
             _textBlinkRoutine = null;
         }
 
-        // --- 게임 로직 (이동) ---
         private void HandleMovement()
         {
-            if (!imageFocus || _isInputBlocked || _isStageCompleted) return;
+            if (_isInputBlocked || _isStageCompleted) return;
 
             int dx = 0, dy = 0;
             float now = Time.time;
 
-            int p1Key = GetPressedKeyIndex(1, 4);
-            int p2Key = GetPressedKeyIndex(5, 8);
+            int p1KeyRaw = GetPressedKeyIndex(1, 4, _lastP1Key, _p1LastDir);
+            int p2KeyRaw = GetPressedKeyIndex(5, 8, _lastP2Key, _p2LastDir);
+
+            if (p1KeyRaw != -1 && p1KeyRaw == _lastP1Key) _p1InputTimer = 0f;
+            if (p2KeyRaw != -1 && p2KeyRaw == _lastP2Key) _p2InputTimer = 0f;
+
+            int p1Key = (p1KeyRaw != -1 && p1KeyRaw != _lastP1Key) ? p1KeyRaw : -1;
+            int p2Key = (p2KeyRaw != -1 && p2KeyRaw != _lastP2Key) ? p2KeyRaw : -1;
 
             bool blockP1 = false;
             bool blockP2 = false;
 
-            // 동시 입력 방지 및 독점 타이머 적용
-            if (p1Key != -1 && p2Key != -1) // 완벽히 동시에 들어왔을 경우
+            if (p1Key != -1 && p2Key != -1) 
             {
                 blockP1 = true;
                 blockP2 = true;
@@ -347,84 +363,87 @@ namespace My.Scripts.Core.Pages
             }
             else if (p1Key != -1)
             {
-                if (_p2InputTimer > 0f) // P2가 선점 중
+                if (_p2InputTimer > 0f) 
                 {
                     blockP1 = true;
                     TriggerSimultaneousWarning();
                 }
-                else // P1 입력 허용 및 0.5초 타이머 세팅
+                else 
                 {
-                    _p1InputTimer = 0.5f;
+                    _p1InputTimer = 0.5f; 
                 }
             }
             else if (p2Key != -1)
             {
-                if (_p1InputTimer > 0f) // P1이 선점 중
+                if (_p1InputTimer > 0f) 
                 {
                     blockP2 = true;
                     TriggerSimultaneousWarning();
                 }
-                else // P2 입력 허용 및 0.5초 타이머 세팅
+                else 
                 {
                     _p2InputTimer = 0.5f;
                 }
             }
 
-            // 차단된 플레이어의 키 입력 무효화
             if (blockP1) p1Key = -1;
             if (blockP2) p2Key = -1;
 
-            // 1. Player 1 (Vertical: 1~4) -> 상하 (dy)
             if (p1Key != -1)
             {
-                if (_lastP1Key != -1)
+                int diff = (p1Key - _lastP1Key + 4) % 4;
+                int dir = 0; 
+
+                if (diff == 1) dir = 1;
+                else if (diff == 3) dir = -1;
+                else if (diff == 2)
                 {
-                    int diff = (p1Key - _lastP1Key + 4) % 4;
-                    int dir = 0; 
-
-                    if (diff == 1) dir = 1;
-                    else if (diff == 3) dir = -1;
-
-                    if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0)
-                    {
-                        if (diff == 2 || (dir != 0 && dir != _p1LastDir)) dir = _p1LastDir;
-                    }
-
-                    if (dir != 0)
-                    {
-                        dy = (dir == 1) ? 1 : -1;
-                        _p1LastDir = dir;
-                        _p1LastTime = now;
-                    }
+                    if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0) 
+                        dir = _p1LastDir;
                 }
+
+                if (dir != 0 && dir != _p1LastDir && _p1LastDir != 0 && (now - _p1LastTime < BounceThreshold))
+                {
+                    dir = 0; 
+                }
+
+                if (dir != 0)
+                {
+                    dy = (dir == 1) ? 1 : -1;
+                    _p1LastDir = dir;
+                    _p1LastTime = now;
+                }
+                
                 _lastP1Key = p1Key;
             }
 
-            // 2. Player 2 (Horizontal: 5~8) -> 좌우 (dx)
             if (p2Key != -1)
             {
-                if (_lastP2Key != -1)
+                int currIdx = p2Key - 5;
+                int lastIdx = _lastP2Key - 5;
+                int diff = (currIdx - lastIdx + 4) % 4;
+                int dir = 0;
+
+                if (diff == 1) dir = 1;
+                else if (diff == 3) dir = -1;
+                else if (diff == 2)
                 {
-                    int currIdx = p2Key - 5;
-                    int lastIdx = _lastP2Key - 5;
-                    int diff = (currIdx - lastIdx + 4) % 4;
-                    int dir = 0;
-
-                    if (diff == 1) dir = 1;
-                    else if (diff == 3) dir = -1;
-
-                    if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0)
-                    {
-                        if (diff == 2 || (dir != 0 && dir != _p2LastDir)) dir = _p2LastDir;
-                    }
-
-                    if (dir != 0)
-                    {
-                        dx = (dir == 1) ? 1 : -1;
-                        _p2LastDir = dir;
-                        _p2LastTime = now;
-                    }
+                    if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0) 
+                        dir = _p2LastDir;
                 }
+
+                if (dir != 0 && dir != _p2LastDir && _p2LastDir != 0 && (now - _p2LastTime < BounceThreshold))
+                {
+                    dir = 0; 
+                }
+
+                if (dir != 0)
+                {
+                    dx = (dir == 1) ? 1 : -1;
+                    _p2LastDir = dir;
+                    _p2LastTime = now;
+                }
+                
                 _lastP2Key = p2Key;
             }
 
@@ -444,7 +463,6 @@ namespace My.Scripts.Core.Pages
 
                 if (textSub && textSub.gameObject.activeSelf)
                 {
-                    // 경고 깜빡임이나 기존 페이드가 작동 중이지 않을 때만 정상적으로 사라지게 함 (Stuttering 방지)
                     if (_textFadeRoutine == null && _simultaneousWarningRoutine == null && _textBlinkRoutine == null) 
                     {
                         _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 1f, () =>
@@ -457,38 +475,34 @@ namespace My.Scripts.Core.Pages
                 }
 
                 int nextX = _currentGridX + dx, nextY = _currentGridY + dy;
-                if (nextX >= 0 && nextX < gridSize && nextY >= 0 && nextY < gridSize) SetFocusToGrid(nextX, nextY);
+                
+                if (nextX >= 0 && nextX < gridSizeX && nextY >= 0 && nextY < gridSizeY) 
+                    SetFocusToGrid(nextX, nextY);
             }
         }
 
-        /// <summary> 동시 입력 시 경고 텍스트 연출 트리거 </summary>
         private void TriggerSimultaneousWarning()
         {
-            // 이미 경고가 깜빡이고 있다면 무시 (중복 실행 방지)
             if (_simultaneousWarningRoutine != null) return;
 
-            // 실행 중이던 다른 텍스트 코루틴들 강제 종료
             if (_textBlinkRoutine != null) { StopCoroutine(_textBlinkRoutine); _textBlinkRoutine = null; }
             if (_textFadeRoutine != null) { StopCoroutine(_textFadeRoutine); _textFadeRoutine = null; }
 
             _simultaneousWarningRoutine = StartCoroutine(SimultaneousWarningRoutine());
         }
 
-        /// <summary> DescriptionText2(기본 서브 텍스트)를 띄우고 빠른 속도로 2회 깜빡임 </summary>
         private IEnumerator SimultaneousWarningRoutine()
         {
             if (textSub)
             {
                 textSub.gameObject.SetActive(true);
                 
-                // 설정해둔 DescriptionText2 로 텍스트 내용 교체
                 if (_defaultTextSub != null) UIManager.Instance.SetText(textSub.gameObject, _defaultTextSub);
 
                 Color c = textSub.color;
                 c.a = 0f;
                 textSub.color = c;
 
-                // 2회 빠른 깜빡임
                 for (int i = 0; i < 2; i++)
                 {
                     yield return StartCoroutine(FadeTo(textSub, 1f, 0.5f));
@@ -500,14 +514,44 @@ namespace My.Scripts.Core.Pages
             _simultaneousWarningRoutine = null;
         }
 
-        private int GetPressedKeyIndex(int start, int end)
+        private int GetPressedKeyIndex(int start, int end, int lastKey, int lastDir)
         {
+            List<int> pressedKeys = new List<int>();
             for (int i = start; i <= end; i++)
             {
-                if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha0 + i))) return i;
-                if (Input.GetKeyDown((KeyCode)((int)KeyCode.Keypad0 + i))) return i;
+                if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha0 + i)) || 
+                    Input.GetKeyDown((KeyCode)((int)KeyCode.Keypad0 + i)))
+                {
+                    pressedKeys.Add(i);
+                }
             }
-            return -1;
+
+            if (pressedKeys.Count == 0) return -1;
+            if (pressedKeys.Count == 1) return pressedKeys[0];
+
+            if (lastKey != -1)
+            {
+                foreach (int k in pressedKeys)
+                {
+                    int currIdx = k - start;
+                    int lastIdx = lastKey - start;
+                    int diff = (currIdx - lastIdx + 4) % 4;
+                    
+                    int expectedDiff = (lastDir == -1) ? 3 : 1; 
+                    if (diff == expectedDiff) return k;
+                }
+
+                foreach (int k in pressedKeys)
+                {
+                    int currIdx = k - start;
+                    int lastIdx = lastKey - start;
+                    int diff = (currIdx - lastIdx + 4) % 4;
+                    
+                    if (diff == 1 || diff == 3) return k;
+                }
+            }
+
+            return pressedKeys[pressedKeys.Count - 1]; 
         }
 
         private IEnumerator FadeTo(Text target, float targetAlpha, float duration, Action onComplete = null)
@@ -533,17 +577,20 @@ namespace My.Scripts.Core.Pages
         {
             if (!isFirstInit)
             {
-                if (!_questionMap[_currentGridX, _currentGridY]) StartCellFade(_currentGridX, _currentGridY, 0.0f);
+                if (!_questionMap[_currentGridX, _currentGridY]) 
+                    StartCellFade(_currentGridX, _currentGridY, 0.0f); 
+                else 
+                    UpdateMaskPixelInstant(_currentGridX, _currentGridY, 1.0f, false); 
+                
                 _isInputBlocked = true;
             }
 
             _currentGridX = x;
             _currentGridY = y;
-            float startX = -(_blackRect.rect.width / 2f), startY = (_blackRect.rect.height / 2f);
-            imageFocus.rectTransform.anchoredPosition = new Vector2(startX + (x * _cellWidth) + (_cellWidth / 2f),
-                startY - (y * _cellHeight) - (_cellHeight / 2f));
+            
             if (isFirstInit) UpdateMaskPixelInstant(x, y, 1.0f);
-            else StartCellFade(x, y, 1.0f);
+            else StartCellFade(x, y, 1.0f); 
+            
             CheckQuestionFound(x, y);
         }
 
@@ -568,6 +615,9 @@ namespace My.Scripts.Core.Pages
         private IEnumerator ShowCompletionRoutine()
         {   
             SoundManager.Instance?.PlaySFX("카메라_3");
+
+            UpdateMaskPixelInstant(_currentGridX, _currentGridY, 1.0f, true);
+
             if (completionCanvasGroups != null)
             {
                 float t = 0f;
@@ -578,13 +628,13 @@ namespace My.Scripts.Core.Pages
                     t += Time.deltaTime;
                     float alpha = Mathf.Clamp01(t / duration);
                     
-                    foreach (var cg in completionCanvasGroups)
+                    foreach (CanvasGroup cg in completionCanvasGroups)
                         if (cg) cg.alpha = alpha;
                     
                     yield return null;
                 }
 
-                foreach (var cg in completionCanvasGroups)
+                foreach (CanvasGroup cg in completionCanvasGroups)
                     if (cg) cg.alpha = 1f;
             }
 
@@ -603,7 +653,7 @@ namespace My.Scripts.Core.Pages
                 }
 
                 if (textCanvasGroups != null)
-                    foreach (var cg in textCanvasGroups)
+                    foreach (CanvasGroup cg in textCanvasGroups)
                         if (cg) cg.alpha = Mathf.Lerp(1f, 0f, p);
                 yield return null;
             }
@@ -630,31 +680,71 @@ namespace My.Scripts.Core.Pages
 
         private void UpdateCellFades()
         {
-            if (_activeFades.Count == 0) return;
-            for (int i = _activeFades.Count - 1; i >= 0; i--)
+            bool needsApply = false;
+
+            // 1. 기존 페이드 로직 (이동 시 즉시 밝히거나 끄는 역할)
+            if (_activeFades.Count > 0)
             {
-                var f = _activeFades[i];
-                f.timer += Time.deltaTime;
-                float p = Mathf.Clamp01(f.timer / cellFadeDuration);
-                UpdateMaskPixelInstant(f.x, f.y, Mathf.Lerp(f.startVal, f.targetVal, p), false);
-                if (p >= 1.0f)
+                for (int i = _activeFades.Count - 1; i >= 0; i--)
                 {
-                    if (f.x == _currentGridX && f.y == _currentGridY) _isInputBlocked = false;
-                    _activeFades.RemoveAt(i);
+                    CellFadeInfo f = _activeFades[i];
+                    f.timer += Time.deltaTime;
+                    float p = Mathf.Clamp01(f.timer / cellFadeDuration);
+                    UpdateMaskPixelInstant(f.x, f.y, Mathf.Lerp(f.startVal, f.targetVal, p), false);
+                    needsApply = true;
+
+                    if (p >= 1.0f)
+                    {
+                        if (f.x == _currentGridX && f.y == _currentGridY) _isInputBlocked = false;
+                        _activeFades.RemoveAt(i);
+                    }
                 }
             }
 
-            if (_maskTexture != null) _maskTexture.Apply();
+            // 2. 커서 숨쉬기 효과 로직 (정답인 칸에 올라가 있을 때)
+            if (!_isStageCompleted && _questionMap != null)
+            {
+                if (_questionMap[_currentGridX, _currentGridY])
+                {
+                    bool isFading = false;
+                    for (int i = 0; i < _activeFades.Count; i++)
+                    {
+                        if (_activeFades[i].x == _currentGridX && _activeFades[i].y == _currentGridY)
+                        {
+                            isFading = true; break;
+                        }
+                    }
+
+                    if (!isFading)
+                    {
+                        // 0 ~ 1 사이의 핑퐁 애니메이션 값 생성
+                        float pingPong = Mathf.PingPong(Time.time * breathSpeed, 1f);
+                        // 인스펙터에서 지정한 최소/최대 투명도 사이를 보간
+                        float currentAlpha = Mathf.Lerp(breathAlphaMin, breathAlphaMax, pingPong);
+                        
+                        // 쉐이더의 Alpha = 1.0 - Mask.R 공식을 역산 (우리가 원하는 투명도가 나오려면 마스크 R값은 1 - Alpha여야 함)
+                        float breathMaskValue = 1.0f - currentAlpha;
+                        
+                        UpdateMaskPixelInstant(_currentGridX, _currentGridY, breathMaskValue, false);
+                        needsApply = true;
+                    }
+                }
+            }
+
+            if (needsApply && _maskTexture) 
+            {
+                _maskTexture.Apply();
+            }
         }
 
         private float GetMaskPixelValue(int x, int y) =>
-            _maskTexture != null ? _maskTexture.GetPixel(x, (gridSize - 1) - y).r : 0f;
+            _maskTexture ? _maskTexture.GetPixel(x, (gridSizeY - 1) - y).r : 0f;
 
         private void UpdateMaskPixelInstant(int x, int y, float v, bool a = true)
         {
-            if (_maskTexture != null)
+            if (_maskTexture)
             {
-                _maskTexture.SetPixel(x, (gridSize - 1) - y, new Color(v, 0, 0, 0));
+                _maskTexture.SetPixel(x, (gridSizeY - 1) - y, new Color(v, 0, 0, 0));
                 if (a) _maskTexture.Apply();
             }
         }
@@ -681,9 +771,9 @@ namespace My.Scripts.Core.Pages
         {
             if (questionSpots == null) return;
 
-            foreach (var spot in questionSpots)
+            foreach (Vector2Int spot in questionSpots)
             {
-                if (spot.x >= 0 && spot.x < gridSize && spot.y >= 0 && spot.y < gridSize)
+                if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                 {
                     StartCellFade(spot.x, spot.y, 1.0f);
                 }
