@@ -153,9 +153,49 @@ namespace My.Scripts.Core.Pages
 
             if (!InitializeGame()) return;
 
-            int centerX = GetGridCenterX();
-            int centerY = GetGridCenterY();
-            SetFocusToGrid(centerX, centerY, true);
+            int startX = GetGridCenterX();
+            int startY = GetGridCenterY();
+
+            // 시작 지점이 정답 칸일 경우, 인접한(+-1) 오답 칸을 새로운 시작 지점으로 탐색합니다.
+            if (_questionMap != null && _questionMap[startX, startY])
+            {
+                bool foundSafeSpot = false;
+                
+                // 상하좌우 및 대각선(+-1) 방향 오프셋
+                Vector2Int[] offsets = new Vector2Int[] 
+                {
+                    new Vector2Int(0, 1), new Vector2Int(0, -1), 
+                    new Vector2Int(1, 0), new Vector2Int(-1, 0),
+                    new Vector2Int(1, 1), new Vector2Int(1, -1), 
+                    new Vector2Int(-1, 1), new Vector2Int(-1, -1)
+                };
+
+                foreach (Vector2Int offset in offsets)
+                {
+                    int nx = startX + offset.x;
+                    int ny = startY + offset.y;
+
+                    // 그리드 범위 내인지 확인
+                    if (nx >= 0 && nx < gridSizeX && ny >= 0 && ny < gridSizeY)
+                    {
+                        // 정답이 아닌 칸(오답 칸)을 찾으면 시작 위치로 갱신
+                        if (!_questionMap[nx, ny])
+                        {
+                            startX = nx;
+                            startY = ny;
+                            foundSafeSpot = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!foundSafeSpot)
+                {
+                    Debug.LogWarning("[Page_Grid] 시작점 주변에 안전한 오답 칸이 없습니다.");
+                }
+            }
+
+            SetFocusToGrid(startX, startY, true);
         }
 
         private bool InitializeGame()
@@ -391,27 +431,30 @@ namespace My.Scripts.Core.Pages
 
             if (p1Key != -1)
             {
-                int diff = (p1Key - _lastP1Key + 4) % 4;
-                int dir = 0; 
-
-                if (diff == 1) dir = 1;
-                else if (diff == 3) dir = -1;
-                else if (diff == 2)
+                if (_lastP1Key != -1)
                 {
-                    if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0) 
-                        dir = _p1LastDir;
-                }
+                    int diff = (p1Key - _lastP1Key + 4) % 4;
+                    int dir = 0; 
 
-                if (dir != 0 && dir != _p1LastDir && _p1LastDir != 0 && (now - _p1LastTime < BounceThreshold))
-                {
-                    dir = 0; 
-                }
+                    if (diff == 1) dir = 1;
+                    else if (diff == 3) dir = -1;
+                    else if (diff == 2)
+                    {
+                        if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0) 
+                            dir = _p1LastDir;
+                    }
 
-                if (dir != 0)
-                {
-                    dy = (dir == 1) ? 1 : -1;
-                    _p1LastDir = dir;
-                    _p1LastTime = now;
+                    if (dir != 0 && dir != _p1LastDir && _p1LastDir != 0 && (now - _p1LastTime < BounceThreshold))
+                    {
+                        dir = 0; 
+                    }
+
+                    if (dir != 0)
+                    {
+                        dy = (dir == 1) ? 1 : -1;
+                        _p1LastDir = dir;
+                        _p1LastTime = now;
+                    }
                 }
                 
                 _lastP1Key = p1Key;
@@ -419,29 +462,32 @@ namespace My.Scripts.Core.Pages
 
             if (p2Key != -1)
             {
-                int currIdx = p2Key - 5;
-                int lastIdx = _lastP2Key - 5;
-                int diff = (currIdx - lastIdx + 4) % 4;
-                int dir = 0;
-
-                if (diff == 1) dir = 1;
-                else if (diff == 3) dir = -1;
-                else if (diff == 2)
+                if (_lastP2Key != -1)
                 {
-                    if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0) 
-                        dir = _p2LastDir;
-                }
+                    int currIdx = p2Key - 5;
+                    int lastIdx = _lastP2Key - 5;
+                    int diff = (currIdx - lastIdx + 4) % 4;
+                    int dir = 0;
 
-                if (dir != 0 && dir != _p2LastDir && _p2LastDir != 0 && (now - _p2LastTime < BounceThreshold))
-                {
-                    dir = 0; 
-                }
+                    if (diff == 1) dir = 1;
+                    else if (diff == 3) dir = -1;
+                    else if (diff == 2)
+                    {
+                        if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0) 
+                            dir = _p2LastDir;
+                    }
 
-                if (dir != 0)
-                {
-                    dx = (dir == 1) ? 1 : -1;
-                    _p2LastDir = dir;
-                    _p2LastTime = now;
+                    if (dir != 0 && dir != _p2LastDir && _p2LastDir != 0 && (now - _p2LastTime < BounceThreshold))
+                    {
+                        dir = 0; 
+                    }
+
+                    if (dir != 0)
+                    {
+                        dx = (dir == 1) ? 1 : -1;
+                        _p2LastDir = dir;
+                        _p2LastTime = now;
+                    }
                 }
                 
                 _lastP2Key = p2Key;
@@ -591,7 +637,10 @@ namespace My.Scripts.Core.Pages
             if (isFirstInit) UpdateMaskPixelInstant(x, y, 1.0f);
             else StartCellFade(x, y, 1.0f); 
             
-            CheckQuestionFound(x, y);
+            if (!isFirstInit) 
+            {
+                CheckQuestionFound(x, y);
+            }
         }
 
         private void CheckQuestionFound(int x, int y)
@@ -682,7 +731,6 @@ namespace My.Scripts.Core.Pages
         {
             bool needsApply = false;
 
-            // 1. 기존 페이드 로직 (이동 시 즉시 밝히거나 끄는 역할)
             if (_activeFades.Count > 0)
             {
                 for (int i = _activeFades.Count - 1; i >= 0; i--)
@@ -701,7 +749,6 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            // 2. 커서 숨쉬기 효과 로직 (정답인 칸에 올라가 있을 때)
             if (!_isStageCompleted && _questionMap != null)
             {
                 if (_questionMap[_currentGridX, _currentGridY])
@@ -717,12 +764,9 @@ namespace My.Scripts.Core.Pages
 
                     if (!isFading)
                     {
-                        // 0 ~ 1 사이의 핑퐁 애니메이션 값 생성
                         float pingPong = Mathf.PingPong(Time.time * breathSpeed, 1f);
-                        // 인스펙터에서 지정한 최소/최대 투명도 사이를 보간
                         float currentAlpha = Mathf.Lerp(breathAlphaMin, breathAlphaMax, pingPong);
                         
-                        // 쉐이더의 Alpha = 1.0 - Mask.R 공식을 역산 (우리가 원하는 투명도가 나오려면 마스크 R값은 1 - Alpha여야 함)
                         float breathMaskValue = 1.0f - currentAlpha;
                         
                         UpdateMaskPixelInstant(_currentGridX, _currentGridY, breathMaskValue, false);
