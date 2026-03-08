@@ -174,20 +174,21 @@ namespace My.Scripts.Core
                         GameManager.Instance.IsOtherCartridgeContentsCleared = false;
                         if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
                         {
-                            StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE));
+                            // 첫 번째 API에서 파싱해둔 response 전체 원본(END 값들)을 코루틴으로 함께 넘깁니다.
+                            StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE, response, firstRow));
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIManager] 파싱 중 에러 발생: {e.Message}");
+                Debug.LogError($"[APIManager] 유저 데이터 JSON 파싱 중 에러 발생: {e.Message}");
                 if (GameManager.Instance) GameManager.Instance.IsOtherCartridgeContentsCleared = false;
             }
         }
 
-        //  카트리지 내용 조회 후 A1 제외 나머지 클리어 여부 확인 코루틴
-        private IEnumerator CheckOtherCartridgeContentsRoutine(string cartridgeStr)
+        // 두 번째 API를 호출하여 "감시해야 할 타겟 목록" 문자열을 받아옵니다.
+        private IEnumerator CheckOtherCartridgeContentsRoutine(string cartridgeStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
         {
             ApiSettings config = GameManager.Instance.ApiConfig;
             if (config == null) yield break;
@@ -201,7 +202,11 @@ namespace My.Scripts.Core
 
                 if (req.result == UnityWebRequest.Result.Success)
                 {
-                    GameManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(req.downloadHandler.text, cartridgeStr);
+                    // 두 번째 API의 응답(예: "A1,B1,C1")
+                    string targetListStr = req.downloadHandler.text;
+
+                    // 감시할 목록(targetListStr)과 END 값들이 들어있는 첫 번째 API 원본(firstApiResponse)을 엮어서 비교합니다.
+                    GameManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(targetListStr, firstApiResponse, firstApiRow);
                 }
                 else
                 {
@@ -210,41 +215,57 @@ namespace My.Scripts.Core
             }
         }
 
-        // A1(현재 모듈)을 제외하고 카트리지의 다른 내용들이 모두 End 값이 있는지 확인
-        private bool ParseOtherCartridgeClearState(string json, string cartridgeStr)
+        /// <summary>
+        /// 두 번째 API에서 받은 목록("A1, B1...")을 순회하며, 
+        /// 첫 번째 API의 원본 JSON 데이터에서 해당 모듈들의 END 값이 존재하는지 검사합니다.
+        /// </summary>
+        private bool ParseOtherCartridgeClearState(string targetListStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
         {
             try
             {
-                ApiTableResponse response = JsonConvert.DeserializeObject<ApiTableResponse>(json);
-                if (response != null && response.DATA != null && response.DATA.Count > 0)
+                Debug.Log($"[APIManager] 두 번째 API(감시 목록) 응답 데이터: {targetListStr}");
+
+                // 비어있거나 HTML 에러가 왔다면 감시 불가 처리
+                if (string.IsNullOrWhiteSpace(targetListStr) || targetListStr.Trim().StartsWith("<")) return false;
+
+                // 1. 감시해야 할 타겟 목록을 분리합니다. (예: "A1", "B1", "C1")
+                string[] targetCodes = targetListStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                string currentModule = "A1"; 
+                if (GameManager.Instance && !string.IsNullOrEmpty(GameManager.Instance.CurrentModuleCode))
                 {
-                    List<object> row = response.DATA[0];
-                    string[] codes = cartridgeStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    string currentModule = GameManager.Instance.CurrentModuleCode.ToUpper();
-
-                    foreach (var code in codes)
-                    {
-                        string c = code.Trim().ToUpper();
-                        
-                        // 현재 플레이 중인 모듈(A1)은 검사하지 않고 패스
-                        if (c == currentModule) continue; 
-
-                        string val = ParseStringSafe(response, row, $"END_{c}");
-                        
-                        // 현재 콘텐츠를 제외한 나머지 중 하나라도 완료(END) 안 된 게 있다면 바로 일반 엔딩 처리
-                        if (string.IsNullOrWhiteSpace(val) || val.Equals("null", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return false; 
-                        }
-                    }
-                    return true; // A1을 뺀 나머지 콘텐츠가 모두 완료됨
+                    currentModule = GameManager.Instance.CurrentModuleCode.ToUpper();
                 }
+
+                // 2. 타겟 목록을 하나씩 돕니다.
+                foreach (string target in targetCodes)
+                {
+                    string expectedCode = target.Trim().ToUpper(); 
+                    
+                    // 현재 플레이 중인 모듈(예: A1)은 감시 대상에서 제외
+                    if (expectedCode == currentModule) continue;
+
+                    // 3. 첫 번째 API 데이터(firstApiResponse)에서 "END_B1", "END_C1" 등의 값을 콕 집어서 뽑아옵니다.
+                    string endColumnName = $"END_{expectedCode}";
+                    string endValue = ParseStringSafe(firstApiResponse, firstApiRow, endColumnName);
+
+                    // 4. END 값이 비어있거나 "null" 텍스트라면 아직 클리어하지 않은 것!
+                    if (string.IsNullOrWhiteSpace(endValue) || endValue.Equals("null", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.Log($"[APIManager] 특별 엔딩 불가: 감시 대상 모듈 {expectedCode}이(가) 아직 클리어되지 않았습니다. (END 값이 없음)");
+                        return false; 
+                    }
+                }
+
+                // 모든 타겟 모듈의 END 값이 채워져 있음
+                Debug.Log("[APIManager] 감시 대상 카트리지 목록의 모든 콘텐츠 클리어 확인됨! (특별 엔딩 조건 충족)");
+                return true;
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIManager] 카트리지 상태 파싱 실패: {e.Message}");
+                Debug.LogError($"[APIManager] 카트리지 감시 목록 파싱 실패: {e.Message}");
+                return false;
             }
-            return false;
         }
 
         private int ParseIntSafe(ApiTableResponse response, List<object> row, string colName)

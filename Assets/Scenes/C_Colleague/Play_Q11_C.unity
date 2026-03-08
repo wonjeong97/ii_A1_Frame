@@ -661,6 +661,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 243606469860385081, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 245271838769976808, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
@@ -671,11 +676,21 @@ PrefabInstance:
       propertyPath: defaultMaskingMaterial
       value: 
       objectReference: {fileID: 2100000, guid: 618cf2a1c3e12e64ea7280c270b05622, type: 2}
+    - target: {fileID: 536427332076840668, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1144196219362896077, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 2100000, guid: fee57e2facd74944cbbe0aff8cfe8515, type: 2}
+    - target: {fileID: 3495533361431215452, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4943455746939876439, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Pivot.x

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Data;
 using My.Scripts.Global;
+using My.Scripts.Hardware;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -12,22 +13,21 @@ namespace My.Scripts.Core.Pages
     public class Page_Check : PopupGamePage<CheckPageData>
     {
         [Header("UI References")] 
-        [SerializeField] private Text nicknameA; // 플레이어 A 닉네임
-        [SerializeField] private Text nicknameB; // 플레이어 B 닉네임
-        [SerializeField] private Text waitText;  // 대기 텍스트
+        [SerializeField] private Text nicknameA; 
+        [SerializeField] private Text nicknameB; 
+        [SerializeField] private Text waitText;  
 
         [Header("Check Images")] 
-        [SerializeField] private Image imgBackA; // 플레이어 A 배경
-        [SerializeField] private Image imgLightA; // 플레이어 A 조명 (V 표시)
-        [SerializeField] private Image imgBackB; // 플레이어 B 배경
-        [SerializeField] private Image imgLightB; // 플레이어 B 조명
+        [SerializeField] private Image imgBackA; 
+        [SerializeField] private Image imgLightA; 
+        [SerializeField] private Image imgBackB; 
+        [SerializeField] private Image imgLightB; 
 
-        private bool isLightOnA; // A 점등 여부
-        private bool isLightOnB; // B 점등 여부
-        private bool _completionStarted; // 완료 시퀀스 시작 여부
-        private float _enterTime; // 페이지 진입 시간 기록용
+        private bool isLightOnA; 
+        private bool isLightOnB; 
+        private bool _completionStarted; 
+        private float _enterTime; 
 
-        /// <summary> 데이터 설정 </summary>
         protected override void SetupData(CheckPageData data)
         {
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
@@ -37,7 +37,6 @@ namespace My.Scripts.Core.Pages
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary>  페이지 진입 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -46,11 +45,10 @@ namespace My.Scripts.Core.Pages
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
-            _enterTime = Time.time; // 진입 시간 기록
+            _enterTime = Time.time; 
 
             ResetIdleState(true);
 
-            // 이미지 초기화
             SetImgAlpha(imgBackA, 1f);
             SetImgAlpha(imgLightA, 0f);
             if (imgLightA) imgLightA.gameObject.SetActive(false);
@@ -67,50 +65,56 @@ namespace My.Scripts.Core.Pages
                 Sprite spriteB = GameManager.Instance.GetColorSprite(GameManager.Instance.PlayerBColor);
                 if (imgLightB) imgLightB.sprite = spriteB;
             }
+
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+                ArduinoManager.Instance.OnHardwareInput += HandleArduinoInput;
+            }
         }
-        
-        /// <summary>  매 프레임 업데이트 </summary>
-      private void Update()
+
+        public override void OnExit()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+            base.OnExit();
+        }
+
+        private void OnDestroy()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+        }
+
+        private void Update()
         {
             if (_completionStarted) return; 
 
             bool inputDetected = false;
             int selectedValue = 0;
-            string side = "";
+            string side = string.Empty;
 
-            // Left (1~5) -> Value (1~5)
-            if (Input.GetKeyDown(KeyCode.Alpha1)) { selectedValue = 1; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha2)) { selectedValue = 2; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha3)) { selectedValue = 3; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha4)) { selectedValue = 4; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha5)) { selectedValue = 5; side = "left"; }
-            
-            // Right (6~0) -> Value (1~5)
-            else if (Input.GetKeyDown(KeyCode.Alpha6)) { selectedValue = 1; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha7)) { selectedValue = 2; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha8)) { selectedValue = 3; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha9)) { selectedValue = 4; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha0)) { selectedValue = 5; side = "right"; }
+            // Left 디버그 (Q W E R T)
+            if (Input.GetKeyDown(KeyCode.Q)) { selectedValue = 1; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.W)) { selectedValue = 2; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.E)) { selectedValue = 3; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.R)) { selectedValue = 4; side = "left"; }
+            else if (Input.GetKeyDown(KeyCode.T)) { selectedValue = 5; side = "left"; }
+            // Right 디버그 (Y U I O P)
+            else if (Input.GetKeyDown(KeyCode.Y)) { selectedValue = 1; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.U)) { selectedValue = 2; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.I)) { selectedValue = 3; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.O)) { selectedValue = 4; side = "right"; }
+            else if (Input.GetKeyDown(KeyCode.P)) { selectedValue = 5; side = "right"; }
 
             if (selectedValue != 0)
             {
                 inputDetected = true;
-                bool isPlayerA = (side == "left");
-
-                // 중복 입력(이미 불이 켜진 상태)이 아닐 때만 API 전송
-                if ((isPlayerA && !isLightOnA) || (!isPlayerA && !isLightOnB))
-                {
-                    if (GameManager.Instance && LevelManager.Instance)
-                    {
-                        int qNo = LevelManager.Instance.CurrentQuestionNumber;
-                        if (qNo > 0)
-                        {
-                            GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
-                        }
-                    }
-                }
-
-                ActivatePlayerCheck(isPlayerA);
+                ProcessInput(selectedValue, side);
             }
 
             if (inputDetected || Input.anyKey || Input.touchCount > 0)
@@ -123,12 +127,56 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>  플레이어 체크 활성화 (지연 로직 적용) </summary>
+        private void HandleArduinoInput(string input, bool isLeft)
+        {
+            if (_completionStarted) return;
+
+            int selectedValue = 0;
+            string side = isLeft ? "left" : "right";
+
+            if (input == "1On") selectedValue = 1;
+            else if (input == "2On") selectedValue = 2;
+            else if (input == "3On") selectedValue = 3;
+            else if (input == "4On") selectedValue = 4;
+            else if (input == "5On") selectedValue = 5;
+
+            if (selectedValue != 0)
+            {
+                ProcessInput(selectedValue, side);
+            }
+        }
+
+        private void ProcessInput(int selectedValue, string side)
+        {
+            bool isPlayerA = (side == "left");
+
+            // 중복 입력(이미 불이 켜진 상태)이 아닐 때만 API 전송 및 LED 제어
+            if ((isPlayerA && !isLightOnA) || (!isPlayerA && !isLightOnB))
+            {
+                // [수정] 자신이 누른 쪽의 아두이노 LED만 개별적으로 끕니다.
+                if (ArduinoManager.Instance)
+                {
+                    if (isPlayerA) ArduinoManager.Instance.SendCommandToLeft("LEDAllOff");
+                    else ArduinoManager.Instance.SendCommandToRight("LEDAllOff");
+                }
+
+                if (GameManager.Instance && LevelManager.Instance)
+                {
+                    int qNo = LevelManager.Instance.CurrentQuestionNumber;
+                    if (qNo > 0)
+                    {
+                        GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
+                    }
+                }
+            }
+
+            ActivatePlayerCheck(isPlayerA);
+        }
+
         public void ActivatePlayerCheck(bool isPlayerA)
         {
             ResetIdleState(false);
 
-            // 페이지 진입 후 최소 0.5초가 지나야 불이 켜지도록 딜레이 계산
             float delay = Mathf.Max(0f, 0.5f - (Time.time - _enterTime));
 
             if (isPlayerA)
@@ -147,7 +195,6 @@ namespace My.Scripts.Core.Pages
 
         private void CheckCompletion()
         {   
-            // 양쪽 모두 켜졌고, 완료 시퀀스가 아직 시작되지 않았다면 진행
             if (isLightOnA && isLightOnB && !_completionStarted)
             {
                 _completionStarted = true;
@@ -157,19 +204,15 @@ namespace My.Scripts.Core.Pages
 
         private IEnumerator CompleteRoutine()
         {   
-            SoundManager.Instance?.PlaySFX("공통_22");
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_22");
             yield return CoroutineData.GetWaitForSeconds(1.0f);
             CompleteStep();
         }
 
-        /// <summary> 
-        /// 점등 연출 (Delay + Fade In)
-        /// </summary>
         private IEnumerator LightOnRoutine(Image back, Image light, float delay)
         {
             if (!back || !light) yield break;
             
-            // 계산된 시간만큼 대기 (페이지 전환 직후 즉시 점등 방지)
             if (delay > 0f) yield return CoroutineData.GetWaitForSeconds(delay);
 
             light.gameObject.SetActive(true);
@@ -178,7 +221,7 @@ namespace My.Scripts.Core.Pages
             light.color = cl;
 
             float t = 0f;
-            float duration = 1.0f; // 1초 페이드 인
+            float duration = 1.0f; 
 
             while (t < duration)
             {
@@ -194,7 +237,6 @@ namespace My.Scripts.Core.Pages
             cl.a = 1f;
             light.color = cl;
             
-            // 페이드 연출이 완전히 끝난 후 완료 조건을 체크
             CheckCompletion();
         }
 
