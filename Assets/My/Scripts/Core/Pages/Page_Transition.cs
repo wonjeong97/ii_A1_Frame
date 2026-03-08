@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Data;
 using My.Scripts.Global;
-using My.Scripts.Timelapse;
+using My.Scripts.Hardware; 
 using UnityEngine.SceneManagement;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -14,56 +14,88 @@ namespace My.Scripts.Core.Pages
     public class Page_Transition : PopupGamePage<TransitionPageData>
     {
         [Header("Mode Settings")]
-        [SerializeField] private bool autoPass = true; // 자동 넘김 여부
-        [SerializeField] private float autoPassDelay = 4.0f; // 자동 넘김 대기 시간
-        
-        [Tooltip("체크하면 종료 시 텍스트가 사라지지 않고 유지됩니다. (암전 전환 시 체크)")]
-        [SerializeField] private bool keepContentOnFinish; // 종료 시 콘텐츠 유지 여부
+        [SerializeField] private bool autoPass = true; 
+        [SerializeField] private float autoPassDelay = 4.0f; 
+        [SerializeField] private bool keepContentOnFinish; 
+
+        [Header("Arduino Integration")]
+        [Tooltip("체크 시 카메라 연출 페이지로 동작하여, 등장 시 사운드/LED를 켜고 아두이노의 Shot 버튼 입력을 대기합니다.")]
+        [SerializeField] private bool waitForShotButton = false;
 
         [Header("Common UI")] 
-        [SerializeField] private Text descriptionText; // 설명 텍스트
-        [SerializeField] private CanvasGroup contentGroup; // 콘텐츠 그룹
+        [SerializeField] private Text descriptionText; 
+        [SerializeField] private CanvasGroup contentGroup; 
 
         [Header("Intro Mode UI (Optional)")]
-        [SerializeField] private Text playerAName; // 플레이어 A 이름
-        [SerializeField] private Text playerBName; // 플레이어 B 이름
-        [SerializeField] private CanvasGroup namesGroup; // 이름 그룹
+        [SerializeField] private Text playerAName; 
+        [SerializeField] private Text playerBName; 
+        [SerializeField] private CanvasGroup namesGroup; 
 
-        private bool _isCompleted; // 완료 여부
-        private float _enterTime; // 진입 시간
+        private bool _isCompleted; 
+        private float _enterTime; 
 
-        /// <summary> 데이터 설정: 텍스트 및 팝업 메시지 적용 </summary>
         protected override void SetupData(TransitionPageData data)
         {
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-
-            // 플레이어 이름 데이터 적용 (옵션)
             if (playerAName) UIManager.Instance.SetText(playerAName.gameObject, data.playerAName);
             if (playerBName) UIManager.Instance.SetText(playerBName.gameObject, data.playerBName);
 
-            // 팝업 메시지 설정 (부모 메서드)
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary>  페이지 진입: 상태 초기화 및 연출 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             _isCompleted = false;
             _enterTime = Time.time;
 
-            // 팝업 타이머 초기화
             ResetIdleState(true);
 
-            // UI 초기화
             if (contentGroup) contentGroup.alpha = 0f;
             if (namesGroup) namesGroup.alpha = 0f;
 
             PlaySFXOnEnter();
             
-            // 기존 리얼타임 변환 시작 로직은 Page_Camera의 OnExit 시점으로 이동됨
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+                ArduinoManager.Instance.OnHardwareInput += HandleArduinoInput;
+            }
             
             StartCoroutine(SequenceRoutine());
+        }
+
+        public override void OnExit()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+            base.OnExit();
+        }
+
+        private void OnDestroy()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+        }
+
+        private void HandleArduinoInput(string input, bool isLeft)
+        {
+            if (_isCompleted) return;
+
+            // 카메라 대기 모드일 때 ShotOn 입력 감지
+            if (waitForShotButton && input == "ShotOn")
+            {
+                ProcessManualNext();
+            }
+            // 일반 대기 모드일 때 아무 버튼이나 누르면 스킵
+            else if (!waitForShotButton && input.EndsWith("On"))
+            {
+                ProcessManualNext();
+            }
         }
 
         private void PlaySFXOnEnter()
@@ -80,69 +112,93 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
         private void Update()
         {
             if (_isCompleted) return;
             if (Time.time - _enterTime < 1.5f) return; // 진입 직후 오입력 방지
 
-            // 1. 입력 감지 (Space 키 또는 기타 입력)
             if (Input.anyKey || Input.touchCount > 0)
             {
-                // 입력 시 리셋 타이머 초기화 (부드럽게)
                 ResetIdleState(false);
 
-                // Space 키 입력 시 다음 단계로 진행 (수동 넘김)
-                if (Input.GetKeyDown(KeyCode.Space))
+                // 스페이스바를 누르거나, waitForShotButton이 아닐때의 터치 입력 시 넘김 처리
+                if (Input.GetKeyDown(KeyCode.Space) || !waitForShotButton)
                 {
-                    _isCompleted = true;
-                    CompleteStep();
+                    ProcessManualNext();
                 }
             }
             else
             {
-                // 2. 비활성 시간 누적 (부모 메서드)
                 UpdateInactivity();
             }
         }
 
-        /// <summary>  연출 시퀀스 (등장 -> 대기 -> 퇴장) </summary>
+        private void ProcessManualNext()
+        {
+            if (_isCompleted) return;
+            ResetIdleState(false);
+            _isCompleted = true;
+
+            // [추가] 수동/입력으로 넘어갈 때 LED 끄기
+            if (waitForShotButton && ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth("LEDShotOff");
+            }
+
+            StartCoroutine(FinishRoutine());
+        }
+
         private IEnumerator SequenceRoutine()
         {
-            // 1. 콘텐츠 등장
             yield return StartCoroutine(FadeGroup(contentGroup, 0f, 1f, 1f));
             if (namesGroup)
             {
                 yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 1f));
             }
             
-            // 2. 대기
+            // [추가] 연출 등장 직후 카메라 샷 버튼 조명 및 사운드 켜기
+            if (waitForShotButton && ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth("SoundOn");
+                ArduinoManager.Instance.SendCommandToBoth("LEDShotOn");
+            }
+
             if (autoPass)
             {
                 yield return CoroutineData.GetWaitForSeconds(autoPassDelay);
-            }
-
-            // 3. 종료 처리
-            if (!_isCompleted && autoPass) 
-            {
-                // 유지 옵션이 꺼져있을 때만 페이드 아웃
-                if (!keepContentOnFinish)
-                {
-                    if (descriptionText)
-                    {
-                        yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.5f));
-                        if (namesGroup)
-                        {
-                            yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.5f));
-                        }
-                    }
-                }
                 
-                CompleteStep();
+                if (!_isCompleted)
+                {
+                    _isCompleted = true;
+                    
+                    // [추가] 자동 넘김 시 LED 끄기
+                    if (waitForShotButton && ArduinoManager.Instance)
+                    {
+                        ArduinoManager.Instance.SendCommandToBoth("LEDShotOff");
+                    }
+
+                    yield return StartCoroutine(FinishRoutine());
+                }
             }
         }
 
-        /// <summary> 캔버스 그룹 페이드 코루틴 </summary>
+        private IEnumerator FinishRoutine()
+        {
+            if (!keepContentOnFinish)
+            {
+                if (descriptionText)
+                {
+                    yield return StartCoroutine(FadeGroup(contentGroup, 1f, 0f, 0.5f));
+                    if (namesGroup)
+                    {
+                        yield return StartCoroutine(FadeGroup(namesGroup, 1f, 0f, 0.5f));
+                    }
+                }
+            }
+            
+            CompleteStep();
+        }
+
         private IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration)
         {
             if (!cg) yield break;

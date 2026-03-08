@@ -306,6 +306,7 @@ MonoBehaviour:
   autoPass: 0
   autoPassDelay: 4
   keepContentOnFinish: 0
+  waitForShotButton: 1
   descriptionText: {fileID: 8378860592891711516}
   contentGroup: {fileID: 2589233484698007269}
   playerAName: {fileID: 0}
@@ -4072,6 +4073,7 @@ MonoBehaviour:
   autoPass: 1
   autoPassDelay: 4
   keepContentOnFinish: 0
+  waitForShotButton: 0
   descriptionText: {fileID: 722194469658891940}
   contentGroup: {fileID: 0}
   playerAName: {fileID: 0}

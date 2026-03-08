@@ -1,6 +1,7 @@
 using System.Collections;
 using My.Scripts.Core.Data;
 using My.Scripts.Global;
+using My.Scripts.Hardware;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.UI;
@@ -12,20 +13,19 @@ namespace My.Scripts.Core.Pages
     public class Page_QnA : PopupGamePage<QnAPageData>
     {
         [Header("UI References")] 
-        [SerializeField] private Text descriptionText; // 설명 텍스트
-        [SerializeField] private Text questionText; // 질문 텍스트
-        [SerializeField] private Text[] answerTexts; // 답변 텍스트 배열
+        [SerializeField] private Text descriptionText; 
+        [SerializeField] private Text questionText; 
+        [SerializeField] private Text[] answerTexts; 
 
         [Header("Canvas Groups")] 
-        [SerializeField] private CanvasGroup descriptionGroup; // 설명 그룹
-        [SerializeField] private CanvasGroup questionGroup; // 질문 그룹
-        [SerializeField] private CanvasGroup answerGroup; // 답변 그룹
+        [SerializeField] private CanvasGroup descriptionGroup; 
+        [SerializeField] private CanvasGroup questionGroup; 
+        [SerializeField] private CanvasGroup answerGroup; 
 
-        private Coroutine _sequenceRoutine; // 등장 연출 코루틴
-        private bool _isCompleted; // 단계 완료 여부
-        private bool _isInputEnabled; // 입력 허용 여부
+        private Coroutine _sequenceRoutine; 
+        private bool _isCompleted; 
+        private bool _isInputEnabled; 
 
-        /// <summary>  데이터 설정: 텍스트 UI 적용 및 팝업 메시지 설정 </summary>
         protected override void SetupData(QnAPageData data)
         {
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
@@ -45,109 +45,151 @@ namespace My.Scripts.Core.Pages
                 }
             }
             
-            // 팝업 메시지 설정
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary> 페이지 진입: 상태 초기화 및 등장 연출 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             _isCompleted = false;
             _isInputEnabled = false;
             
-            // 팝업 즉시 끄기 및 타이머 초기화
             ResetIdleState(true);
 
-            // 그룹 투명도 초기화
             SetGroupAlpha(questionGroup, 0f);
             SetGroupAlpha(answerGroup, 0f);
             SetGroupAlpha(descriptionGroup, 0f);
+
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+                ArduinoManager.Instance.OnHardwareInput += HandleArduinoInput;
+            }
 
             if (_sequenceRoutine != null) StopCoroutine(_sequenceRoutine);
             _sequenceRoutine = StartCoroutine(ShowSequence());
         }
 
-        /// <summary>  매 프레임 업데이트: 입력 감지 및 비활성 체크 </summary>
+        public override void OnExit()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+            base.OnExit();
+        }
+
+        private void OnDestroy()
+        {
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+            }
+        }
+
         private void Update()
         {
             if (_isCompleted) return;
 
-            // 1. 입력 감지
-            if (Input.anyKey || Input.touchCount > 0)
+            bool inputDetected = false;
+
+            if (_isInputEnabled)
             {
-                // 입력 시 부드럽게 리셋 취소
-                ResetIdleState(false);
-                
-                // 정답 선택 로직
-                if (_isInputEnabled)
+                int selectedValue = 0;
+                string side = string.Empty;
+
+                // Left 디버그 (Q W E R T)
+                if (Input.GetKeyDown(KeyCode.Q)) { selectedValue = 1; side = "left"; }
+                else if (Input.GetKeyDown(KeyCode.W)) { selectedValue = 2; side = "left"; }
+                else if (Input.GetKeyDown(KeyCode.E)) { selectedValue = 3; side = "left"; }
+                else if (Input.GetKeyDown(KeyCode.R)) { selectedValue = 4; side = "left"; }
+                else if (Input.GetKeyDown(KeyCode.T)) { selectedValue = 5; side = "left"; }
+                // Right 디버그 (Y U I O P)
+                else if (Input.GetKeyDown(KeyCode.Y)) { selectedValue = 1; side = "right"; }
+                else if (Input.GetKeyDown(KeyCode.U)) { selectedValue = 2; side = "right"; }
+                else if (Input.GetKeyDown(KeyCode.I)) { selectedValue = 3; side = "right"; }
+                else if (Input.GetKeyDown(KeyCode.O)) { selectedValue = 4; side = "right"; }
+                else if (Input.GetKeyDown(KeyCode.P)) { selectedValue = 5; side = "right"; }
+
+                if (selectedValue != 0)
                 {
-                    HandleSelectionInput();
+                    inputDetected = true;
+                    ProcessInput(selectedValue, side);
                 }
+            }
+
+            if (inputDetected || Input.anyKey || Input.touchCount > 0)
+            {
+                ResetIdleState(false);
             }
             else
             {
-                // 2. 비활성 시간 누적 (부모 메서드)
-                // 입력이 허용되지 않은 상태(_isInputEnabled == false)라면 타이머를 차단함
                 UpdateInactivity(!_isInputEnabled);
             }
         }
 
-        /// <summary>  플레이어의 키 입력(숫자키)에 따라 답변을 선택 처리 </summary>
-        private void HandleSelectionInput()
+        private void HandleArduinoInput(string input, bool isLeft)
         {
-            int selectedValue = 0;
-            string side = "";
+            if (_isCompleted || !_isInputEnabled) return;
 
-            // Left (1~5) -> Value (1~5)
-            if (Input.GetKeyDown(KeyCode.Alpha1)) { selectedValue = 1; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha2)) { selectedValue = 2; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha3)) { selectedValue = 3; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha4)) { selectedValue = 4; side = "left"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha5)) { selectedValue = 5; side = "left"; }
-            
-            // Right (6~0) -> Value (1~5)
-            else if (Input.GetKeyDown(KeyCode.Alpha6)) { selectedValue = 1; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha7)) { selectedValue = 2; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha8)) { selectedValue = 3; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha9)) { selectedValue = 4; side = "right"; }
-            else if (Input.GetKeyDown(KeyCode.Alpha0)) { selectedValue = 5; side = "right"; }
+            int selectedValue = 0;
+            string side = isLeft ? "left" : "right";
+
+            if (input == "1On") selectedValue = 1;
+            else if (input == "2On") selectedValue = 2;
+            else if (input == "3On") selectedValue = 3;
+            else if (input == "4On") selectedValue = 4;
+            else if (input == "5On") selectedValue = 5;
 
             if (selectedValue != 0)
             {
-                _isCompleted = true;
-                
-                // API 호출 (튜토리얼 씬(qNo == 0)이 아닐 때만 전송)
-                if (GameManager.Instance && LevelManager.Instance)
-                {
-                    int qNo = LevelManager.Instance.CurrentQuestionNumber;
-                    if (qNo > 0)
-                    {
-                        GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
-                    }
-                }
-
-                CompleteStep(side == "left" ? 1 : 2); // 1: Player A 완료 정보, 2: Player B 완료 정보
+                ProcessInput(selectedValue, side);
             }
         }
 
-        /// <summary>  페이지 진입 시 UI 요소들을 순차적으로 페이드 인 </summary>
+        private void ProcessInput(int selectedValue, string side)
+        {
+            ResetIdleState(false);
+            _isCompleted = true;
+            
+            // [수정] 입력이 들어온 쪽의 아두이노 LED만 개별적으로 끕니다.
+            if (ArduinoManager.Instance)
+            {
+                if (side == "left") ArduinoManager.Instance.SendCommandToLeft("LEDAllOff");
+                else ArduinoManager.Instance.SendCommandToRight("LEDAllOff");
+            }
+            
+            if (GameManager.Instance && LevelManager.Instance)
+            {
+                int qNo = LevelManager.Instance.CurrentQuestionNumber;
+                if (qNo > 0)
+                {
+                    GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
+                }
+            }
+
+            CompleteStep(side == "left" ? 1 : 2); 
+        }
+
         private IEnumerator ShowSequence()
         {
-            // 페이지 전체 페이드 완료 대기
             if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
             
-            SoundManager.Instance?.PlaySFX("공통_8");
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_8");
             
-            // 순차 등장 (FadeContent 사용)
             yield return StartCoroutine(FadeContent(questionGroup, 0f, 1f, 1f));
             yield return StartCoroutine(FadeContent(answerGroup, 0f, 1f, 1f));
             yield return StartCoroutine(FadeContent(descriptionGroup, 0f, 1f, 1f));
             
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth("SoundOn");
+                ArduinoManager.Instance.SendCommandToBoth("LEDAllOn");
+            }
+            
             _isInputEnabled = true;
         }
 
-        /// <summary> 콘텐츠 CanvasGroup의 투명도를 조절하는 유틸리티 코루틴 </summary>
         private IEnumerator FadeContent(CanvasGroup cg, float start, float end, float duration)
         {
             if (!cg) yield break;
@@ -166,7 +208,6 @@ namespace My.Scripts.Core.Pages
             if (end <= 0f) cg.gameObject.SetActive(false);
         }
 
-        /// <summary>  CanvasGroup의 투명도를 즉시 설정 </summary>
         private void SetGroupAlpha(CanvasGroup cg, float alpha)
         {
             if (cg)
