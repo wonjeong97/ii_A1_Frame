@@ -119,8 +119,8 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             if (txt && GameManager.Instance)
             {
-                txt.text = txt.text.Replace("{nameA}", GameManager.Instance.PlayerALastName)
-                                   .Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+                txt.text = txt.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName)
+                                   .Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
             }
         }
         

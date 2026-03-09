@@ -30,7 +30,7 @@
       },
       {
         "name": "04",
-        "position": {"x": 1650, "y": -760},
+        "position": {"x": 1750, "y": -760},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "느낌이",
         "fontName": "font7",

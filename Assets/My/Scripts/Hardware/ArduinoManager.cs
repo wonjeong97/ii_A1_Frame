@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.IO.Ports;
 using UnityEngine;
+using My.Scripts.Global;
+using Wonjeong.Utils;
 
 namespace My.Scripts.Hardware
 {
@@ -12,7 +14,6 @@ namespace My.Scripts.Hardware
     {
         public static ArduinoManager Instance;
 
-        // 하드웨어 입력 발생 시 다른 스크립트(페이지 등)에 알려주기 위한 이벤트
         public Action<string, bool> OnHardwareInput;
 
         private SerialPort _leftPort;
@@ -42,31 +43,23 @@ namespace My.Scripts.Hardware
 
         private void Update()
         {
-            // 1. 왼쪽 아두이노에서 들어온 신호 읽기
             if (IsLeftConnected && _leftPort.BytesToRead > 0)
             {
                 try
                 {
                     string leftInput = _leftPort.ReadLine().Trim();
-                    if (!string.IsNullOrEmpty(leftInput))
-                    {
-                        ProcessHardwareInput(leftInput, true);
-                    }
+                    if (!string.IsNullOrEmpty(leftInput)) ProcessHardwareInput(leftInput, true);
                 }
                 catch (TimeoutException) { }
                 catch (Exception e) { Debug.LogWarning($"[ArduinoManager] Left 수신 예외: {e.Message}"); }
             }
 
-            // 2. 오른쪽 아두이노에서 들어온 신호 읽기
             if (IsRightConnected && _rightPort.BytesToRead > 0)
             {
                 try
                 {
                     string rightInput = _rightPort.ReadLine().Trim();
-                    if (!string.IsNullOrEmpty(rightInput))
-                    {
-                        ProcessHardwareInput(rightInput, false);
-                    }
+                    if (!string.IsNullOrEmpty(rightInput)) ProcessHardwareInput(rightInput, false);
                 }
                 catch (TimeoutException) { }
                 catch (Exception e) { Debug.LogWarning($"[ArduinoManager] Right 수신 예외: {e.Message}"); }
@@ -76,9 +69,8 @@ namespace My.Scripts.Hardware
         private void ProcessHardwareInput(string input, bool isLeft)
         {
             string sideName = isLeft ? "Left" : "Right";
-            Debug.Log($"[{sideName} 아두이노] 버튼 입력 감지됨: {input}");
+            Debug.Log($"[{sideName} 아두이노]>> {input}");
 
-            // 이벤트를 발생시켜 구독 중인 페이지들에게 입력된 문자열과 방향을 전달
             if (OnHardwareInput != null)
             {
                 OnHardwareInput.Invoke(input, isLeft);
@@ -105,12 +97,11 @@ namespace My.Scripts.Hardware
                     continue;
                 }
 
-                yield return new WaitForSeconds(2.5f);
+                yield return CoroutineData.GetWaitForSeconds(2.5f);
 
                 string response = string.Empty;
                 try
                 {
-                    // [수정됨] ReadLine() 대신 ReadExisting()을 사용하여 버퍼에 쌓인 모든 로그를 한 번에 긁어옵니다.
                     if (tempPort.BytesToRead > 0) 
                     {
                         response = tempPort.ReadExisting(); 
@@ -119,13 +110,14 @@ namespace My.Scripts.Hardware
                 catch (TimeoutException) { Debug.LogWarning($"[ArduinoManager] 응답 타임아웃 ({portName})"); }
                 catch (Exception e) { Debug.LogWarning($"[ArduinoManager] 읽기 예외 ({portName}): {e.Message}"); }
 
-                if (response.Contains("Left_Arduino"))
+                // 상수 사용
+                if (response.Contains(GameConstants.Hardware.LeftArduino))
                 {
                     tempPort.ReadTimeout = 10; 
                     _leftPort = tempPort;
                     Debug.Log($"[ArduinoManager] Left 아두이노 연결 성공: {portName}");
                 }
-                else if (response.Contains("Right_Arduino"))
+                else if (response.Contains(GameConstants.Hardware.RightArduino))
                 {
                     tempPort.ReadTimeout = 10;
                     _rightPort = tempPort;

@@ -156,12 +156,10 @@ namespace My.Scripts.Core.Pages
             int startX = GetGridCenterX();
             int startY = GetGridCenterY();
 
-            // 시작 지점이 정답 칸일 경우, 인접한(+-1) 오답 칸을 새로운 시작 지점으로 탐색합니다.
             if (_questionMap != null && _questionMap[startX, startY])
             {
                 bool foundSafeSpot = false;
                 
-                // 상하좌우 및 대각선(+-1) 방향 오프셋
                 Vector2Int[] offsets = new Vector2Int[] 
                 {
                     new Vector2Int(0, 1), new Vector2Int(0, -1), 
@@ -175,10 +173,8 @@ namespace My.Scripts.Core.Pages
                     int nx = startX + offset.x;
                     int ny = startY + offset.y;
 
-                    // 그리드 범위 내인지 확인
                     if (nx >= 0 && nx < gridSizeX && ny >= 0 && ny < gridSizeY)
                     {
-                        // 정답이 아닌 칸(오답 칸)을 찾으면 시작 위치로 갱신
                         if (!_questionMap[nx, ny])
                         {
                             startX = nx;
@@ -799,8 +795,10 @@ namespace My.Scripts.Core.Pages
             CleanupResources();
         }
 
-        private void OnDestroy()
+        // --- 부모 클래스의 OnDestroy를 명시적으로 override 처리 ---
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             CleanupResources();
         }
 

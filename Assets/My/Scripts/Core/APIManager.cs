@@ -104,7 +104,6 @@ namespace My.Scripts.Core
 
                     userData.IDX_USER = ParseIntSafe(response, firstRow, "IDX_USER");
                     userData.CARTRIDGE = ParseStringSafe(response, firstRow, "CARTRIDGE"); 
-                    
                     userData.UID_LEFT = ParseStringSafe(response, firstRow, "UID_LEFT");
                     userData.UID_RIGHT = ParseStringSafe(response, firstRow, "UID_RIGHT");
                     userData.LANG = ParseStringSafe(response, firstRow, "LANG");
@@ -129,52 +128,55 @@ namespace My.Scripts.Core
                     userData.PIECE_D2 = ParseIntSafe(response, firstRow, "PIECE_D2");
                     userData.PIECE_D3 = ParseIntSafe(response, firstRow, "PIECE_D3");
 
-                    if (GameManager.Instance)
-                    {   
-                        GameManager.Instance.CurrentUserId = userData.IDX_USER;
-                        GameManager.Instance.Cartridge = userData.CARTRIDGE; 
-                        
-                        GameManager.Instance.PlayerAUid = userData.UID_LEFT;
-                        GameManager.Instance.PlayerBUid = userData.UID_RIGHT;
+                    Debug.Log($"[APIManager] 유저 데이터 로드 완료!\n" +
+                              $"- 유저 인덱스: {userData.IDX_USER}\n" +
+                              $"- 이름: {userData.RESERVATION_LAST_NAME_LEFT} / {userData.RESERVATION_LAST_NAME_RIGHT}");
 
-                        if (!string.IsNullOrWhiteSpace(userData.LANG)) GameManager.Instance.CurrentLanguage = userData.LANG.Trim();
+                    // [수정] 데이터 저장을 SessionManager로 연결
+                    if (SessionManager.Instance)
+                    {   
+                        SessionManager.Instance.CurrentUserId = userData.IDX_USER;
+                        SessionManager.Instance.Cartridge = userData.CARTRIDGE; 
+                        SessionManager.Instance.PlayerAUid = userData.UID_LEFT;
+                        SessionManager.Instance.PlayerBUid = userData.UID_RIGHT;
+
+                        if (!string.IsNullOrWhiteSpace(userData.LANG)) SessionManager.Instance.CurrentLanguage = userData.LANG.Trim();
 
                         switch (userData.RELATION)
                         {
-                            case 1: GameManager.Instance.currentUserType = UserType.A; break;
-                            case 2: GameManager.Instance.currentUserType = UserType.B; break;
-                            case 3: GameManager.Instance.currentUserType = UserType.C; break;
-                            case 4: GameManager.Instance.currentUserType = UserType.D; break;
-                            case 5: GameManager.Instance.currentUserType = UserType.E; break;
-                            case 6: GameManager.Instance.currentUserType = UserType.F; break;
-                            default: GameManager.Instance.currentUserType = UserType.A; break;
+                            case 1: SessionManager.Instance.CurrentUserType = UserType.A; break;
+                            case 2: SessionManager.Instance.CurrentUserType = UserType.B; break;
+                            case 3: SessionManager.Instance.CurrentUserType = UserType.C; break;
+                            case 4: SessionManager.Instance.CurrentUserType = UserType.D; break;
+                            case 5: SessionManager.Instance.CurrentUserType = UserType.E; break;
+                            case 6: SessionManager.Instance.CurrentUserType = UserType.F; break;
+                            default: SessionManager.Instance.CurrentUserType = UserType.A; break;
                         }
 
                         if (!string.IsNullOrEmpty(userData.RESERVATION_LAST_NAME_LEFT))
-                            GameManager.Instance.PlayerALastName = userData.RESERVATION_LAST_NAME_LEFT;
+                            SessionManager.Instance.PlayerALastName = userData.RESERVATION_LAST_NAME_LEFT;
                         if (!string.IsNullOrEmpty(userData.RESERVATION_LAST_NAME_RIGHT))
-                            GameManager.Instance.PlayerBLastName = userData.RESERVATION_LAST_NAME_RIGHT;
+                            SessionManager.Instance.PlayerBLastName = userData.RESERVATION_LAST_NAME_RIGHT;
                         
-                        GameManager.Instance.PlayerAColor = userData.COLOR_LEFT;
-                        GameManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
+                        SessionManager.Instance.PlayerAColor = userData.COLOR_LEFT;
+                        SessionManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
                         
-                        GameManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
-                        GameManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
-                        GameManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
-                        GameManager.Instance.PieceB1 = Mathf.Max(0, userData.PIECE_B1);
-                        GameManager.Instance.PieceB2 = Mathf.Max(0, userData.PIECE_B2);
-                        GameManager.Instance.PieceB3 = Mathf.Max(0, userData.PIECE_B3);
-                        GameManager.Instance.PieceC1 = Mathf.Max(0, userData.PIECE_C1);
-                        GameManager.Instance.PieceC2 = Mathf.Max(0, userData.PIECE_C2);
-                        GameManager.Instance.PieceC3 = Mathf.Max(0, userData.PIECE_C3);
-                        GameManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
-                        GameManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
-                        GameManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
+                        SessionManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
+                        SessionManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
+                        SessionManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
+                        SessionManager.Instance.PieceB1 = Mathf.Max(0, userData.PIECE_B1);
+                        SessionManager.Instance.PieceB2 = Mathf.Max(0, userData.PIECE_B2);
+                        SessionManager.Instance.PieceB3 = Mathf.Max(0, userData.PIECE_B3);
+                        SessionManager.Instance.PieceC1 = Mathf.Max(0, userData.PIECE_C1);
+                        SessionManager.Instance.PieceC2 = Mathf.Max(0, userData.PIECE_C2);
+                        SessionManager.Instance.PieceC3 = Mathf.Max(0, userData.PIECE_C3);
+                        SessionManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
+                        SessionManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
+                        SessionManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
 
-                        GameManager.Instance.IsOtherCartridgeContentsCleared = false;
+                        SessionManager.Instance.IsOtherCartridgeContentsCleared = false;
                         if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
                         {
-                            // 첫 번째 API에서 파싱해둔 response 전체 원본(END 값들)을 코루틴으로 함께 넘깁니다.
                             StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE, response, firstRow));
                         }
                     }
@@ -182,18 +184,16 @@ namespace My.Scripts.Core
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIManager] 유저 데이터 JSON 파싱 중 에러 발생: {e.Message}");
-                if (GameManager.Instance) GameManager.Instance.IsOtherCartridgeContentsCleared = false;
+                Debug.LogError($"[APIManager] JSON 파싱 중 에러 발생: {e.Message}");
+                if (SessionManager.Instance) SessionManager.Instance.IsOtherCartridgeContentsCleared = false;
             }
         }
 
-        // 두 번째 API를 호출하여 "감시해야 할 타겟 목록" 문자열을 받아옵니다.
         private IEnumerator CheckOtherCartridgeContentsRoutine(string cartridgeStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
         {
-            ApiSettings config = GameManager.Instance.ApiConfig;
-            if (config == null) yield break;
+            if (!GameManager.Instance || GameManager.Instance.ApiConfig == null) yield break;
 
-            string url = $"{config.GetCartridgeContentUrl}?cartridge={UnityWebRequest.EscapeURL(cartridgeStr)}";
+            string url = $"{GameManager.Instance.ApiConfig.GetCartridgeContentUrl}?cartridge={UnityWebRequest.EscapeURL(cartridgeStr)}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
@@ -202,11 +202,11 @@ namespace My.Scripts.Core
 
                 if (req.result == UnityWebRequest.Result.Success)
                 {
-                    // 두 번째 API의 응답(예: "A1,B1,C1")
                     string targetListStr = req.downloadHandler.text;
-
-                    // 감시할 목록(targetListStr)과 END 값들이 들어있는 첫 번째 API 원본(firstApiResponse)을 엮어서 비교합니다.
-                    GameManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(targetListStr, firstApiResponse, firstApiRow);
+                    if (SessionManager.Instance)
+                    {
+                        SessionManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(targetListStr, firstApiResponse, firstApiRow);
+                    }
                 }
                 else
                 {
@@ -215,50 +215,28 @@ namespace My.Scripts.Core
             }
         }
 
-        /// <summary>
-        /// 두 번째 API에서 받은 목록("A1, B1...")을 순회하며, 
-        /// 첫 번째 API의 원본 JSON 데이터에서 해당 모듈들의 END 값이 존재하는지 검사합니다.
-        /// </summary>
         private bool ParseOtherCartridgeClearState(string targetListStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
         {
             try
             {
-                Debug.Log($"[APIManager] 두 번째 API(감시 목록) 응답 데이터: {targetListStr}");
-
-                // 비어있거나 HTML 에러가 왔다면 감시 불가 처리
                 if (string.IsNullOrWhiteSpace(targetListStr) || targetListStr.Trim().StartsWith("<")) return false;
 
-                // 1. 감시해야 할 타겟 목록을 분리합니다. (예: "A1", "B1", "C1")
                 string[] targetCodes = targetListStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                
-                string currentModule = "A1"; 
-                if (GameManager.Instance && !string.IsNullOrEmpty(GameManager.Instance.CurrentModuleCode))
-                {
-                    currentModule = GameManager.Instance.CurrentModuleCode.ToUpper();
-                }
+                string currentModule = SessionManager.Instance ? SessionManager.Instance.CurrentModuleCode.ToUpper() : "A1"; 
 
-                // 2. 타겟 목록을 하나씩 돕니다.
                 foreach (string target in targetCodes)
                 {
                     string expectedCode = target.Trim().ToUpper(); 
-                    
-                    // 현재 플레이 중인 모듈(예: A1)은 감시 대상에서 제외
                     if (expectedCode == currentModule) continue;
 
-                    // 3. 첫 번째 API 데이터(firstApiResponse)에서 "END_B1", "END_C1" 등의 값을 콕 집어서 뽑아옵니다.
                     string endColumnName = $"END_{expectedCode}";
                     string endValue = ParseStringSafe(firstApiResponse, firstApiRow, endColumnName);
 
-                    // 4. END 값이 비어있거나 "null" 텍스트라면 아직 클리어하지 않은 것!
                     if (string.IsNullOrWhiteSpace(endValue) || endValue.Equals("null", StringComparison.OrdinalIgnoreCase))
                     {
-                        Debug.Log($"[APIManager] 특별 엔딩 불가: 감시 대상 모듈 {expectedCode}이(가) 아직 클리어되지 않았습니다. (END 값이 없음)");
                         return false; 
                     }
                 }
-
-                // 모든 타겟 모듈의 END 값이 채워져 있음
-                Debug.Log("[APIManager] 감시 대상 카트리지 목록의 모든 콘텐츠 클리어 확인됨! (특별 엔딩 조건 충족)");
                 return true;
             }
             catch (Exception e)

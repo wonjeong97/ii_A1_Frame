@@ -56,43 +56,41 @@ namespace My.Scripts.Core.Pages
 
             PlaySFXOnEnter();
             
-            if (ArduinoManager.Instance)
-            {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
-                ArduinoManager.Instance.OnHardwareInput += HandleArduinoInput;
-            }
-            
             StartCoroutine(SequenceRoutine());
         }
 
         public override void OnExit()
         {
-            if (ArduinoManager.Instance)
+            bool isQ15Page6 = false;
+            if (LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 15)
             {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
+                if (gameObject.name.Contains("Page6"))
+                {
+                    isQ15Page6 = true;
+                }
             }
-            base.OnExit();
+
+            if (isQ15Page6)
+            {
+                StopResetSequence(true);
+                UnsubscribeHardwareInput();
+            }
+            else
+            {
+                base.OnExit();
+            }
         }
 
-        private void OnDestroy()
-        {
-            if (ArduinoManager.Instance)
-            {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
-            }
-        }
-
-        private void HandleArduinoInput(string input, bool isLeft)
+        protected override void OnHardwareInput(string input, bool isLeft)
         {
             if (_isCompleted) return;
 
-            // 카메라 대기 모드일 때 ShotOn 입력 감지
-            if (waitForShotButton && input == "ShotOn")
+            // 상수 사용
+            if (waitForShotButton && input == GameConstants.Hardware.InputShotOn)
             {
                 ProcessManualNext();
             }
-            // 일반 대기 모드일 때 아무 버튼이나 누르면 스킵
-            else if (!waitForShotButton && input.EndsWith("On"))
+            else if (!waitForShotButton && input.EndsWith(GameConstants.Hardware.InputOnSuffix))
             {
                 ProcessManualNext();
             }
@@ -115,13 +113,12 @@ namespace My.Scripts.Core.Pages
         private void Update()
         {
             if (_isCompleted) return;
-            if (Time.time - _enterTime < 1.5f) return; // 진입 직후 오입력 방지
+            if (Time.time - _enterTime < 1.5f) return; 
 
             if (Input.anyKey || Input.touchCount > 0)
             {
                 ResetIdleState(false);
 
-                // 스페이스바를 누르거나, waitForShotButton이 아닐때의 터치 입력 시 넘김 처리
                 if (Input.GetKeyDown(KeyCode.Space) || !waitForShotButton)
                 {
                     ProcessManualNext();
@@ -139,10 +136,9 @@ namespace My.Scripts.Core.Pages
             ResetIdleState(false);
             _isCompleted = true;
 
-            // [추가] 수동/입력으로 넘어갈 때 LED 끄기
             if (waitForShotButton && ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.SendCommandToBoth("LEDShotOff");
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
             }
 
             StartCoroutine(FinishRoutine());
@@ -156,11 +152,10 @@ namespace My.Scripts.Core.Pages
                 yield return StartCoroutine(FadeGroup(namesGroup, 0f, 1f, 1f));
             }
             
-            // [추가] 연출 등장 직후 카메라 샷 버튼 조명 및 사운드 켜기
             if (waitForShotButton && ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.SendCommandToBoth("SoundOn");
-                ArduinoManager.Instance.SendCommandToBoth("LEDShotOn");
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdSoundOn);
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOn);
             }
 
             if (autoPass)
@@ -171,10 +166,9 @@ namespace My.Scripts.Core.Pages
                 {
                     _isCompleted = true;
                     
-                    // [추가] 자동 넘김 시 LED 끄기
                     if (waitForShotButton && ArduinoManager.Instance)
                     {
-                        ArduinoManager.Instance.SendCommandToBoth("LEDShotOff");
+                        ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
                     }
 
                     yield return StartCoroutine(FinishRoutine());
@@ -212,6 +206,26 @@ namespace My.Scripts.Core.Pages
             }
 
             cg.alpha = end;
+        }
+        
+        public IEnumerator FadeOutTextOnly(float duration)
+        {
+            if (!descriptionText) yield break;
+
+            Color c = descriptionText.color;
+            float startAlpha = c.a;
+            float t = 0f;
+
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                c.a = Mathf.Lerp(startAlpha, 0f, t / duration);
+                descriptionText.color = c;
+                yield return null;
+            }
+
+            c.a = 0f;
+            descriptionText.color = c;
         }
     }
 }

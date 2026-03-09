@@ -30,11 +30,13 @@
     {"key": "공통_8", "clipPath": "Sound/Anous_Sound_공통_8.mp3", "volume": 1.0},
     {"key": "공통_9", "clipPath": "Sound/Anous_Sound_공통_9.mp3", "volume": 1.0},
     {"key": "공통_10_3초", "clipPath": "Sound/Anous_Sound_공통_10_3초.mp3", "volume": 1.0},
+    {"key": "공통_10_5초", "clipPath": "Sound/Anous_Sound_공통_10_5초.mp3", "volume": 1.0},
     {"key": "공통_11", "clipPath": "Sound/Anous_Sound_공통_11.mp3", "volume": 1.0},
     {"key": "공통_12", "clipPath": "Sound/Anous_Sound_공통_12.mp3", "volume": 1.0},
     {"key": "공통_13", "clipPath": "Sound/Anous_Sound_공통_13.mp3", "volume": 1.0},
     {"key": "공통_14", "clipPath": "Sound/Anous_Sound_공통_14.mp3", "volume": 1.0},
     {"key": "공통_22", "clipPath": "Sound/Anous_Sound_공통_22.mp3", "volume": 1.0},
-    {"key": "공통_23", "clipPath": "Sound/Anous_Sound_공통_23.mp3", "volume": 1.0}
+    {"key": "공통_23", "clipPath": "Sound/Anous_Sound_공통_23.mp3", "volume": 1.0},
+    {"key": "키오스크_3", "clipPath": "Sound/Anous_Sound_키오스크_3.mp3", "volume": 1.0}
   ]
 }

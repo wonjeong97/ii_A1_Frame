@@ -58,9 +58,9 @@ namespace My.Scripts._01_Tutorial.Pages
             if (GameManager.Instance && _data != null)
             {
                 if (nicknameA && _data.nicknamePlayerA != null)
-                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", GameManager.Instance.PlayerALastName).Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
                 if (nicknameB && _data.nicknamePlayerB != null)
-                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", GameManager.Instance.PlayerALastName).Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
             }
 
             ResetIdleState(true);

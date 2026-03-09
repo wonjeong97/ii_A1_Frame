@@ -1,5 +1,6 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.IO;
 using My.Scripts.Core;
 using My.Scripts.Core.Data;
 using UnityEngine;
@@ -12,11 +13,10 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Global
 {   
-    public enum UserType
-    {
-        A, B, C, D, E, F
-    }
-
+    /// <summary>
+    /// 게임의 전반적인 상태(씬 전환, 대기 시간 체크, API 호출, 강제 종료 처리)를 관리합니다.
+    /// 플레이어의 개인 데이터는 SessionManager로 분리되었습니다.
+    /// </summary>
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance;
@@ -29,44 +29,8 @@ namespace My.Scripts.Global
         private float _fadeTime = 1.0f;
 
         public int firstTaggedPlayer = 0;
-        public UserType currentUserType = UserType.A;
-        
         public ApiSettings ApiConfig { get; private set; }
         
-        // --- API 연동 데이터 캐싱 ---
-        public int CurrentUserId { get; set; } 
-        public string PlayerAUid { get; set; } = string.Empty;
-        public string PlayerBUid { get; set; } = string.Empty;
-        public string CurrentLanguage { get; set; } = "ko";
-        public string PlayerALastName { get; set; } = "NoNameA";
-        public string PlayerBLastName { get; set; } = "NoNameB";
-        public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
-        public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
-
-        public string CurrentModuleCode { get; set; } = "A1";
-
-        // [추가] 카트리지 내 A1을 제외한 나머지 콘텐츠 클리어 여부
-        public string Cartridge { get; set; } = string.Empty;
-        public bool IsOtherCartridgeContentsCleared { get; set; } = false;
-
-        public int PieceA1 { get; set; }
-        public int PieceA2 { get; set; }
-        public int PieceA3 { get; set; }
-        public int PieceB1 { get; set; }
-        public int PieceB2 { get; set; }
-        public int PieceB3 { get; set; }
-        public int PieceC1 { get; set; }
-        public int PieceC2 { get; set; }
-        public int PieceC3 { get; set; }
-        public int PieceD1 { get; set; }
-        public int PieceD2 { get; set; }
-        public int PieceD3 { get; set; }
-
-        public int TotalPieces => PieceA2 + PieceA3 + 
-                                  PieceB1 + PieceB2 + PieceB3 + 
-                                  PieceC1 + PieceC2 + PieceC3 + 
-                                  PieceD1 + PieceD2 + PieceD3;
-
         [Header("Player Color Sprites")]
         public Sprite[] playerColorSprites;
 
@@ -76,6 +40,13 @@ namespace My.Scripts.Global
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                
+                // SessionManager 자동 생성 보장
+                if (!SessionManager.Instance)
+                {
+                    GameObject sessionObj = new GameObject("SessionManager");
+                    sessionObj.AddComponent<SessionManager>();
+                }
             }
             else
             {
@@ -187,15 +158,17 @@ namespace My.Scripts.Global
 
             firstTaggedPlayer = 0; 
             _currentInactivityTimer = 0f;
-            CurrentUserId = 0; 
+            
+            if (SessionManager.Instance) SessionManager.Instance.ClearSession(); 
 
             ChangeScene(GameConstants.Scene.Title);
         }
 
         public string GetLevelSuffix(int questionNumber)
         {
-            if (questionNumber <= 0) return ""; 
-            switch (currentUserType)
+            if (questionNumber <= 0 || !SessionManager.Instance) return ""; 
+            
+            switch (SessionManager.Instance.CurrentUserType)
             {
                 case UserType.A: return "_A"; 
                 case UserType.B: return (questionNumber == 4) ? "_B" : "_A";
@@ -214,14 +187,14 @@ namespace My.Scripts.Global
 
         public void SendResetStartAPI()
         {
-            if (CurrentUserId == 0) return;
-            StartCoroutine(ResetStartRoutine(CurrentUserId));
+            if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0) return;
+            StartCoroutine(ResetStartRoutine(SessionManager.Instance.CurrentUserId));
         }
 
         private IEnumerator ResetStartRoutine(int userId)
         {
             if (ApiConfig == null) yield break;
-            string url = $"{ApiConfig.ResetStartUrl}?idx_user={userId}&code={CurrentModuleCode.ToLower()}";
+            string url = $"{ApiConfig.ResetStartUrl}?idx_user={userId}&code={GameConstants.Module.Code.ToLower()}";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
@@ -231,14 +204,14 @@ namespace My.Scripts.Global
 
         public void SendExitRoomAPI()
         {
-            if (CurrentUserId == 0) return;
-            StartCoroutine(ExitRoomRoutine(CurrentUserId));
+            if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0) return;
+            StartCoroutine(ExitRoomRoutine(SessionManager.Instance.CurrentUserId));
         }
 
         private IEnumerator ExitRoomRoutine(int userId)
         {
             if (ApiConfig == null) yield break;
-            string url = $"{ApiConfig.ExitRoomUrl}?code={CurrentModuleCode.ToLower()}&idx_user={userId}";
+            string url = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={userId}";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
@@ -248,14 +221,14 @@ namespace My.Scripts.Global
 
         public void SendTimeUpdateAPI()
         {
-            if (CurrentUserId == 0) return;
-            StartCoroutine(TimeUpdateRoutine(CurrentUserId));
+            if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0) return;
+            StartCoroutine(TimeUpdateRoutine(SessionManager.Instance.CurrentUserId));
         }
 
         private IEnumerator TimeUpdateRoutine(int userId)
         {
             if (ApiConfig == null) yield break;
-            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={userId}&option=end&code={CurrentModuleCode.ToLower()}";
+            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={userId}&option=end&code={GameConstants.Module.Code.ToLower()}";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
@@ -265,14 +238,14 @@ namespace My.Scripts.Global
 
         public void SendValueUpdateAPI(int qNo, string side, int value)
         {
-            if (CurrentUserId == 0) return;
-            StartCoroutine(ValueUpdateRoutine(CurrentUserId, qNo, side, value));
+            if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0) return;
+            StartCoroutine(ValueUpdateRoutine(SessionManager.Instance.CurrentUserId, qNo, side, value));
         }
 
         private IEnumerator ValueUpdateRoutine(int userId, int qNo, string side, int value)
         {
             if (ApiConfig == null) yield break; 
-            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={userId}&q_no={qNo}&side={side}&code={CurrentModuleCode.ToLower()}&value={value}";
+            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={userId}&q_no={qNo}&side={side}&code={GameConstants.Module.Code.ToLower()}&value={value}";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
@@ -282,14 +255,14 @@ namespace My.Scripts.Global
 
         public void SendPieceUpdateAPI(int value)
         {
-            if (value < 0 || CurrentUserId == 0) return;
-            StartCoroutine(PieceUpdateRoutine(CurrentUserId, value));
+            if (value < 0 || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0) return;
+            StartCoroutine(PieceUpdateRoutine(SessionManager.Instance.CurrentUserId, value));
         }
 
         private IEnumerator PieceUpdateRoutine(int userId, int value)
         {
             if (ApiConfig == null) yield break;
-            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={userId}&code={CurrentModuleCode.ToLower()}&value={value}";
+            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={userId}&code={GameConstants.Module.Code.ToLower()}&value={value}";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
@@ -303,43 +276,60 @@ namespace My.Scripts.Global
 
         private void OnApplicationQuit()
         {
-            if (CurrentUserId != 0 && ApiConfig != null)
+            if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
             {   
-                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={CurrentUserId}&code={CurrentModuleCode.ToLower()}";
+                int uid = SessionManager.Instance.CurrentUserId;
+                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
                 using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
                 {   
                     req.timeout = 2;
-                    var op = req.SendWebRequest();
+                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
                     float deadline = Time.realtimeSinceStartup + 2.5f;
                     while (!op.isDone && Time.realtimeSinceStartup < deadline)
                     {
                         System.Threading.Thread.Sleep(10);
                     }
-
-                    if (!op.isDone)
-                    {
-                        req.Abort();
-                        Debug.LogWarning("[GameManager] OnApplicationQuit resetStart 요청 타임아웃");
-                    }
                 }
 
-                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={CurrentModuleCode.ToLower()}&idx_user={CurrentUserId}";
+                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
                 using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
                 {   
                     req.timeout = 2;
-                    var op = req.SendWebRequest();
+                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
                     float deadline = Time.realtimeSinceStartup + 2.5f;
                     while (!op.isDone && Time.realtimeSinceStartup < deadline)
                     {
                         System.Threading.Thread.Sleep(10);
                     }
-
-                    if (!op.isDone)
-                    {
-                        req.Abort();
-                        Debug.LogWarning("[GameManager] OnApplicationQuit exitRoom 요청 타임아웃");
-                    }
                 }
+            }
+
+            ClearSourceFolders();
+        }
+
+        private void ClearSourceFolders()
+        {
+            try
+            {
+                string dataPath = Application.dataPath;
+                DirectoryInfo parentDir = Directory.GetParent(dataPath);
+                string rootPath = parentDir != null ? parentDir.FullName : dataPath;
+                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+
+                string timelapseSource = Path.Combine(rootPath, "Timelapse", "Timelapse_Source", dateFolder);
+                string realtimeSource = Path.Combine(rootPath, "Timelapse", "Realtime_Source", dateFolder);
+
+                if (Directory.Exists(timelapseSource))
+                    foreach (string file in Directory.GetFiles(timelapseSource)) File.Delete(file);
+
+                if (Directory.Exists(realtimeSource))
+                    foreach (string file in Directory.GetFiles(realtimeSource)) File.Delete(file);
+
+                Debug.Log("[GameManager] 앱 종료 시 소스 폴더 정리 완료");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[GameManager] 앱 종료 시 소스 폴더 정리 중 오류: {e.Message}");
             }
         }
 
