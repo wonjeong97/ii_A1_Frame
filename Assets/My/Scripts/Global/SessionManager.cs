@@ -21,8 +21,8 @@ namespace My.Scripts.Global
         public string PlayerBUid { get; set; } = string.Empty;
         public string CurrentLanguage { get; set; } = "ko";
         
-        public string PlayerALastName { get; set; } = "NoNameA";
-        public string PlayerBLastName { get; set; } = "NoNameB";
+        public string PlayerAFirstName { get; set; } = "NoNameA";
+        public string PlayerBFirstName { get; set; } = "NoNameB";
         
         public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
         public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
@@ -46,10 +46,10 @@ namespace My.Scripts.Global
         public int PieceD2 { get; set; }
         public int PieceD3 { get; set; }
         
-        public int TotalPieces => PieceA1 + PieceA2 + PieceA3 + 
+        public int TotalPieces => PieceA2 + PieceA3 + 
                                   PieceB1 + PieceB2 + PieceB3 + 
                                   PieceC1 + PieceC2 + PieceC3 + 
-                                  PieceD1 + PieceD2 + PieceD3;
+                                  PieceD1 + PieceD2 + PieceD3; // 해당 컨텐츠는 A1이라 마음조각 중복 방지를 위해 제외함.
 
         private void Awake()
         {
@@ -71,8 +71,8 @@ namespace My.Scripts.Global
             PlayerBUid = string.Empty;
             CurrentLanguage = "ko";
             
-            PlayerALastName = "NoNameA";
-            PlayerBLastName = "NoNameB";
+            PlayerAFirstName = "NoNameA";
+            PlayerBFirstName = "NoNameB";
             
             PlayerAColor = ColorData.NotSet;
             PlayerBColor = ColorData.NotSet;

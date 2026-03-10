@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using My.Scripts.Core;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
 using Wonjeong.Data;
@@ -10,6 +11,7 @@ using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
+    /// <summary> 튜토리얼 4페이지용 데이터 구조체 </summary>
     [Serializable]
     public class TutorialPage4Data
     {
@@ -20,7 +22,11 @@ namespace My.Scripts._01_Tutorial.Pages
         public string resetMessage;   
     }
 
-    public class TutorialPage4Controller : PopupGamePage<TutorialPage4Data>
+    /// <summary>
+    /// 튜토리얼 4페이지 컨트롤러.
+    /// 각 플레이어가 다이얼을 일정 횟수 이상 돌려 자신의 색상(또는 준비 상태) 조명을 활성화하는 과정을 처리합니다.
+    /// </summary>
+    public class TutorialPage4Controller : PopupGamePage<TutorialPage4Data>, ITriggerReceiver
     {
         [Header("Page 4 UI")]
         [SerializeField] private Text nicknameA; 
@@ -51,6 +57,7 @@ namespace My.Scripts._01_Tutorial.Pages
         private const int StepsForFullRotation = 3; 
         private const float FastInputThreshold = 0.2f; 
 
+        /// <summary> JSON에서 로드한 UI 텍스트 및 경고 팝업 데이터 주입 </summary>
         protected override void SetupData(TutorialPage4Data data)
         {
             _data = data;
@@ -60,17 +67,17 @@ namespace My.Scripts._01_Tutorial.Pages
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
+        /// <summary> 페이지 진입 시 실시간 이름 할당, 선택된 컬러 적용 및 입력 상태 초기화 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             
-            // 화면이 켜질 때 이름 데이터 교체
             if (SessionManager.Instance && _data != null)
             {
                 if (nicknameA && _data.nicknamePlayerA != null)
-                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
+                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", SessionManager.Instance.PlayerAFirstName).Replace("{nameB}", SessionManager.Instance.PlayerBFirstName);
                 if (nicknameB && _data.nicknamePlayerB != null)
-                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
+                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", SessionManager.Instance.PlayerAFirstName).Replace("{nameB}", SessionManager.Instance.PlayerBFirstName);
             }
 
             isLightOnA = false;
@@ -101,6 +108,14 @@ namespace My.Scripts._01_Tutorial.Pages
             SoundManager.Instance?.PlaySFX("공통_1");
         }
 
+        /// <summary> ITriggerReceiver 구현부: 이전 페이지에서 넘어온 트리거 정보로 조명을 켭니다. </summary>
+        public void ReceiveTrigger(int triggerInfo)
+        {
+            if (triggerInfo == 1) ActivatePlayerCheck(true);
+            else if (triggerInfo == 2) ActivatePlayerCheck(false);
+        }
+
+        /// <summary> 매 프레임 휠 조작 감지 및 유저 무응답 타임아웃 갱신 </summary>
         private void Update()
         {
             if (_completionStarted) return; 
@@ -117,6 +132,10 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
+        /// <summary> 
+        /// 4개의 접점 센서(하드웨어 키보드 1~4, 5~8번 입력)를 통해 다이얼의 회전 방향과 누적 스텝을 계산합니다.
+        /// 목표 스텝 도달 시 해당 플레이어의 조명을 활성화합니다.
+        /// </summary>
         private void HandleWheelInput()
         {
             float now = Time.time;
@@ -202,6 +221,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
+        /// <summary> 지정된 범위(start~end)의 숫자 키 입력을 감지하여 반환하는 헬퍼 함수 </summary>
         private int GetPressedKeyIndex(int start, int end)
         {
             for (int i = start; i <= end; i++)
@@ -211,6 +231,7 @@ namespace My.Scripts._01_Tutorial.Pages
             return -1;
         }
 
+        /// <summary> 특정 플레이어의 조작이 완료되었을 때 조명을 켜고, 양쪽 모두 켜지면 완료 시퀀스를 시작합니다. </summary>
         public void ActivatePlayerCheck(bool isPlayerA)
         {
             ResetIdleState(false);
@@ -239,6 +260,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
+        /// <summary> 양쪽 모두 완료된 후 연출 여운을 주기 위한 2초 대기 코루틴 </summary>
         private IEnumerator WaitAndComplete()
         {   
             SoundManager.Instance?.PlaySFX("공통_3");
@@ -246,6 +268,7 @@ namespace My.Scripts._01_Tutorial.Pages
             CompleteStep(); 
         }
 
+        /// <summary> 조명(Check) 이미지를 부드럽게 페이드인(Fade-in)하는 연출 </summary>
         private IEnumerator ShowCheckMarkRoutine(Image backImage, Image lightImage)
         {
             if (!backImage || !lightImage) yield break;
@@ -273,6 +296,7 @@ namespace My.Scripts._01_Tutorial.Pages
             lightImage.color = lightColor;
         }
 
+        /// <summary> 이미지의 투명도 즉시 설정 </summary>
         private void SetImageAlpha(Image img, float alpha)
         {
             if (!img) return;

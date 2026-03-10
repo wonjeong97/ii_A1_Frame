@@ -18,7 +18,7 @@ namespace My.Scripts.Timelapse
 {
     /// <summary>
     /// 웹캠 화면을 캡처하여 타임랩스(고속) 및 리얼타임(1배속) 영상을 생성하는 레코더입니다.
-    /// 비동기 GPU Readback과 별도 스레드 파일 쓰기를 통해 메인 스레드 부하를 최소화합니다.
+    /// 비동기 GPU Readback과 백그라운드 스레드 파일 쓰기를 통해 메인 스레드 부하(프레임 드랍)를 최소화합니다.
     /// </summary>
     public class TimeLapseRecorder : MonoBehaviour
     {
@@ -65,6 +65,7 @@ namespace My.Scripts.Timelapse
             public byte[] data;
         }
 
+        // 비동기 스레드 환경에서 안전하게 파일 쓰기 작업을 대기시키기 위한 스레드-세이프 큐
         private readonly ConcurrentQueue<SaveTaskData> _saveQueue = new ConcurrentQueue<SaveTaskData>();
         private CancellationTokenSource _cts;
 
@@ -74,7 +75,7 @@ namespace My.Scripts.Timelapse
 
         private float _timelapseTimer;
         
-        // [추가] 파일 쓰기(File.WriteAllBytesAsync)의 동시 진행 작업 수를 추적하여 안전한 정리를 보장합니다.
+        // 파일 쓰기(File.WriteAllBytesAsync)의 동시 진행 작업 수를 추적하여 안전한 정리를 보장하기 위한 카운터
         private int _activeDiskWrites = 0;
 
         // --- 외부 제어 및 상태 프로퍼티 ---
@@ -94,6 +95,7 @@ namespace My.Scripts.Timelapse
         public string LastVideoPath { get; private set; }
         public string LastRealtimeVideoPath { get; private set; }
 
+        /// <summary> 싱글톤 초기화 및 저장 경로 루트를 설정합니다. </summary>
         private void Awake()
         {
             if (!Instance)
@@ -110,11 +112,13 @@ namespace My.Scripts.Timelapse
             else Destroy(gameObject);
         }
 
+        /// <summary> 앱 시작과 동시에 백그라운드 파일 쓰기 루프를 가동합니다. </summary>
         private void Start()
         {
             _diskWriteTask = StartDiskWriteLoop();
         }
 
+        /// <summary> 리얼타임 영상 변환 진행률의 시각적 피드백을 위해 임의로 프로그레스를 증가시킵니다. </summary>
         private void Update()
         {
             if (IsRealtimeProcessing && RealtimeProgress < 0.95f)
@@ -123,6 +127,7 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 현재 진행 중인 레벨을 설정하고, 리얼타임 녹화 대상(11~15)일 경우 타이머를 가동합니다. </summary>
         public void SetCurrentLevel(string levelID)
         {
             _currentLevelID = levelID;
@@ -135,6 +140,7 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 날짜가 바뀔 것을 대비해 촬영 시작 전 폴더 경로를 갱신합니다. </summary>
         private void UpdatePaths()
         {
             _currentDateFolder = DateTime.Now.ToString("yyyy-MM-dd");
@@ -155,6 +161,7 @@ namespace My.Scripts.Timelapse
             catch (Exception e) { Debug.LogError($"[TimeLapse] 폴더 생성 실패 ({path}): {e.Message}"); }
         }
 
+        /// <summary> 변환이 완료된 소스 프레임 이미지들을 삭제하여 디스크 용량을 확보합니다. </summary>
         private void ClearFolder(string path)
         {
             if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
@@ -164,12 +171,13 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 새로운 플레이 시작(Q1 진입 등) 시 이전 촬영 데이터를 전면 초기화합니다. </summary>
         public void ClearRecordingData()
         {
             ClearRecordingDataAsync().Forget();
         }
 
-        // [수정] 대기 큐뿐만 아니라 현재 진행 중인 디스크 I/O 작업(_activeDiskWrites)까지 모두 완료될 때까지 안전하게 대기
+        /// <summary> 대기 큐 및 현재 진행 중인 디스크 I/O 작업(_activeDiskWrites)이 모두 완료될 때까지 안전하게 대기한 뒤 파일을 삭제합니다. </summary>
         private async UniTaskVoid ClearRecordingDataAsync()
         {
             _globalFrameIndex = 0;
@@ -193,6 +201,7 @@ namespace My.Scripts.Timelapse
             ClearFolder(_realtimeSourcePath);
         }
 
+        /// <summary> 카메라 렌더텍스처를 초기화하고 비동기 캡처 루프를 시작합니다. </summary>
         public void StartCapture(WebCamTexture cam)
         {
             if (!enabled) return;
@@ -215,6 +224,7 @@ namespace My.Scripts.Timelapse
             CaptureLoopRoutine().Forget();
         }
 
+        /// <summary> 카메라 캡처를 중지하고 리얼타임 누적 촬영 시간을 정산합니다. </summary>
         public void StopCapture()
         {
             _isRecording = false;
@@ -228,6 +238,10 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 
+        /// 프레임 드랍을 완벽히 차단하기 위해 AsyncGPUReadback으로 비동기 메모리 복사를 수행한 뒤, 
+        /// 무거운 JPG 인코딩 작업을 스레드 풀(백그라운드)로 오프로드합니다.
+        /// </summary>
         private async UniTaskVoid CaptureLoopRoutine()
         {
             RenderTexture captureRT = _captureRT;
@@ -268,13 +282,14 @@ namespace My.Scripts.Timelapse
                     if (request.hasError) continue;
 
                     NativeArray<byte> nativeData = request.GetData<byte>();
-
-                    NativeArray<byte> encodedNativeData = ImageConversion.EncodeNativeArrayToJPG(
-                        nativeData, captureRT.graphicsFormat, (uint)captureWidth, (uint)captureHeight, 0, 70
-                    );
-
-                    byte[] bytes = encodedNativeData.ToArray();
-                    encodedNativeData.Dispose();
+                    byte[] rawBytes = nativeData.ToArray(); // 메인 스레드에서 관리되는 배열로 고속 복사
+                    UnityEngine.Experimental.Rendering.GraphicsFormat format = captureRT.graphicsFormat;
+                    
+                    // 무거운 JPG 인코딩을 백그라운드 스레드에서 수행하여 CPU 스파이크(프레임 끊김) 원천 차단
+                    byte[] bytes = await UniTask.RunOnThreadPool(() =>
+                    {
+                        return ImageConversion.EncodeArrayToJPG(rawBytes, format, (uint)captureWidth, (uint)captureHeight, 0, 70);
+                    });
 
                     if (saveToTimelapse)
                     {
@@ -292,12 +307,14 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 디스크 I/O를 메인 스레드에서 분리하기 위해 작업 데이터를 큐에 삽입합니다. </summary>
         private void EnqueueSave(byte[] data, string folder, int index)
         {
             string path = Path.Combine(folder, $"img_{index:D5}.jpg");
             _saveQueue.Enqueue(new SaveTaskData { path = path, data = data });
         }
 
+        /// <summary> 백그라운드 스레드 풀에서 무한 루프를 돌며 큐에 쌓인 이미지를 디스크에 저장합니다. </summary>
         private async UniTask StartDiskWriteLoop()
         {
             _cts = new CancellationTokenSource();
@@ -329,6 +346,7 @@ namespace My.Scripts.Timelapse
             catch (OperationCanceledException) { }
         }
 
+        /// <summary> 11~15번 문제 구간에서만 리얼타임 영상 소스를 수집하기 위한 검증 로직입니다. </summary>
         private bool IsRealtimeTargetLevel(string levelID)
         {
             if (string.IsNullOrEmpty(levelID)) return false;
@@ -340,6 +358,7 @@ namespace My.Scripts.Timelapse
             return false;
         }
 
+        /// <summary> 전체 플레이 과정 중 수집된 프레임 이미지를 FFmpeg을 사용해 하나의 타임랩스 영상으로 인코딩합니다. </summary>
         public void ConvertToVideo()
         {
             if (IsTimelapseProcessing) return;
@@ -357,6 +376,7 @@ namespace My.Scripts.Timelapse
             ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, fileName, fps, false).Forget();
         }
 
+        /// <summary> 후반부(Q11~15) 플레이 과정 중 수집된 프레임 이미지를 FFmpeg을 사용해 리얼타임 영상으로 인코딩합니다. </summary>
         public void ConvertToRealtimeVideo()
         {
             if (IsRealtimeProcessing) return;
@@ -381,17 +401,21 @@ namespace My.Scripts.Timelapse
             ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, fileName, fps, true).Forget();
         }
 
+        /// <summary> 예외 발생 시 리얼타임 진행 상태를 강제로 초기화합니다. </summary>
         public void ResetRealtimeProcessing()
         {
             IsRealtimeProcessing = false;
             RealtimeProgress = 0f;
         }
 
+        /// <summary> 
+        /// 외부 프로세스(FFmpeg)를 백그라운드 스레드에서 가동하여 수천 장의 이미지를 H.264 mp4 영상으로 병합합니다. 
+        /// </summary>
         private async UniTaskVoid ConversionSequence(string sourceFolder, string outputFolder, string filePrefix, float fps, bool isRealtime)
         {
             try
             {
-                // [수정] 변환 시작 전 큐에 남은 파일과 실제 디스크 I/O가 완벽히 종료될 때까지 대기
+                // 변환 시작 전 큐에 남은 파일과 실제 디스크 I/O가 완벽히 종료될 때까지 대기하여 누락 방지
                 await UniTask.WaitUntil(() => _saveQueue.IsEmpty && _activeDiskWrites == 0);
 
                 if (string.IsNullOrEmpty(sourceFolder) || string.IsNullOrEmpty(outputFolder))
@@ -439,6 +463,7 @@ namespace My.Scripts.Timelapse
                 string fpsStr = fps.ToString("F2", CultureInfo.InvariantCulture);
                 string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 \"{outputPath}\"";
 
+                // 메인 스레드 프리징을 막기 위해 외부 프로세스 실행 및 대기를 스레드 풀에서 수행
                 await UniTask.SwitchToThreadPool();
 
                 using (Process process = new Process())
@@ -449,6 +474,7 @@ namespace My.Scripts.Timelapse
                     process.StartInfo.CreateNoWindow = true;
                     process.Start();
 
+                    // 최대 60초간 응답 대기, 실패 시 강제 종료
                     if (process.WaitForExit(60000))
                     {
                         LastExitCode = process.ExitCode;
@@ -492,6 +518,9 @@ namespace My.Scripts.Timelapse
             }
         }
 
+        /// <summary> 
+        /// 디스크에 생성된 대용량 비디오 파일을 스트림 방식을 사용하여 안전하게 서버로 전송합니다.
+        /// </summary>
         private IEnumerator UploadVideoRoutine(string filePath)
         {
             if (!File.Exists(filePath)) yield break;
@@ -512,15 +541,14 @@ namespace My.Scripts.Timelapse
 
             if (string.IsNullOrEmpty(baseUrl)) yield break;
 
-            byte[] videoBytes = File.ReadAllBytes(filePath);
             string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=mp4";
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
-                UploadHandlerRaw uploadHandler = new UploadHandlerRaw(videoBytes);
-                uploadHandler.contentType = "video/mp4"; 
+                // 스트림 방식을 사용하여 대용량 파일을 메모리에 통째로 올리지 않고 디스크에서 직접 읽어 전송합니다.
+                webRequest.uploadHandler = new UploadHandlerFile(filePath);
+                webRequest.uploadHandler.contentType = "video/mp4"; 
 
-                webRequest.uploadHandler = uploadHandler;
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
                 webRequest.timeout = 60;
 
@@ -537,11 +565,13 @@ namespace My.Scripts.Timelapse
             return "0";
         }
 
+        /// <summary> 오브젝트 파괴 시 진행 중인 백그라운드 파일 쓰기 태스크를 취소하고 렌더 텍스처 메모리를 반환합니다. </summary>
         private void OnDestroy()
         {
             if (_cts != null) 
             {
                 _cts.Cancel();
+                // Task 취소 대기 중 메인 스레드 무한 루프 방지를 위한 타임아웃(1초) 설정
                 long timeoutTicks = DateTime.Now.Ticks + 1000 * 10000; 
                 while (!_diskWriteTask.GetAwaiter().IsCompleted && DateTime.Now.Ticks < timeoutTicks)
                 {
