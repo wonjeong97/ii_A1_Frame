@@ -68,7 +68,7 @@ namespace My.Scripts._18_Ending.Pages
         {
             if (!TimeLapseRecorder.Instance)
             {
-                Debug.LogWarning("[EndingPage2] TimeLapseRecorder가 존재하지 않습니다. 합성을 건너뜜.");
+                Debug.LogWarning("[EndingPage2] TimeLapseRecorder가 존재하지 않습니다. 합성을 건너뜁니다.");
                 if (loadingFillImage) loadingFillImage.fillAmount = 1f;
                 yield return CoroutineData.GetWaitForSeconds(2.0f);
                 CompleteStep();

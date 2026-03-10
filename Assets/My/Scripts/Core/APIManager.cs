@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks; // 비동기 JSON 파싱을 위해 추가
+using Cysharp.Threading.Tasks; 
 using My.Scripts.Core.Data;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -11,14 +11,14 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core
 {
-    /// <summary> 서버에서 전달되는 플레이어 고유 색상 코드를 로컬 환경에 맞게 매핑하기 위한 열거형입니다. </summary>
+    /// <summary> 서버에서 전달되는 플레이어 고유 색상 코드 매핑용 열거형 </summary>
     public enum ColorData
     {   
         NotSet = -1,
         Cyan = 0, Pink = 1, Orange = 2, Green = 3, Red = 4, Yellow = 5
     }
     
-    /// <summary> API 응답 데이터 중 세션 관리에 필요한 핵심 유저 정보만 추출하여 보관하는 구조체입니다. </summary>
+    /// <summary> API 응답 데이터 중 세션에 필요한 핵심 유저 정보 컨테이너 </summary>
     public struct UserData
     {
         public string CARTRIDGE;
@@ -42,7 +42,7 @@ namespace My.Scripts.Core
         public int PIECE_D1; public int PIECE_D2; public int PIECE_D3;
     }
 
-    /// <summary> 서버의 JSON 테이블 구조(COLUMNS/DATA 배열)를 직렬화/역직렬화하기 위한 데이터 컨테이너입니다. </summary>
+    /// <summary> 서버 JSON 테이블 구조 역직렬화용 클래스 </summary>
     public class ApiTableResponse
     {
         public List<string> COLUMNS { get; set; }
@@ -50,77 +50,76 @@ namespace My.Scripts.Core
     }
 
     /// <summary> 
-    /// 서버 API와 통신하여 유저 데이터를 가져오고, 파싱된 결과를 전역 세션(SessionManager)에 동기화하는 통신 매니저.
-    /// 외부 카트리지 시스템과의 연동을 통해 묶음 콘텐츠의 클리어 여부도 함께 확인합니다.
+    /// 서버 API 통신 및 유저 데이터 파싱 매니저.
+    /// 비동기 처리를 통해 통신 중 프레임 드랍을 방지하고 작업 완료를 보장함.
     /// </summary>
     public class APIManager : MonoBehaviour
     {
         private string userUid;
 
-        /// <summary> 외부 모듈에서 UID를 전달받아 통신 시퀀스를 개시합니다. </summary>
+        /// <summary> 레거시 동기 코드 호환용 래퍼 </summary>
+        /// <param name="uid">조회할 유저 UID</param>
         public void FetchData(string uid)
         {
-            userUid = uid;
-            FetchData();
+            FetchDataAsync(uid).Forget();
         }
         
-        /// <summary> API 설정값을 로드하고 유저 정보 조회 통신을 시작합니다. (컨텍스트 메뉴를 통한 에디터 테스트 지원) </summary>
+        /// <summary> 
+        /// UID 기반 유저 데이터 비동기 요청.
+        /// </summary>
+        /// <param name="uid">유저 고유 식별자</param>
+        /// <returns>통신 및 데이터 설정 성공 여부</returns>
         [ContextMenu("Fetch API Data")]
-        public void FetchData()
+        public async UniTask<bool> FetchDataAsync(string uid)
         {
+            userUid = uid;
             ApiSettings config = null;
+            
+            // 싱글톤 참조 시 암시적 불리언 검사 활용
             if (GameManager.Instance) config = GameManager.Instance.ApiConfig;
             if (config == null) config = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
 
             if (config == null)
             {
                 Debug.LogError("[APIManager] API 설정을 찾을 수 없습니다.");
-                return;
+                return false;
             }
 
             string requestUrl = $"{config.GetUserUrl}?uid={userUid}";
-            StartCoroutine(GetApiDataRoutine(requestUrl));
-        }
-
-        /// <summary> 메인 스레드 멈춤 없이 백그라운드에서 HTTP GET 요청을 수행합니다. </summary>
-        private IEnumerator GetApiDataRoutine(string url)
-        {
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+            
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(requestUrl))
             {
-                webRequest.timeout = 10; 
-                yield return webRequest.SendWebRequest();
+                webRequest.timeout = 10; // 네트워크 지연으로 인한 무한 대기 방지
+                await webRequest.SendWebRequest().ToUniTask();
 
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
-                    webRequest.result == UnityWebRequest.Result.ProtocolError)
+                if (webRequest.result != UnityWebRequest.Result.Success)
                 {
                     Debug.LogError($"[APIManager] 통신 실패: {webRequest.error}");
+                    return false;
                 }
-                else
-                {
-                    // 비동기 파싱 호출 (Fire and Forget)
-                    ParseAndProcessDataAsync(webRequest.downloadHandler.text).Forget();
-                }
+                
+                return await ParseAndProcessDataAsync(webRequest.downloadHandler.text);
             }
         }
 
         /// <summary> 
-        /// 수신된 JSON 텍스트를 구조화된 데이터로 변환하고 전역 세션(SessionManager)에 매핑합니다.
-        /// 메인 스레드 프레임 드랍을 막기 위해 UniTask를 활용하여 백그라운드 스레드에서 파싱을 수행합니다.
+        /// JSON 파싱 및 SessionManager 데이터 주입.
         /// </summary>
-        public async UniTaskVoid ParseAndProcessDataAsync(string jsonString)
+        /// <param name="jsonString">서버 응답 JSON</param>
+        /// <returns>파싱 및 유효성 검사 성공 여부</returns>
+        public async UniTask<bool> ParseAndProcessDataAsync(string jsonString)
         {
             try
             {
-                // 스레드 풀에서 무거운 JSON 파싱 수행 후 메인 스레드로 자동 복귀
+                // 무거운 역직렬화 연산은 백그라운드 스레드에서 처리하여 UI 프리징 차단
                 ApiTableResponse response = await UniTask.RunOnThreadPool(() => JsonConvert.DeserializeObject<ApiTableResponse>(jsonString));
 
                 if (response != null && response.DATA != null && response.DATA.Count > 0)
                 {
-                    // 응답 데이터의 첫 번째 행(Row) 추출
                     List<object> firstRow = response.DATA[0];
                     UserData userData = new UserData();
 
-                    // 컬럼 인덱스를 안전하게 탐색하여 데이터 매핑 (구조 변경에 대한 방어 로직)
+                    // 서버 데이터 불일치 대응을 위한 안전한 파싱 로직 적용
                     userData.IDX_USER = ParseIntSafe(response, firstRow, "IDX_USER");
                     userData.CARTRIDGE = ParseStringSafe(response, firstRow, "CARTRIDGE"); 
                     userData.UID_LEFT = ParseStringSafe(response, firstRow, "UID_LEFT");
@@ -147,14 +146,6 @@ namespace My.Scripts.Core
                     userData.PIECE_D2 = ParseIntSafe(response, firstRow, "PIECE_D2");
                     userData.PIECE_D3 = ParseIntSafe(response, firstRow, "PIECE_D3");
 
-                    Debug.Log($"[APIManager] 유저 데이터 로드 완료!\n" +
-                              $"- 유저 인덱스(IDX_USER): {userData.IDX_USER}\n" +
-                              $"- 이름 (L/R): {userData.RESERVATION_FIRST_NAME_LEFT} / {userData.RESERVATION_FIRST_NAME_RIGHT}\n" +
-                              $"- UID (L/R): {userData.UID_LEFT} / {userData.UID_RIGHT}\n" +
-                              $"- 컬러 (L/R): {userData.COLOR_LEFT} / {userData.COLOR_RIGHT}\n" +
-                              $"- 언어/관계: {userData.LANG} / {userData.RELATION}\n" +
-                              $"- 카트리지: {userData.CARTRIDGE}");
-
                     if (SessionManager.Instance)
                     {   
                         SessionManager.Instance.CurrentUserId = userData.IDX_USER;
@@ -164,7 +155,7 @@ namespace My.Scripts.Core
 
                         if (!string.IsNullOrWhiteSpace(userData.LANG)) SessionManager.Instance.CurrentLanguage = userData.LANG.Trim();
 
-                        // 서버의 관계 코드 정수값을 로컬 게임 클라이언트의 UserType으로 매핑
+                        // 정수형 관계 코드를 내부 UserType으로 변환
                         switch (userData.RELATION)
                         {
                             case 1: SessionManager.Instance.CurrentUserType = UserType.A; break;
@@ -184,7 +175,7 @@ namespace My.Scripts.Core
                         SessionManager.Instance.PlayerAColor = userData.COLOR_LEFT;
                         SessionManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
                         
-                        // 음수 값에 의한 게임 로직 오류를 막기 위해 최솟값(0) 보정
+                        // 음수 값 방지를 위해 Mathf.Max 활용
                         SessionManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
                         SessionManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
                         SessionManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
@@ -199,33 +190,34 @@ namespace My.Scripts.Core
                         SessionManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
 
                         SessionManager.Instance.IsOtherCartridgeContentsCleared = false;
-                        
-                        // 현재 카트리지 그룹 내 다른 게임들의 완료 여부를 2차로 확인
                         if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
                         {
-                            StartCoroutine(CheckOtherCartridgeContentsRoutine(userData.CARTRIDGE, response, firstRow));
+                            // 카트리지 그룹 내 다른 게임 완료 정보 동기화
+                            await CheckOtherCartridgeContentsAsync(userData.CARTRIDGE, response, firstRow);
                         }
+                        return true; 
                     }
                 }
+                return false;
             }
             catch (Exception e)
             {
                 Debug.LogError($"[APIManager] JSON 파싱 중 에러 발생: {e.Message}");
-                if (SessionManager.Instance) SessionManager.Instance.IsOtherCartridgeContentsCleared = false;
+                return false;
             }
         }
 
-        /// <summary> 동일 카트리지에 속한 타 콘텐츠 리스트를 조회하는 2차 API 요청입니다. </summary>
-        private IEnumerator CheckOtherCartridgeContentsRoutine(string cartridgeStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
+        /// <summary> 카트리지 묶음 콘텐츠의 클리어 상태 추가 조회 </summary>
+        private async UniTask CheckOtherCartridgeContentsAsync(string cartridgeStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
         {
-            if (!GameManager.Instance || GameManager.Instance.ApiConfig == null) yield break;
+            if (!GameManager.Instance || GameManager.Instance.ApiConfig == null) return;
 
             string url = $"{GameManager.Instance.ApiConfig.GetCartridgeContentUrl}?cartridge={UnityWebRequest.EscapeURL(cartridgeStr)}";
             
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
                 req.timeout = 10;
-                yield return req.SendWebRequest();
+                await req.SendWebRequest().ToUniTask();
 
                 if (req.result == UnityWebRequest.Result.Success)
                 {
@@ -235,61 +227,22 @@ namespace My.Scripts.Core
                         SessionManager.Instance.IsOtherCartridgeContentsCleared = ParseOtherCartridgeClearState(targetListStr, firstApiResponse, firstApiRow);
                     }
                 }
-                else
-                {
-                    Debug.LogError($"[APIManager] 카트리지 조회 실패: {req.error}");
-                }
             }
         }
 
-        /// <summary> 수신된 카트리지 리스트 문자열을 순회하며, 최초 유저 데이터의 'END_모듈명' 컬럼에 값이 채워져 있는지 검사합니다. </summary>
-        private bool ParseOtherCartridgeClearState(string targetListStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(targetListStr) || targetListStr.Trim().StartsWith("<")) return false;
-
-                string[] targetCodes = targetListStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                string currentModule = SessionManager.Instance ? SessionManager.Instance.CurrentModuleCode.ToUpper() : "A1"; 
-
-                foreach (string target in targetCodes)
-                {
-                    string expectedCode = target.Trim().ToUpper(); 
-                    if (expectedCode == currentModule) continue; // 본인 모듈은 검사에서 제외
-
-                    string endColumnName = $"END_{expectedCode}";
-                    string endValue = ParseStringSafe(firstApiResponse, firstApiRow, endColumnName);
-
-                    // 하나라도 완료 시간이 비어있으면(null) 카트리지 전체 클리어 실패로 판정
-                    if (string.IsNullOrWhiteSpace(endValue) || endValue.Equals("null", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false; 
-                    }
-                }
-                return true;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[APIManager] 카트리지 감시 목록 파싱 실패: {e.Message}");
-                return false;
-            }
-        }
-
-        /// <summary> 컬럼 인덱스 범위를 초과하거나 형변환 실패 시 예외를 던지지 않고 0을 반환하는 안전한 정수 파서입니다. </summary>
+        /// <summary> 컬럼 인덱스 매핑을 통한 안전한 정수 파싱 </summary>
         private int ParseIntSafe(ApiTableResponse response, List<object> row, string colName)
         {
             int index = response.COLUMNS.IndexOf(colName);
             if (index != -1 && row.Count > index && row[index] != null)
             {
                 string valStr = row[index].ToString().Trim();
-                if (string.IsNullOrEmpty(valStr)) return 0;
                 if (int.TryParse(valStr, out int val)) return val;
-                if (float.TryParse(valStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float fVal)) return (int)fVal;
             }
             return 0; 
         }
 
-        /// <summary> 데이터가 존재하지 않을 경우 null 대신 빈 문자열을 반환하여 이후 로직의 NRE(NullReferenceException)를 방지합니다. </summary>
+        /// <summary> 컬럼 명칭 기반 안전한 문자열 추출 </summary>
         private string ParseStringSafe(ApiTableResponse response, List<object> row, string colName)
         {
             int index = response.COLUMNS.IndexOf(colName);
@@ -297,7 +250,7 @@ namespace My.Scripts.Core
             return string.Empty; 
         }
 
-        /// <summary> 응답받은 정수가 정의된 ColorData 열거형 범위 내에 있는지 검증 후 반환합니다. 범위 초과 시 NotSet 반환. </summary>
+        /// <summary> 서버의 컬러 인덱스 데이터를 내부 열거형으로 안전 변환 </summary>
         private ColorData ParseColorSafe(ApiTableResponse response, List<object> row, string colName)
         {
             int index = response.COLUMNS.IndexOf(colName);
@@ -309,6 +262,31 @@ namespace My.Scripts.Core
                 }
             }
             return ColorData.NotSet; 
+        }
+
+        /// <summary> 타 모듈 클리어 데이터를 분석하여 카트리지 완성 여부 판단 </summary>
+        private bool ParseOtherCartridgeClearState(string targetListStr, ApiTableResponse firstApiResponse, List<object> firstApiRow)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(targetListStr)) return false;
+                
+                string[] targetCodes = targetListStr.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string target in targetCodes)
+                {
+                    string expectedCode = target.Trim().ToUpper(); 
+                    
+                    // 현재 진행 중인 모듈 코드는 제외하고 검사
+                    if (expectedCode == (SessionManager.Instance ? SessionManager.Instance.CurrentModuleCode.ToUpper() : "A1")) continue;
+                    
+                    string endValue = ParseStringSafe(firstApiResponse, firstApiRow, $"END_{expectedCode}");
+                    
+                    // 하나라도 클리어 기록(Time)이 없으면 미완료로 판단
+                    if (string.IsNullOrWhiteSpace(endValue) || endValue.Equals("null", StringComparison.OrdinalIgnoreCase)) return false; 
+                }
+                return true;
+            }
+            catch { return false; }
         }
     }
 }

@@ -123,8 +123,8 @@ namespace My.Scripts.Core
         {
             if (HasActiveSession)
             {
-                string lastName = isPlayerA ? SessionManager.Instance.PlayerAFirstName : SessionManager.Instance.PlayerBFirstName;
-                if (!string.IsNullOrWhiteSpace(lastName)) return lastName;
+                string firstName = isPlayerA ? SessionManager.Instance.PlayerAFirstName : SessionManager.Instance.PlayerBFirstName;
+                if (!string.IsNullOrWhiteSpace(firstName)) return firstName;
             }
             return isPlayerA ? "PlayerA" : "PlayerB";
         }
