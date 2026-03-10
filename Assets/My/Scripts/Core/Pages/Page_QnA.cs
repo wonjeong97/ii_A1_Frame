@@ -5,7 +5,6 @@ using My.Scripts.Hardware;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -60,31 +59,8 @@ namespace My.Scripts.Core.Pages
             SetGroupAlpha(answerGroup, 0f);
             SetGroupAlpha(descriptionGroup, 0f);
 
-            if (ArduinoManager.Instance)
-            {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
-                ArduinoManager.Instance.OnHardwareInput += HandleArduinoInput;
-            }
-
             if (_sequenceRoutine != null) StopCoroutine(_sequenceRoutine);
             _sequenceRoutine = StartCoroutine(ShowSequence());
-        }
-
-        public override void OnExit()
-        {
-            if (ArduinoManager.Instance)
-            {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
-            }
-            base.OnExit();
-        }
-
-        private void OnDestroy()
-        {
-            if (ArduinoManager.Instance)
-            {
-                ArduinoManager.Instance.OnHardwareInput -= HandleArduinoInput;
-            }
         }
 
         private void Update()
@@ -95,27 +71,7 @@ namespace My.Scripts.Core.Pages
 
             if (_isInputEnabled)
             {
-                int selectedValue = 0;
-                string side = string.Empty;
-
-                // Left 디버그 (Q W E R T)
-                if (Input.GetKeyDown(KeyCode.Q)) { selectedValue = 1; side = "left"; }
-                else if (Input.GetKeyDown(KeyCode.W)) { selectedValue = 2; side = "left"; }
-                else if (Input.GetKeyDown(KeyCode.E)) { selectedValue = 3; side = "left"; }
-                else if (Input.GetKeyDown(KeyCode.R)) { selectedValue = 4; side = "left"; }
-                else if (Input.GetKeyDown(KeyCode.T)) { selectedValue = 5; side = "left"; }
-                // Right 디버그 (Y U I O P)
-                else if (Input.GetKeyDown(KeyCode.Y)) { selectedValue = 1; side = "right"; }
-                else if (Input.GetKeyDown(KeyCode.U)) { selectedValue = 2; side = "right"; }
-                else if (Input.GetKeyDown(KeyCode.I)) { selectedValue = 3; side = "right"; }
-                else if (Input.GetKeyDown(KeyCode.O)) { selectedValue = 4; side = "right"; }
-                else if (Input.GetKeyDown(KeyCode.P)) { selectedValue = 5; side = "right"; }
-
-                if (selectedValue != 0)
-                {
-                    inputDetected = true;
-                    ProcessInput(selectedValue, side);
-                }
+                inputDetected = ProcessCommonKeyboardInput();
             }
 
             if (inputDetected || Input.anyKey || Input.touchCount > 0)
@@ -128,18 +84,19 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        private void HandleArduinoInput(string input, bool isLeft)
+        protected override void OnHardwareInput(string input, bool isLeft)
         {
             if (_isCompleted || !_isInputEnabled) return;
 
             int selectedValue = 0;
             string side = isLeft ? "left" : "right";
 
-            if (input == "1On") selectedValue = 1;
-            else if (input == "2On") selectedValue = 2;
-            else if (input == "3On") selectedValue = 3;
-            else if (input == "4On") selectedValue = 4;
-            else if (input == "5On") selectedValue = 5;
+            // 상수 사용
+            if (input == GameConstants.Hardware.Input1On) selectedValue = 1;
+            else if (input == GameConstants.Hardware.Input2On) selectedValue = 2;
+            else if (input == GameConstants.Hardware.Input3On) selectedValue = 3;
+            else if (input == GameConstants.Hardware.Input4On) selectedValue = 4;
+            else if (input == GameConstants.Hardware.Input5On) selectedValue = 5;
 
             if (selectedValue != 0)
             {
@@ -152,11 +109,11 @@ namespace My.Scripts.Core.Pages
             ResetIdleState(false);
             _isCompleted = true;
             
-            // [수정] 입력이 들어온 쪽의 아두이노 LED만 개별적으로 끕니다.
             if (ArduinoManager.Instance)
             {
-                if (side == "left") ArduinoManager.Instance.SendCommandToLeft("LEDAllOff");
-                else ArduinoManager.Instance.SendCommandToRight("LEDAllOff");
+                // 상수 사용
+                if (side == "left") ArduinoManager.Instance.SendCommandToLeft(GameConstants.Hardware.CmdLedAllOff);
+                else ArduinoManager.Instance.SendCommandToRight(GameConstants.Hardware.CmdLedAllOff);
             }
             
             if (GameManager.Instance && LevelManager.Instance)
@@ -183,8 +140,8 @@ namespace My.Scripts.Core.Pages
             
             if (ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.SendCommandToBoth("SoundOn");
-                ArduinoManager.Instance.SendCommandToBoth("LEDAllOn");
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdSoundOn);
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOn);
             }
             
             _isInputEnabled = true;

@@ -67,7 +67,7 @@ namespace My.Scripts._18_Ending.Pages
             if (descriptionText && _data?.secondText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.secondText);
-                SoundManager.Instance?.PlaySFX("공통_14");
+                SoundManager.Instance?.PlaySFX("공통_13");
             }
 
             // 4. 두 번째 텍스트 페이드 인 (나타남)

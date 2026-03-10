@@ -28,21 +28,22 @@ namespace My.Scripts._01_Tutorial
         /// <summary> 설정 로드 및 페이지 데이터 주입 </summary>
         protected override void LoadSettings()
         {
-            var setting = JsonLoader.Load<TutorialSetting>(GameConstants.Path.Tutorial);
-            if (setting == null)
+            // var 키워드 제거
+            TutorialSetting setting = JsonLoader.Load<TutorialSetting>(GameConstants.Path.Tutorial);
+            if (setting == null) // C# 일반 객체이므로 == null 유지
             {
                 Debug.LogError($"[TutorialManager] JSON Load Failed");
                 return;
             }
 
-            // 각 페이지에 데이터 주입
-            if (pages.Length > 0 && pages[0] != null) pages[0].SetupData(setting.page1);
-            if (pages.Length > 1 && pages[1] != null) pages[1].SetupData(setting.page2);
-            if (pages.Length > 2 && pages[2] != null) pages[2].SetupData(setting.page3);
-            if (pages.Length > 3 && pages[3] != null) pages[3].SetupData(setting.page4);
-            if (pages.Length > 4 && pages[4] != null) pages[4].SetupData(setting.page5);
-            if (pages.Length > 5 && pages[5] != null) pages[5].SetupData(setting.page6);
-            if (pages.Length > 6 && pages[6] != null) pages[6].SetupData(setting.page7);
+            // 각 페이지에 데이터 주입 (유니티 컴포넌트의 != null 검사를 암시적 변환으로 변경)
+            if (pages.Length > 0 && pages[0]) pages[0].SetupData(setting.page1);
+            if (pages.Length > 1 && pages[1]) pages[1].SetupData(setting.page2);
+            if (pages.Length > 2 && pages[2]) pages[2].SetupData(setting.page3);
+            if (pages.Length > 3 && pages[3]) pages[3].SetupData(setting.page4);
+            if (pages.Length > 4 && pages[4]) pages[4].SetupData(setting.page5);
+            if (pages.Length > 5 && pages[5]) pages[5].SetupData(setting.page6);
+            if (pages.Length > 6 && pages[6]) pages[6].SetupData(setting.page7);
         }
 
         /// <summary> 튜토리얼 종료 처리 (실전 플레이 씬 이동) </summary>
@@ -92,10 +93,9 @@ namespace My.Scripts._01_Tutorial
             if (next)
             {
                 next.OnEnter();
-                HandleTriggerInfo(next, info); // 정보 전달
+                HandleTriggerInfo(next, info); 
                 
                 // 3. 다음 페이지 등장
-                // 1페이지는 전체 페이드 없이 즉시 노출
                 if (targetIndex == 0)
                 {
                     next.SetAlpha(1f);

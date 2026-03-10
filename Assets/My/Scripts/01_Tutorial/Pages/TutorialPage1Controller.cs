@@ -38,7 +38,7 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             base.Awake();
             
-            if (descriptionText != null)
+            if (descriptionText)
             {
                 Color c = descriptionText.color;
                 c.a = 0f;
@@ -87,7 +87,6 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 ResetIdleState(false); 
 
-                // 디버그용 강제 스킵
                 if (Input.GetKeyDown(KeyCode.Return))
                 {
                     CompleteStep(); 
@@ -101,25 +100,22 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator PollRoomStateRoutine()
         {
-            float emptyStartTime = -1f; // EMPTY 최초 감지 시점
+            float emptyStartTime = -1f; 
 
             while (true)
             {
-                // GameManager에서 API 설정이 로드될 때까지 대기
                 if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
                 {
                     yield return CoroutineData.GetWaitForSeconds(pollInterval);
                     continue;
                 }
 
-                string checkRoomStateUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code=a1";
-                string getCurrentUserUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code=a1";
+                // 상수 사용
+                string checkRoomStateUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code={GameConstants.Module.Code.ToLower()}";
+                string getCurrentUserUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code={GameConstants.Module.Code.ToLower()}";
 
                 bool isEmptyThisPoll = false;
 
-                // =========================================================
-                // 1. 방 상태가 EMPTY인지 1차 확인
-                // =========================================================
                 using (UnityWebRequest stateReq = UnityWebRequest.Get(checkRoomStateUrl))
                 {
                     stateReq.timeout = 10; 
@@ -131,16 +127,13 @@ namespace My.Scripts._01_Tutorial.Pages
                     {
                         string responseText = stateReq.downloadHandler.text;
                         
-                        if (!string.IsNullOrEmpty(responseText) && responseText.IndexOf("EMPTY", StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (!string.IsNullOrEmpty(responseText) && responseText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             isEmptyThisPoll = true;
                         }
                     }
                 }
 
-                // =========================================================
-                // 2. 방 상태가 EMPTY가 아니라면 유저 데이터 확인
-                // =========================================================
                 if (!isEmptyThisPoll)
                 {
                     using (UnityWebRequest userReq = UnityWebRequest.Get(getCurrentUserUrl))
@@ -154,17 +147,13 @@ namespace My.Scripts._01_Tutorial.Pages
                         {
                             string rawText = userReq.downloadHandler.text;
                             
-                            if (rawText.IndexOf("EMPTY", StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
                             {
-                                // 방 상태는 정상이지만 아직 유저 데이터가 배정되지 않음
                                 isEmptyThisPoll = true;
                             }
                             else if (rawText.Contains(","))
                             {
-                                // =========================================================
-                                // 정상 데이터 수신 시퀀스 진행
-                                // =========================================================
-                                emptyStartTime = -1f; // EMPTY 타이머 초기화
+                                emptyStartTime = -1f; 
 
                                 string cleanData = "";
                                 string[] lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
@@ -188,23 +177,23 @@ namespace My.Scripts._01_Tutorial.Pages
 
                                         if (parts.Length >= 2 && GameManager.Instance)
                                         {
-                                            GameManager.Instance.PlayerAUid = uidLeft;
-                                            GameManager.Instance.PlayerBUid = parts[1].Trim();
+                                            SessionManager.Instance.PlayerAUid = uidLeft;
+                                            SessionManager.Instance.PlayerBUid = parts[1].Trim();
                                         }
 
                                         if (apiManager)
                                         {   
-                                            if (GameManager.Instance) GameManager.Instance.CurrentUserId = 0;
+                                            if (SessionManager.Instance) SessionManager.Instance.CurrentUserId = 0;
                                             apiManager.FetchData(uidLeft);
                                             float timeoutAt = Time.time + 11f;
                                             while (GameManager.Instance &&
-                                                   GameManager.Instance.CurrentUserId == 0 &&
+                                                   SessionManager.Instance.CurrentUserId == 0 &&
                                                    Time.time < timeoutAt)
                                             {
                                                 yield return null;
                                             }
 
-                                            if (!GameManager.Instance || GameManager.Instance.CurrentUserId == 0)
+                                            if (!GameManager.Instance || SessionManager.Instance.CurrentUserId == 0)
                                             {
                                                 Debug.LogWarning("[TutorialPage1] CurrentUserId 확정 실패. 다음 폴링에서 재시도합니다.");
                                                 yield return CoroutineData.GetWaitForSeconds(pollInterval);
@@ -213,7 +202,7 @@ namespace My.Scripts._01_Tutorial.Pages
                                         }
                                         else
                                         {
-                                            Debug.LogWarning("[TutorialPage1] APIManager를 씬에서 찾을 수 없습니다.");
+                                            Debug.LogWarning("[TutorialPage1] APIManager를 찾을 수 없습니다.");
                                             yield return CoroutineData.GetWaitForSeconds(pollInterval);
                                             continue;
                                         }
@@ -226,9 +215,6 @@ namespace My.Scripts._01_Tutorial.Pages
                     }
                 }
 
-                // =========================================================
-                // 3. EMPTY 연속 지속 시간 검사 (15초 초과 시 초기화)
-                // =========================================================
                 if (isEmptyThisPoll)
                 {
                     if (emptyStartTime < 0f) emptyStartTime = Time.time;

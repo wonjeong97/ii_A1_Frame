@@ -1,12 +1,9 @@
 using System;
 using System.Collections;
-using System.IO;
-using System.Text.RegularExpressions;
-using My.Scripts.Core;
-using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Video;
+using My.Scripts.Core;
+using My.Scripts.Timelapse;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -19,218 +16,159 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting descriptionText; 
     }
 
-    /// <summary> 
-    /// 엔딩 2페이지 컨트롤러
-    /// 플레이 중 녹화된 '리얼타임' 영상을 재생하며, 영상의 실제 길이와 무관하게 15초 카운트다운 연출을 동기화.
+    /// <summary>
+    /// 엔딩 2페이지 컨트롤러.
+    /// 리얼타임 영상 합성을 수행하며 로딩바를 표시하고, 완료 후 타임랩스 합성을 백그라운드에서 시작합니다.
     /// </summary>
     public class EndingPage2Controller : GamePage<EndingPage2Data>
     {
         [Header("UI References")]
-        [SerializeField] private RawImage videoDisplay; 
-        [SerializeField] private VideoPlayer videoPlayer; 
         [SerializeField] private Text descriptionText; 
+        [SerializeField] private Image loadingBgImage; // 로딩바 배경
+        [SerializeField] private Image loadingFillImage; // 로딩바 채우기(Fill) 이미지
+
+        [Header("Sound Settings")]
+        [Tooltip("로딩 효과음 반복 재생 간격(초). 사운드 파일의 실제 길이에 맞춰 자연스럽게 조절해 주세요.")]
+        [SerializeField] private float loadingSoundInterval = 7.0f;
         
-        private const float FixedDuration = 15f; 
-        
+        private Coroutine _loadingSoundRoutine;
+
+        /// <summary>
+        /// 데이터 설정 및 초기 투명도 세팅을 수행합니다.
+        /// </summary>
         protected override void SetupData(EndingPage2Data data)
         {
             if (descriptionText && data.descriptionText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-                descriptionText.text = "00:00";
+                SetTextAlpha(0f); 
             }
+            else Debug.LogWarning("[EndingPage2] UI 텍스트 컴포넌트나 데이터가 없습니다.");
         }
 
+        /// <summary>
+        /// 페이지 진입 시 리얼타임 영상 합성을 시작합니다.
+        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
-            SetImageAlpha(videoDisplay, 0f);
-            
-            if (descriptionText) 
-            {
-                Color c = descriptionText.color;
-                c.a = 0f;
-                descriptionText.color = c;
-            }
-            
-            StartCoroutine(PresentationRoutine());
+
+            if (loadingFillImage) loadingFillImage.fillAmount = 0f;
+
+            StartCoroutine(FadeText(0f, 1f, 1.0f));
+            StartCoroutine(ProcessRealtimeVideoRoutine());
         }
 
-        public override void OnExit()
-        {
-            base.OnExit();
-            StopAllCoroutines();
-        }
-        
         /// <summary>
-        /// 영상 재생 및 타이머 연출의 전체 시퀀스를 제어합니다.
-        /// (준비 -> 재생/페이드인 -> 15초 타이머 -> 정지/페이드아웃 -> 완료)
+        /// 리얼타임 영상 변환을 지시하고, 완료될 때까지 진행도를 모니터링합니다.
         /// </summary>
-        private IEnumerator PresentationRoutine()
-        {   
-            if (!videoPlayer || !videoDisplay)
+        private IEnumerator ProcessRealtimeVideoRoutine()
+        {
+            if (!TimeLapseRecorder.Instance)
             {
-                CompleteStep();
-                yield break;
-            }
-            
-            string filePath = GetVideoPath();
-
-            if (!File.Exists(filePath))
-            {
-                Debug.LogError($"[EndingPage2] 영상 파일을 찾을 수 없습니다: {filePath}");
+                Debug.LogWarning("[EndingPage2] TimeLapseRecorder가 존재하지 않습니다. 합성을 건너뜁니다.");
+                if (loadingFillImage) loadingFillImage.fillAmount = 1f;
+                yield return CoroutineData.GetWaitForSeconds(2.0f);
                 CompleteStep();
                 yield break;
             }
 
-            Debug.Log($"[EndingPage2] 재생 시작: {filePath}");
+            yield return CoroutineData.GetWaitForSeconds(0.5f); // 텍스트가 나타날 시간 부여
 
-            // 2. 재생 준비
-            videoPlayer.source = VideoSource.Url;
-            videoPlayer.url = new Uri(filePath).AbsoluteUri; 
-            videoPlayer.Prepare();
-
-            // 준비 완료 대기 (최대 10초 타임아웃)
-            float prepareWait = 0f;
-            while (!videoPlayer.isPrepared && prepareWait < 10f)
+            // 이미 변환 중이 아니며, 영상이 없는 경우에만 시작
+            if (!TimeLapseRecorder.Instance.IsRealtimeProcessing && string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastRealtimeVideoPath))
             {
-                yield return null;
-                prepareWait += Time.deltaTime;
+                Debug.Log("[EndingPage2] 리얼타임 영상 변환 시작");
+                TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
             }
 
-            if (!videoPlayer.isPrepared)
+            // 로딩 사운드 루프 시작
+            if (_loadingSoundRoutine != null) StopCoroutine(_loadingSoundRoutine);
+            _loadingSoundRoutine = StartCoroutine(LoadingSoundLoopRoutine());
+
+            // 변환 중일 때 진행도를 로딩바에 반영
+            while (TimeLapseRecorder.Instance.IsRealtimeProcessing)
             {
-                CompleteStep();
-                yield break;
-            }
-
-            // 텍스처 생성 대기
-            float textureWait = 0f;
-            while (!videoPlayer.texture && textureWait < 5f)
-            {
-                yield return null;
-                textureWait += Time.deltaTime;
-            }
-
-            if (!videoPlayer.texture)
-            {
-                Debug.LogError("[EndingPage2] Video prepared but texture is null.");
-                CompleteStep();
-                yield break;
-            }
-
-            // 3. 재생 시작 및 화면/텍스트 페이드 인
-            videoDisplay.texture = videoPlayer.texture;
-            videoPlayer.Play();
-            
-            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
-
-            // 4. 타이머 진행 (15초 고정)
-            float currentTimer = 0f;
-            while (currentTimer < FixedDuration)
-            {
-                currentTimer += Time.deltaTime;
-                float displayTime = Mathf.Min(currentTimer, FixedDuration);
-
-                if (descriptionText)
+                if (loadingFillImage)
                 {
-                    int seconds = Mathf.FloorToInt(displayTime);
-                    int milliseconds = Mathf.FloorToInt((displayTime * 100) % 100);
-                    descriptionText.text = $"{seconds:00}:{milliseconds:00}";
+                    // 부드러운 UI 갱신을 위해 Lerp 사용
+                    loadingFillImage.fillAmount = Mathf.Lerp(loadingFillImage.fillAmount, TimeLapseRecorder.Instance.RealtimeProgress, Time.deltaTime * 5f);
                 }
                 yield return null;
             }
-            
-            // 타이머 종료 확정 표시
-            if (descriptionText) 
-            {
-                int finalSeconds = Mathf.FloorToInt(FixedDuration);
-                int finalMilliseconds = Mathf.FloorToInt((FixedDuration * 100) % 100);
-                descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
-            }
-            
-            if (videoPlayer.isPlaying) videoPlayer.Pause();
 
+            // 로딩 사운드 루프 종료 (변환 완료 시)
+            if (_loadingSoundRoutine != null)
+            {
+                StopCoroutine(_loadingSoundRoutine);
+                _loadingSoundRoutine = null;
+            }
+
+            // 완료 보장
+            if (loadingFillImage) loadingFillImage.fillAmount = 1f;
+
+            // 로딩 완료 후 유저가 인지할 수 있는 여운 시간 부여
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
-            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 1f));
-            
             CompleteStep();
         }
-
-        private string GetVideoPath()
-        {   
-            string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
-            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            
-            // GameManager에서 이름 가져오기
-            string nameA = "PlayerA";
-            string nameB = "PlayerB";
-
-            if (GameManager.Instance)
-            {
-                nameA = GameManager.Instance.PlayerALastName;
-                nameB = GameManager.Instance.PlayerBLastName;
-            }
-            
-            // 파일명 조합
-            string combined = $"{nameA}{nameB}";
-            string clean = combined.Replace("\n", "").Replace("\r", "").Trim();
-            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
-            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
-            string safeName = Regex.Replace(clean, invalidRegStr, "");
-
-            // Fallback for empty names
-            if (string.IsNullOrWhiteSpace(safeName)) safeName = "UnknownPlayers";
-
-            string dynamicVideoFileName = $"{safeName}_Realtime.mp4";
-            
-            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, dynamicVideoFileName);
-        }
-
-        private IEnumerator FadeRawImage(RawImage t, float s, float e, float d)
-        {
-            if (!t) yield break;
-            float time = 0f;
-            SetImageAlpha(t, s);
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                SetImageAlpha(t, Mathf.Lerp(s, e, time/d)); 
-                yield return null; 
-            }
-            SetImageAlpha(t, e);
-        }
         
-        private IEnumerator FadeText(Text t, float s, float e, float d)
+        /// <summary>
+        /// 로딩이 진행되는 동안 일정 간격으로 사운드를 무한 재생합니다.
+        /// </summary>
+        private IEnumerator LoadingSoundLoopRoutine()
         {
-            if (!t) yield break;
-            float time = 0f;
-            Color c = t.color;
-            c.a = s;
-            t.color = c;
-            
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                c.a = Mathf.Lerp(s, e, time/d);
-                t.color = c;
-                yield return null; 
+            while (true)
+            {
+                if (SoundManager.Instance) SoundManager.Instance.PlaySFX("키오스크_3");
+                yield return CoroutineData.GetWaitForSeconds(loadingSoundInterval);
             }
-            c.a = e;
-            t.color = c;
         }
 
-        private void SetImageAlpha(RawImage i, float a) 
-        { 
-            if(i) 
-            { 
-                Color c = i.color; 
-                c.a = a; 
-                i.color = c; 
-            } 
+        /// <summary>
+        /// 페이지 퇴장 시, 다음 페이지들을 보는 동안 백그라운드에서 타임랩스 영상을 변환하도록 지시합니다.
+        /// </summary>
+        public override void OnExit()
+        {
+            if (_loadingSoundRoutine != null)
+            {
+                StopCoroutine(_loadingSoundRoutine);
+                _loadingSoundRoutine = null;
+            }
+            
+            base.OnExit();
+            
+            if (TimeLapseRecorder.Instance)
+            {
+                Debug.Log("[EndingPage2] OnExit: 타임랩스 영상 백그라운드 변환 시작");
+                TimeLapseRecorder.Instance.ConvertToVideo();
+            }
+        }
+
+        private IEnumerator FadeText(float start, float end, float duration)
+        {
+            if (!descriptionText) yield break;
+            
+            float t = 0f;
+            SetTextAlpha(start);
+            
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                SetTextAlpha(Mathf.Lerp(start, end, t / duration));
+                yield return null;
+            }
+            SetTextAlpha(end);
+        }
+
+        private void SetTextAlpha(float alpha)
+        {
+            if (descriptionText)
+            {
+                Color c = descriptionText.color;
+                c.a = alpha;
+                descriptionText.color = c;
+            }
         }
     }
 }

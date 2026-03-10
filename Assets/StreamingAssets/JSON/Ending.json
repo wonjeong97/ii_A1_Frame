@@ -21,6 +21,17 @@
   },
   "page2": {
     "descriptionText": {
+      "name": "Text_PleaseWait",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "기록된 우리의 모습을 준비 중 입니다.\n잠시만 기다려 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.196, "g": 0.196, "b": 0.196, "a": 1}
+    }
+  },
+  "page3": {
+    "descriptionText": {
       "name": "Text_VideoDesc",
       "position": {"x": 108.84, "y": -912.48},
       "scale": {"x": 1, "y": 1, "z": 1},
@@ -30,7 +41,7 @@
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     }
   },
-  "page3": {
+  "page4": {
     "descriptionText1": {
       "name": "Text_Piece",
       "position": {"x": 960, "y": -300},
@@ -50,7 +61,7 @@
       "fontColor": {"r": 0.196, "g": 0.196, "b": 0.196, "a": 1}
     }
   },
-  "page4": {
+  "page5": {
     "descriptionText": {
       "name": "Text_End",
       "position": {"x": 960, "y": -867},

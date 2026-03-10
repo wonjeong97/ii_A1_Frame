@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
+using System.IO;
+using System.Text.RegularExpressions;
 using My.Scripts.Core;
-using My.Scripts.Global; 
+using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -13,89 +16,206 @@ namespace My.Scripts._18_Ending.Pages
     [Serializable]
     public class EndingPage3Data
     {
-        public TextSetting descriptionText1; 
-        public TextSetting descriptionText2; 
+        public TextSetting descriptionText; 
     }
 
+    /// <summary> 
+    /// 엔딩 3페이지 컨트롤러
+    /// 플레이 중 녹화된 '리얼타임' 영상을 재생하며, 영상의 실제 길이와 무관하게 15초 카운트다운 연출을 동기화.
+    /// </summary>
     public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
         [Header("UI References")]
-        [SerializeField] private Text text1; 
-        [SerializeField] private Text text2; 
-        [SerializeField] private CanvasGroup imageCanvasGroup;
-        [SerializeField] private CanvasGroup textCanvasGroup;
+        [SerializeField] private RawImage videoDisplay; 
+        [SerializeField] private VideoPlayer videoPlayer; 
+        [SerializeField] private Text descriptionText; 
         
-        private const int PagePieceReward = 5;
-        private EndingPage3Data _data; 
-        private bool _hasSentPieceUpdate;
-
+        private const float FixedDuration = 15f; 
+        
         protected override void SetupData(EndingPage3Data data)
         {
-            _data = data;
-            if (text1) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
-            if (text2) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
+            if (descriptionText && data.descriptionText != null)
+            {
+                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+                descriptionText.text = "00:00";
+            }
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
+            SetImageAlpha(videoDisplay, 0f);
             
-            if (textCanvasGroup) textCanvasGroup.alpha = 0;
-            if (imageCanvasGroup) imageCanvasGroup.alpha = 0f;
-
-            UpdateTotalPiecesText();
-
-            if (GameManager.Instance && !_hasSentPieceUpdate)
+            if (descriptionText) 
             {
-                GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
-                _hasSentPieceUpdate = true; 
+                Color c = descriptionText.color;
+                c.a = 0f;
+                descriptionText.color = c;
             }
             
-            StartCoroutine(SequenceRoutine());
+            StartCoroutine(PresentationRoutine());
         }
 
-        private void UpdateTotalPiecesText()
+        public override void OnExit()
         {
-            if (text2 && _data?.descriptionText2 != null)
+            base.OnExit();
+            StopAllCoroutines();
+        }
+        
+        /// <summary>
+        /// 영상 재생 및 타이머 연출의 전체 시퀀스를 제어합니다.
+        /// </summary>
+        private IEnumerator PresentationRoutine()
+        {   
+            if (!videoPlayer || !videoDisplay)
             {
-                if (!GameManager.Instance) return;
-                int existingPieces = GameManager.Instance.TotalPieces;
-                int pendingReward = _hasSentPieceUpdate ? 0 : PagePieceReward;
-                int totalPieces = existingPieces + pendingReward;
+                CompleteStep();
+                yield break;
+            }
+            
+            string filePath = GetVideoPath();
 
-                string originalText = _data.descriptionText2.text;
-                if (!string.IsNullOrEmpty(originalText))
+            if (!File.Exists(filePath))
+            {
+                Debug.LogError($"[EndingPage3] 영상 파일을 찾을 수 없습니다: {filePath}");
+                CompleteStep();
+                yield break;
+            }
+
+            Debug.Log($"[EndingPage3] 재생 시작: {filePath}");
+
+            // 2. 재생 준비
+            videoPlayer.source = VideoSource.Url;
+            videoPlayer.url = new Uri(filePath).AbsoluteUri; 
+            videoPlayer.Prepare();
+
+            // 준비 완료 대기 (최대 10초 타임아웃)
+            float prepareWait = 0f;
+            while (!videoPlayer.isPrepared && prepareWait < 10f)
+            {
+                yield return null;
+                prepareWait += Time.deltaTime;
+            }
+
+            if (!videoPlayer.isPrepared)
+            {
+                CompleteStep();
+                yield break;
+            }
+
+            // 텍스처 생성 대기
+            float textureWait = 0f;
+            while (!videoPlayer.texture && textureWait < 5f)
+            {
+                yield return null;
+                textureWait += Time.deltaTime;
+            }
+
+            if (!videoPlayer.texture)
+            {
+                Debug.LogError("[EndingPage3] Video prepared but texture is null.");
+                CompleteStep();
+                yield break;
+            }
+
+            // 3. 재생 시작 및 화면/텍스트 페이드 인
+            videoDisplay.texture = videoPlayer.texture;
+            videoPlayer.Play();
+            
+            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
+
+            // 4. 타이머 진행 (15초 고정)
+            float currentTimer = 0f;
+            while (currentTimer < FixedDuration)
+            {
+                currentTimer += Time.deltaTime;
+                float displayTime = Mathf.Min(currentTimer, FixedDuration);
+
+                if (descriptionText)
                 {
-                    text2.text = originalText.Replace("{0}", totalPieces.ToString());
+                    int seconds = Mathf.FloorToInt(displayTime);
+                    int milliseconds = Mathf.FloorToInt((displayTime * 100) % 100);
+                    descriptionText.text = $"{seconds:00}:{milliseconds:00}";
                 }
+                yield return null;
             }
-        }
+            
+            // 타이머 종료 확정 표시
+            if (descriptionText) 
+            {
+                int finalSeconds = Mathf.FloorToInt(FixedDuration);
+                int finalMilliseconds = Mathf.FloorToInt((FixedDuration * 100) % 100);
+                descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
+            }
+            
+            if (videoPlayer.isPlaying) videoPlayer.Pause();
 
-        private IEnumerator SequenceRoutine()
-        {
-            yield return CoroutineData.GetWaitForSeconds(0.5f);
-            SoundManager.Instance?.PlaySFX("공통_6");
-            yield return StartCoroutine(FadeCanvasGroup(imageCanvasGroup, 0f, 1f, 1.0f));
-            yield return CoroutineData.GetWaitForSeconds(2.0f);
-            yield return StartCoroutine(FadeCanvasGroup(textCanvasGroup, 0f, 1f, 1.0f));
-            yield return CoroutineData.GetWaitForSeconds(3.0f);
+            yield return CoroutineData.GetWaitForSeconds(1.5f);
 
+            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 1f));
+            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 1f));
+            
             CompleteStep();
         }
 
-        private IEnumerator FadeCanvasGroup(CanvasGroup cg, float s, float e, float d)
+        private string GetVideoPath()
+        {   
+            string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            
+            string userIdStr = "0";
+            if (GameManager.Instance && SessionManager.Instance)
+            {
+                userIdStr = SessionManager.Instance.CurrentUserId.ToString();
+            }
+            
+            string dynamicVideoFileName = $"{userIdStr}_Realtime.mp4";
+            
+            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, dynamicVideoFileName);
+        }
+
+        private IEnumerator FadeRawImage(RawImage t, float s, float e, float d)
         {
-            if (!cg) yield break;
+            if (!t) yield break;
             float time = 0f;
-            cg.alpha = s;
+            SetImageAlpha(t, s);
+            while(time < d) 
+            { 
+                time += Time.deltaTime; 
+                SetImageAlpha(t, Mathf.Lerp(s, e, time/d)); 
+                yield return null; 
+            }
+            SetImageAlpha(t, e);
+        }
+        
+        private IEnumerator FadeText(Text t, float s, float e, float d)
+        {
+            if (!t) yield break;
+            float time = 0f;
+            Color c = t.color;
+            c.a = s;
+            t.color = c;
             
             while(time < d) 
             { 
                 time += Time.deltaTime; 
-                cg.alpha = Mathf.Lerp(s, e, time/d); 
+                c.a = Mathf.Lerp(s, e, time/d);
+                t.color = c;
                 yield return null; 
             }
-            cg.alpha = e;
+            c.a = e;
+            t.color = c;
+        }
+
+        private void SetImageAlpha(RawImage i, float a) 
+        { 
+            if(i) 
+            { 
+                Color c = i.color; 
+                c.a = a; 
+                i.color = c; 
+            } 
         }
     }
 }

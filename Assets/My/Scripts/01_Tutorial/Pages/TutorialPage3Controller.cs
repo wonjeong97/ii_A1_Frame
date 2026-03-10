@@ -55,12 +55,12 @@ namespace My.Scripts._01_Tutorial.Pages
             base.OnEnter();
 
             // 화면이 켜질 때 최신 이름 데이터 적용
-            if (GameManager.Instance && _data != null)
+            if (SessionManager.Instance && _data != null)
             {
                 if (nicknameA && _data.nicknamePlayerA != null)
-                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", GameManager.Instance.PlayerALastName).Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+                    nicknameA.text = _data.nicknamePlayerA.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
                 if (nicknameB && _data.nicknamePlayerB != null)
-                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", GameManager.Instance.PlayerALastName).Replace("{nameB}", GameManager.Instance.PlayerBLastName);
+                    nicknameB.text = _data.nicknamePlayerB.text.Replace("{nameA}", SessionManager.Instance.PlayerALastName).Replace("{nameB}", SessionManager.Instance.PlayerBLastName);
             }
 
             ResetIdleState(true);
