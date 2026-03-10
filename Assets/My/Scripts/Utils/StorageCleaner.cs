@@ -7,13 +7,16 @@ using Cysharp.Threading.Tasks;
 namespace My.Scripts.Utils
 {
     /// <summary>
-    /// 앱 실행 시 백그라운드에서 동작하여 오래된 사진 및 영상 폴더를 정리하는 유틸리티 클래스
+    /// 앱 실행 시 백그라운드에서 오래된 데이터(사진, 영상)를 자동 삭제하여 디스크 용량을 관리하는 유틸리티입니다.
     /// </summary>
     public static class StorageCleaner
     {
-        private const int MaxKeepDays = 7; // 보관할 최대 기간 (일)
+        private const int MaxKeepDays = 3; 
 
-        // 프로그램이 실행되고 첫 씬이 로드된 직후 1회 실행.
+        /// <summary> 
+        /// 첫 씬 로드 직후 자동으로 실행됩니다. 
+        /// 메인 스레드 프리징을 방지하기 위해 UniTask.RunOnThreadPool을 사용하여 백그라운드에서 작업을 수행합니다.
+        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void RunCleanupOnStartup()
         {
@@ -23,12 +26,11 @@ namespace My.Scripts.Utils
                 {
                     Debug.Log($"[StorageCleaner] 백그라운드 자동 정리 시작 (보관 기준: {MaxKeepDays}일)");
 
-                    // 루트 경로 가져오기
                     string dataPath = Application.dataPath;
                     DirectoryInfo parentDir = Directory.GetParent(dataPath);
                     string rootPath = parentDir != null ? parentDir.FullName : dataPath;
 
-                    // 검사할 타겟 최상위 폴더 경로들
+                    // 스캔 대상: 합성 사진, 리얼타임 비디오, 타임랩스 비디오 폴더
                     string[] targetFolders = {
                         Path.Combine(rootPath, "Pictures"),
                         Path.Combine(rootPath, "Timelapse", "Realtime_Video"),
@@ -37,17 +39,13 @@ namespace My.Scripts.Utils
                         Path.Combine(rootPath, "Timelapse", "Timelapse_Source")
                     };
 
-                    // 기준 날짜 계산
-                    DateTime thresholdDate = DateTime.Now.Date.AddDays(-MaxKeepDays);
+                    DateTime thresholdDate = DateTime.Now.AddDays(-MaxKeepDays);
 
-                    foreach (string folderPath in targetFolders)
+                    foreach (string folder in targetFolders)
                     {
-                        CleanOldFolders(folderPath, thresholdDate);
+                        CleanOldFolders(folder, thresholdDate);
                     }
-
-                    Debug.Log("[StorageCleaner] 백그라운드 자동 정리 완료");
-                
-                }).Forget(); // .Forget()을 붙여 비동기 작업이 백그라운드에서 안전하게 독립적으로 실행되도록 명시
+                }).Forget();
             }
             catch (Exception e)
             {
@@ -55,30 +53,39 @@ namespace My.Scripts.Utils
             }
         }
 
+        /// <summary> 
+        /// 대상 폴더 내 하위 폴더들을 전수 조사하여 날짜 기준에 미달하는 데이터를 삭제합니다. 
+        /// </summary>
         private static void CleanOldFolders(string targetPath, DateTime thresholdDate)
         {
             if (!Directory.Exists(targetPath)) return;
 
             DirectoryInfo dirInfo = new DirectoryInfo(targetPath);
-            DirectoryInfo[] subDirs = dirInfo.GetDirectories(); // 하위 폴더들 (예: "2026-03-02")
+            // "yyyy-MM-dd" 형식으로 생성된 하위 날짜 폴더들을 가져옵니다.
+            DirectoryInfo[] subDirs = dirInfo.GetDirectories(); 
 
             foreach (DirectoryInfo subDir in subDirs)
             {
-                // 폴더 이름이 "yyyy-MM-dd" 형식의 날짜인지 파싱 시도
+                // 폴더 명칭이 날짜 형식이 아닌 경우(예: 임시 폴더) 무시하여 데이터 손실 방지
                 if (DateTime.TryParseExact(subDir.Name, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime folderDate))
                 {
-                    // 폴더의 날짜가 기준 날짜보다 이전(과거)이라면 삭제
+                    // 기준 날짜보다 이전(과거)인 폴더만 선별 삭제
                     if (folderDate.Date < thresholdDate)
                     {
                         try
                         {
-                            subDir.Delete(true); // true: 내부 파일까지 모두 강제 삭제
+                            // 내부 파일 및 하위 디렉토리를 포함하여 강제 삭제
+                            subDir.Delete(true); 
                             Debug.Log($"[StorageCleaner] 오래된 폴더 삭제 완료: {subDir.FullName}");
+                        }
+                        catch (IOException)
+                        {
+                            // 파일이 다른 프로세스(FFmpeg 등)에 의해 사용 중일 때 발생하는 충돌 무시
+                            Debug.LogWarning($"[StorageCleaner] 폴더가 사용 중임: {subDir.Name}");
                         }
                         catch (Exception e)
                         {
-                            // 파일이 열려있거나 권한이 없는 등 예외 발생 시 에러 로그만 남김 (게임 멈춤 방지)
-                            Debug.LogWarning($"[StorageCleaner] 폴더 삭제 실패 ({subDir.FullName}): {e.Message}");
+                            Debug.LogWarning($"[StorageCleaner] 폴더 삭제 실패 ({subDir.Name}): {e.Message}");
                         }
                     }
                 }

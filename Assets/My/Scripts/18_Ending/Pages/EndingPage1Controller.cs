@@ -9,6 +9,7 @@ using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
+    /// <summary> 엔딩 1페이지용 데이터 구조체 </summary>
     [Serializable]
     public class EndingPage1Data
     {
@@ -17,8 +18,8 @@ namespace My.Scripts._18_Ending.Pages
     }
 
     /// <summary> 
-    /// 엔딩 씬의 첫 번째 페이지를 담당하는 컨트롤러입니다.
-    /// 두 개의 텍스트를 순차적으로 페이드 전환(Cross-fade)하여 보여주는 연출을 수행합니다.
+    /// 엔딩 씬의 진입 안내를 담당하는 컨트롤러입니다.
+    /// 두 개의 안내 문구를 순차적인 페이드 효과(Cross-fade)로 연출하여 몰입감을 높입니다.
     /// </summary>
     public class EndingPage1Controller : GamePage<EndingPage1Data>
     {
@@ -27,11 +28,12 @@ namespace My.Scripts._18_Ending.Pages
 
         private EndingPage1Data _data;
 
+        /// <summary> JSON 설정 로드 및 첫 번째 문구 즉시 활성화 </summary>
         protected override void SetupData(EndingPage1Data data)
         {
             _data = data;
             
-            // 페이지 진입 시 첫 번째 텍스트가 바로 보여야 하므로 미리 설정합니다.
+            // 진입 시 화면이 비어있지 않도록 첫 문구를 미리 렌더링
             if (descriptionText && _data.firstText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.firstText);
@@ -39,51 +41,50 @@ namespace My.Scripts._18_Ending.Pages
             }
         }
 
+        /// <summary> 페이지 활성화 시 연출 시퀀스 가동 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             StartCoroutine(SequenceRoutine());
         }
 
-        /// <summary>
-        /// 텍스트 전환 시퀀스를 제어합니다. (텍스트1 -> 대기 -> 페이드아웃 -> 텍스트2 -> 페이드인 -> 완료)
+        /// <summary> 
+        /// 텍스트의 가독성과 연출 흐름을 위해 대기 및 페이드 효과를 순차 제어합니다.
+        /// (텍스트1 유지 -> 페이드아웃 -> 내용 교체 -> 페이드인)
         /// </summary>
         private IEnumerator SequenceRoutine()
         {
-            // 1. 첫 번째 텍스트 표시 확인
+            // 데이터 무결성 재확인 후 첫 문구 노출
             if (descriptionText && _data?.firstText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.firstText);
                 SetTextAlpha(1f);
             }
             
-            // 사용자가 첫 문구를 읽을 시간을 줍니다.
+            // 사용자가 첫 문구를 인지할 수 있는 최소 시간 확보
             yield return CoroutineData.GetWaitForSeconds(2.0f); 
 
-            // 2. 텍스트 교체를 위해 페이드 아웃 (사라짐)
+            // 자연스러운 내용 교체를 위한 투명도 연출
             yield return StartCoroutine(FadeText(1f, 0f, 1f));
 
-            // 3. 내용 교체 ("STEP.2...")
+            // 두 번째 단계 안내 내용으로 갱신
             if (descriptionText && _data?.secondText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.secondText);
-                SoundManager.Instance?.PlaySFX("공통_13");
+                SoundManager.Instance?.PlaySFX("공통_13"); // 시각 변화에 따른 효과음 강조
             }
 
-            // 4. 두 번째 텍스트 페이드 인 (나타남)
+            // 교체된 내용을 부드럽게 노출
             yield return StartCoroutine(FadeText(0f, 1f, 1f));
             
-            // 5. 충분히 보여준 뒤 다음 단계로 넘어갑니다.
+            // 안내 완료 후 다음 페이지로 자동 전환
             yield return CoroutineData.GetWaitForSeconds(2.0f);
             CompleteStep();
         }
 
-        /// <summary>
-        /// 텍스트의 투명도(Alpha)를 부드럽게 변경합니다.
+        /// <summary> 
+        /// 지정된 시간 동안 텍스트 투명도를 선형 보간하여 시각적 전환을 수행합니다. 
         /// </summary>
-        /// <param name="start">시작 알파값 (0~1)</param>
-        /// <param name="end">목표 알파값 (0~1)</param>
-        /// <param name="duration">진행 시간(초)</param>
         private IEnumerator FadeText(float start, float end, float duration)
         {
             if (!descriptionText) yield break;
@@ -100,6 +101,7 @@ namespace My.Scripts._18_Ending.Pages
             SetTextAlpha(end);
         }
 
+        /// <summary> UI 텍스트 컬러 속성의 알파값을 직접 수정합니다. </summary>
         private void SetTextAlpha(float alpha)
         {
             if (descriptionText)

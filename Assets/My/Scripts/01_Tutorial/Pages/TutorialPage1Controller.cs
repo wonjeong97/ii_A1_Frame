@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks; 
 using My.Scripts.Core;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
@@ -12,32 +13,33 @@ using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
-{
+{   
+    /// <summary> 튜토리얼 1페이지용 데이터 구조체 </summary>
     [Serializable]
     public class TutorialPage1Data
     {
         public TextSetting descriptionText; 
-        
         public string warningMessage; 
         public string resetMessage;   
     }
-
+    
     public class TutorialPage1Controller : PopupGamePage<TutorialPage1Data>
     {
         [Header("Page 1 UI")]
         [SerializeField] private Text descriptionText;
-        
         [Header("API Manager")]
         [SerializeField] private APIManager apiManager;
-        
-        private readonly float pollInterval = 1.0f; // 폴링 간격 (1초)
+        [Header("Polling Settings")]
+        [SerializeField] private float basePollInterval = 1.0f; 
+        [SerializeField] private float maxPollInterval = 10.0f; 
+
+        private float _currentPollInterval; 
         private readonly float fadeTime = 1f;
         private Coroutine _pollCoroutine; 
 
         protected override void Awake()
         {
             base.Awake();
-            
             if (descriptionText)
             {
                 Color c = descriptionText.color;
@@ -48,24 +50,15 @@ namespace My.Scripts._01_Tutorial.Pages
 
         protected override void SetupData(TutorialPage1Data data)
         {
-            if (descriptionText) 
-            {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            }
+            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
         public override void OnEnter()
         {
             base.OnEnter(); 
-
             ResetIdleState(true);
-
-            if (descriptionText)
-            {
-                StartCoroutine(FadeInTextRoutine());
-            }
-
+            if (descriptionText) StartCoroutine(FadeInTextRoutine());
             if (_pollCoroutine != null) StopCoroutine(_pollCoroutine);
             _pollCoroutine = StartCoroutine(PollRoomStateRoutine());
         }
@@ -77,7 +70,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 StopCoroutine(_pollCoroutine);
                 _pollCoroutine = null;
             }
-            
             base.OnExit();
         }
 
@@ -86,124 +78,88 @@ namespace My.Scripts._01_Tutorial.Pages
             if (Input.anyKey || Input.touchCount > 0)
             {
                 ResetIdleState(false); 
-
-                if (Input.GetKeyDown(KeyCode.Return))
-                {
-                    CompleteStep(); 
-                }
+                if (Input.GetKeyDown(KeyCode.Return)) CompleteStep(); 
             }
-            else
-            {
-                UpdateInactivity();
-            }
+            else UpdateInactivity();
         }
 
         private IEnumerator PollRoomStateRoutine()
         {
-            float emptyStartTime = -1f; 
+            float emptyUserStartTime = -1f; 
+            _currentPollInterval = basePollInterval;
 
             while (true)
             {
                 if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
                 {
-                    yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                    yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
                     continue;
                 }
 
-                // 상수 사용
-                string checkRoomStateUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code={GameConstants.Module.Code.ToLower()}";
-                string getCurrentUserUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code={GameConstants.Module.Code.ToLower()}";
+                string checkUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code={GameConstants.Module.Code.ToLower()}";
+                string userUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code={GameConstants.Module.Code.ToLower()}";
 
-                bool isEmptyThisPoll = false;
+                bool isRoomEmpty = false;
+                bool isNetworkError = false;
 
-                using (UnityWebRequest stateReq = UnityWebRequest.Get(checkRoomStateUrl))
+                using (UnityWebRequest stateReq = UnityWebRequest.Get(checkUrl))
                 {
                     stateReq.timeout = 10; 
-                    
                     yield return stateReq.SendWebRequest();
 
-                    if (stateReq.result != UnityWebRequest.Result.ConnectionError && 
-                        stateReq.result != UnityWebRequest.Result.ProtocolError)
+                    if (stateReq.result == UnityWebRequest.Result.Success)
                     {
-                        string responseText = stateReq.downloadHandler.text;
-                        
-                        if (!string.IsNullOrEmpty(responseText) && responseText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            isEmptyThisPoll = true;
-                        }
+                        // # FIX: 여기서 즉시 리셋하지 않고 전체 사이클 성공 시 리셋하도록 변경
+                        if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
+                            isRoomEmpty = true;
                     }
+                    else isNetworkError = true;
                 }
 
-                if (!isEmptyThisPoll)
+                if (!isNetworkError && !isRoomEmpty)
                 {
-                    using (UnityWebRequest userReq = UnityWebRequest.Get(getCurrentUserUrl))
+                    bool isUserEmpty = false;
+                    using (UnityWebRequest userReq = UnityWebRequest.Get(userUrl))
                     {
                         userReq.timeout = 10; 
-                        
                         yield return userReq.SendWebRequest();
 
-                        if (userReq.result != UnityWebRequest.Result.ConnectionError && 
-                            userReq.result != UnityWebRequest.Result.ProtocolError)
+                        if (userReq.result == UnityWebRequest.Result.Success)
                         {
                             string rawText = userReq.downloadHandler.text;
-                            
-                            if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                isEmptyThisPoll = true;
-                            }
+                            if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0) isUserEmpty = true;
                             else if (rawText.Contains(","))
                             {
-                                emptyStartTime = -1f; 
+                                // 전체 요청 성공 시에만 폴링 주기 복구
+                                _currentPollInterval = basePollInterval;
+                                emptyUserStartTime = -1f;
 
-                                string cleanData = "";
-                                string[] lines = rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                                
-                                foreach (string line in lines)
+                                string[] parts = rawText.Split(new[] { '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (parts.Length >= 1)
                                 {
-                                    string trimmed = line.Trim();
-                                    if (trimmed.Contains(",") && !trimmed.StartsWith("<"))
+                                    string uidLeft = parts[0].Trim();
+                                    if (parts.Length >= 2 && SessionManager.Instance)
                                     {
-                                        cleanData = trimmed;
-                                        break;
+                                        SessionManager.Instance.PlayerAUid = uidLeft;
+                                        SessionManager.Instance.PlayerBUid = parts[1].Trim();
                                     }
-                                }
 
-                                if (!string.IsNullOrEmpty(cleanData))
-                                {
-                                    string[] parts = cleanData.Split(',');
-                                    if (parts.Length >= 1)
-                                    {
-                                        string uidLeft = parts[0].Trim();
+                                    if (apiManager)
+                                    {   
+                                        bool fetchSuccess = false;
+                                        bool fetchFaulted = false;
 
-                                        if (parts.Length >= 2 && GameManager.Instance)
+                                        // # FIX: 타임아웃을 25초로 확장
+                                        yield return apiManager.FetchDataAsync(uidLeft)
+                                                               .Timeout(TimeSpan.FromSeconds(25))
+                                                               .ToCoroutine(
+                                                                    r => fetchSuccess = r, 
+                                                                    ex => { fetchFaulted = true; }
+                                                                );
+
+                                        if (fetchFaulted || !fetchSuccess || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0)
                                         {
-                                            SessionManager.Instance.PlayerAUid = uidLeft;
-                                            SessionManager.Instance.PlayerBUid = parts[1].Trim();
-                                        }
-
-                                        if (apiManager)
-                                        {   
-                                            if (SessionManager.Instance) SessionManager.Instance.CurrentUserId = 0;
-                                            apiManager.FetchData(uidLeft);
-                                            float timeoutAt = Time.time + 11f;
-                                            while (GameManager.Instance &&
-                                                   SessionManager.Instance.CurrentUserId == 0 &&
-                                                   Time.time < timeoutAt)
-                                            {
-                                                yield return null;
-                                            }
-
-                                            if (!GameManager.Instance || SessionManager.Instance.CurrentUserId == 0)
-                                            {
-                                                Debug.LogWarning("[TutorialPage1] CurrentUserId 확정 실패. 다음 폴링에서 재시도합니다.");
-                                                yield return CoroutineData.GetWaitForSeconds(pollInterval);
-                                                continue;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            Debug.LogWarning("[TutorialPage1] APIManager를 찾을 수 없습니다.");
-                                            yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                                            yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
                                             continue;
                                         }
                                     }
@@ -212,52 +168,44 @@ namespace My.Scripts._01_Tutorial.Pages
                                 }
                             }
                         }
+                        else isNetworkError = true;
                     }
-                }
 
-                if (isEmptyThisPoll)
-                {
-                    if (emptyStartTime < 0f) emptyStartTime = Time.time;
-                    if (Time.time - emptyStartTime >= 15f)
+                    if (isUserEmpty)
                     {
-                        Debug.LogWarning($"[TutorialPage1] 15초 연속 EMPTY 감지. 강제 초기화를 진행합니다.");
-                        if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
-                        else SceneManager.LoadScene(GameConstants.Scene.Title);
-                        yield break;
+                        if (emptyUserStartTime < 0f) emptyUserStartTime = Time.time;
+                        if (Time.time - emptyUserStartTime >= 15f) isRoomEmpty = true;
                     }
                 }
-                else
+
+                if (isNetworkError)
                 {
-                    emptyStartTime = -1f;
+                    _currentPollInterval = Mathf.Min(_currentPollInterval * 2f, maxPollInterval);
                 }
 
-                yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                if (isRoomEmpty)
+                {
+                    if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                    yield break;
+                }
+
+                yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
             }
         }
 
         private IEnumerator FadeInTextRoutine()
         {
             float timer = 0f;
-
             while (timer < fadeTime)
             {
                 timer += Time.deltaTime;
-                float alpha = Mathf.Clamp01(timer / fadeTime);
-
                 if (descriptionText)
                 {
                     Color c = descriptionText.color;
-                    c.a = alpha;
+                    c.a = Mathf.Clamp01(timer / fadeTime);
                     descriptionText.color = c;
                 }
                 yield return null;
-            }
-
-            if (descriptionText)
-            {
-                Color c = descriptionText.color;
-                c.a = 1f;
-                descriptionText.color = c;
             }
         }
     }

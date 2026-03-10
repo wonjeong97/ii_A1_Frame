@@ -13,6 +13,7 @@ using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
+    /// <summary> 엔딩 3페이지용 데이터 구조체 </summary>
     [Serializable]
     public class EndingPage3Data
     {
@@ -20,8 +21,9 @@ namespace My.Scripts._18_Ending.Pages
     }
 
     /// <summary> 
-    /// 엔딩 3페이지 컨트롤러
-    /// 플레이 중 녹화된 '리얼타임' 영상을 재생하며, 영상의 실제 길이와 무관하게 15초 카운트다운 연출을 동기화.
+    /// 엔딩 3페이지 컨트롤러.
+    /// 녹화된 '리얼타임' 영상을 재생하며 15초 카운트다운을 시각적으로 동기화합니다.
+    /// 영상이 15초보다 짧을 경우 반복 재생하여 연출 시간을 유지합니다.
     /// </summary>
     public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
@@ -32,6 +34,7 @@ namespace My.Scripts._18_Ending.Pages
         
         private const float FixedDuration = 15f; 
         
+        /// <summary> 텍스트 설정 로드 및 타이머 초기값 할당 </summary>
         protected override void SetupData(EndingPage3Data data)
         {
             if (descriptionText && data.descriptionText != null)
@@ -41,6 +44,7 @@ namespace My.Scripts._18_Ending.Pages
             }
         }
 
+        /// <summary> 페이지 진입 시 UI 초기화 및 연출 시퀀스 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -56,6 +60,7 @@ namespace My.Scripts._18_Ending.Pages
             StartCoroutine(PresentationRoutine());
         }
 
+        /// <summary> 퇴장 시 모든 연출 코루틴 중단 </summary>
         public override void OnExit()
         {
             base.OnExit();
@@ -63,7 +68,8 @@ namespace My.Scripts._18_Ending.Pages
         }
         
         /// <summary>
-        /// 영상 재생 및 타이머 연출의 전체 시퀀스를 제어합니다.
+        /// 영상 준비, 재생, 타이머 진행 및 페이드 효과를 포함한 전체 연출 흐름을 제어합니다.
+        /// 영상 길이가 짧을 경우를 대비해 반복 재생(Loop) 모드를 활성화합니다.
         /// </summary>
         private IEnumerator PresentationRoutine()
         {   
@@ -82,14 +88,12 @@ namespace My.Scripts._18_Ending.Pages
                 yield break;
             }
 
-            Debug.Log($"[EndingPage3] 재생 시작: {filePath}");
-
-            // 2. 재생 준비
+            // 부드러운 재생 시작을 위해 비디오 준비 과정 수행
             videoPlayer.source = VideoSource.Url;
             videoPlayer.url = new Uri(filePath).AbsoluteUri; 
             videoPlayer.Prepare();
 
-            // 준비 완료 대기 (최대 10초 타임아웃)
+            // 파일 손상 시 무한 대기를 방지하기 위해 10초 타임아웃 설정
             float prepareWait = 0f;
             while (!videoPlayer.isPrepared && prepareWait < 10f)
             {
@@ -103,7 +107,7 @@ namespace My.Scripts._18_Ending.Pages
                 yield break;
             }
 
-            // 텍스처 생성 대기
+            // 첫 프레임 렌더링 지연을 방지하기 위해 텍스처 생성 대기
             float textureWait = 0f;
             while (!videoPlayer.texture && textureWait < 5f)
             {
@@ -118,14 +122,15 @@ namespace My.Scripts._18_Ending.Pages
                 yield break;
             }
 
-            // 3. 재생 시작 및 화면/텍스트 페이드 인
+            // 영상 길이가 15초보다 짧을 경우 끊기지 않도록 반복 재생 활성화
+            videoPlayer.isLooping = true;
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
             
             StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
             if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
 
-            // 4. 타이머 진행 (15초 고정)
+            // 영상 실제 길이와 상관없이 기획된 15초 연출 시간 준수
             float currentTimer = 0f;
             while (currentTimer < FixedDuration)
             {
@@ -149,6 +154,7 @@ namespace My.Scripts._18_Ending.Pages
                 descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
             }
             
+            // 15초 시점에 영상의 반복 상태와 관계없이 강제 정지
             if (videoPlayer.isPlaying) videoPlayer.Pause();
 
             yield return CoroutineData.GetWaitForSeconds(1.5f);
@@ -159,6 +165,7 @@ namespace My.Scripts._18_Ending.Pages
             CompleteStep();
         }
 
+        /// <summary> 현재 유저 ID와 오늘 날짜에 기반한 영상 파일 경로를 반환합니다. </summary>
         private string GetVideoPath()
         {   
             string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
@@ -175,6 +182,7 @@ namespace My.Scripts._18_Ending.Pages
             return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, dynamicVideoFileName);
         }
 
+        /// <summary> RawImage의 알파값을 선형 보간하여 시각적 전환 수행 </summary>
         private IEnumerator FadeRawImage(RawImage t, float s, float e, float d)
         {
             if (!t) yield break;
@@ -189,6 +197,7 @@ namespace My.Scripts._18_Ending.Pages
             SetImageAlpha(t, e);
         }
         
+        /// <summary> Text 컴포넌트의 알파값을 선형 보간하여 등장/퇴장 연출 </summary>
         private IEnumerator FadeText(Text t, float s, float e, float d)
         {
             if (!t) yield break;
@@ -208,6 +217,7 @@ namespace My.Scripts._18_Ending.Pages
             t.color = c;
         }
 
+        /// <summary> 지정된 이미지의 투명도 즉시 변경 </summary>
         private void SetImageAlpha(RawImage i, float a) 
         { 
             if(i) 

@@ -6,23 +6,27 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking; 
 using My.Scripts.Global;      
+using Cysharp.Threading.Tasks; // UniTask 활용을 위한 네임스페이스 추가
 
 namespace My.Scripts.Utils
 {
     [Serializable]
     public class CompositeSlot
     {
-        public string fileSuffix; // 예: "_Q1"
+        public string fileSuffix; 
 
         [Header("Position (Top-Left Pivot)")]
-        [Tooltip("배경의 좌상단(0,0)을 기준으로, 사진의 좌상단이 위치할 좌표입니다.\n(X: 오른쪽으로 이동, Y: 아래로 이동)")]
+        [Tooltip("배경의 좌상단(0,0)을 기준으로, 사진의 좌상단이 위치할 좌표입니다.")]
         public Vector2 position; 
         
         [Header("Scale")]
         public Vector2 scale = Vector2.one; 
     }
 
-    /// <summary> 사진 합성기 (좌상단 좌표계: Photoshop/UI 표준) </summary>
+    /// <summary> 
+    /// 저장된 개별 플레이어 사진들을 지정된 프레임(틀) 이미지 위에 합성한 뒤,
+    /// 로컬 디스크에 저장하고 서버로 업로드하는 시퀀스를 관리합니다.
+    /// </summary>
     public class PhotoCompositor : MonoBehaviour
     {
         [Header("Assets")]
@@ -42,12 +46,17 @@ namespace My.Scripts.Utils
         [Header("Debug")]
         public string debugBaseName = "PlayerAPlayerB";
 
+        public bool IsProcessing { get; private set; }
+
         [ContextMenu("Execute Composite Now")] 
         public void DebugProcessAndSave()
         {
             ProcessAndSave(debugBaseName);
         }
 
+        /// <summary> 
+        /// 합성 로직을 실행합니다. 무거운 인코딩과 업로드는 비동기로 처리하여 프리징을 방지합니다.
+        /// </summary>
         public void ProcessAndSave(string baseName)
         {
             if (!baseFrame)
@@ -55,6 +64,8 @@ namespace My.Scripts.Utils
                 Debug.LogError("[PhotoCompositor] 배경 이미지 누락");
                 return;
             }
+
+            IsProcessing = true;
             
             string safeBaseName = string.IsNullOrEmpty(baseName) ? "" : baseName;
             string clean = safeBaseName.Replace("\n", "").Replace("\r", "").Trim();
@@ -67,82 +78,89 @@ namespace My.Scripts.Utils
                 sanitizedName = "UnknownPlayers";
             }
 
-            // 1. 경로 설정 (날짜 폴더 포함)
-            string rootPath = GetRootPath();
-            if (!Directory.Exists(rootPath))
-            {
-                Debug.LogWarning($"[PhotoCompositor] 폴더가 존재하지 않아 합성할 수 없습니다: {rootPath}");
-                return;
-            }
-
-            Debug.Log($"[PhotoCompositor] 합성 시작 (경로: {rootPath})");
-
-            // 2. 렌더 텍스처 준비
-            RenderTexture rt = RenderTexture.GetTemporary(baseFrame.width, baseFrame.height, 0, RenderTextureFormat.ARGB32);
-            RenderTexture prevActive = RenderTexture.active;
-            RenderTexture.active = rt;
-
-            // 3. GL 매트릭스 설정 (좌측 상단 0,0 기준)
-            GL.PushMatrix();
-            GL.LoadPixelMatrix(0, baseFrame.width, baseFrame.height, 0);
-
-            // 4. 배경 그리기
-            Graphics.DrawTexture(new Rect(0, 0, baseFrame.width, baseFrame.height), baseFrame);
-
-            // 5. 사진 합성 (해당 날짜 폴더에서 파일 로드, var 제거)
-            foreach (CompositeSlot slot in slots)
-            {
-                string targetPath = Path.Combine(rootPath, $"{sanitizedName}{slot.fileSuffix}.png");
-                
-                if (File.Exists(targetPath))
-                {
-                    Texture2D photoTex = LoadTextureFromFile(targetPath);
-                    if (photoTex)
-                    {
-                        float w = photoTex.width * slot.scale.x;
-                        float h = photoTex.height * slot.scale.y;
-                        
-                        Rect drawRect = new Rect(slot.position.x, -slot.position.y, w, h);
-                        
-                        Graphics.DrawTexture(drawRect, photoTex);
-                        
-                        Destroy(photoTex);
-                    }
-                }
-            }
-
-            GL.PopMatrix();
-
-            // 6. 결과 텍스처 생성
-            Texture2D resultTex = new Texture2D(baseFrame.width, baseFrame.height, TextureFormat.RGB24, false);
-            resultTex.ReadPixels(new Rect(0, 0, baseFrame.width, baseFrame.height), 0, 0);
-            resultTex.Apply();
-
-            RenderTexture.active = prevActive;
-            RenderTexture.ReleaseTemporary(rt);
-
-            // 7. JPG 인코딩 (Quality 85)
-            byte[] jpgBytes = resultTex.EncodeToJPG(85);
-            if (jpgBytes == null || jpgBytes.Length == 0)
-            {
-                Debug.LogError("[PhotoCompositor] JPG 인코딩 실패로 저장/업로드를 중단합니다.");
-                Destroy(resultTex);
-                return;
-            }
-            string finalFileName = $"{sanitizedName}_{outputFileName}.jpg";
-
-            // 8. 로컬 저장
-            SaveToFile(jpgBytes, finalFileName, rootPath);
-
-            // 9. 서버 업로드 진행
-            StartCoroutine(UploadImageRoutine(jpgBytes, finalFileName));
-
-            Destroy(resultTex);
-
-            Debug.Log($"[PhotoCompositor] 합성 완료 및 로컬 저장됨: {Path.Combine(rootPath, finalFileName)}");
+            ExecuteCompositeAsync(sanitizedName).Forget();
         }
 
-        private IEnumerator UploadImageRoutine(byte[] imageBytes, string fileName)
+        /// <summary> 
+        /// 실제 렌더링 및 비동기 파일 처리 시퀀스입니다. 
+        /// </summary>
+        private async UniTaskVoid ExecuteCompositeAsync(string sanitizedName)
+        {
+            string rootPath = GetRootPath();
+            RenderTexture rt = null;
+            Texture2D resultTex = null;
+
+            try
+            {
+                rt = RenderTexture.GetTemporary(baseFrame.width, baseFrame.height, 0, RenderTextureFormat.ARGB32);
+                RenderTexture prevActive = RenderTexture.active;
+                RenderTexture.active = rt;
+
+                GL.PushMatrix();
+                GL.LoadPixelMatrix(0, baseFrame.width, baseFrame.height, 0);
+
+                Graphics.DrawTexture(new Rect(0, 0, baseFrame.width, baseFrame.height), baseFrame);
+
+                foreach (CompositeSlot slot in slots)
+                {
+                    string targetPath = Path.Combine(rootPath, $"{sanitizedName}{slot.fileSuffix}.png");
+                    if (File.Exists(targetPath))
+                    {
+                        Texture2D photoTex = LoadTextureFromFile(targetPath);
+                        if (photoTex)
+                        {
+                            float w = photoTex.width * slot.scale.x;
+                            float h = photoTex.height * slot.scale.y;
+                            Rect drawRect = new Rect(slot.position.x, -slot.position.y, w, h);
+                            Graphics.DrawTexture(drawRect, photoTex);
+                            Destroy(photoTex); 
+                        }
+                    }
+                }
+
+                GL.PopMatrix();
+
+                resultTex = new Texture2D(baseFrame.width, baseFrame.height, TextureFormat.RGB24, false);
+                resultTex.ReadPixels(new Rect(0, 0, baseFrame.width, baseFrame.height), 0, 0);
+                resultTex.Apply();
+
+                RenderTexture.active = prevActive;
+                RenderTexture.ReleaseTemporary(rt);
+                rt = null;
+
+                // 인코딩 연산(CPU 집약적)을 스레드 풀로 넘겨 메인 스레드 프리징 차단
+                byte[] jpgBytes = await UniTask.RunOnThreadPool(() => resultTex.EncodeToJPG(85));
+
+                if (jpgBytes == null || jpgBytes.Length == 0)
+                {
+                    Debug.LogError("[PhotoCompositor] JPG 인코딩 실패");
+                    return;
+                }
+
+                string finalFileName = $"{sanitizedName}_{outputFileName}.jpg";
+                
+                // 파일 쓰기도 비동기로 수행
+                await File.WriteAllBytesAsync(Path.Combine(rootPath, finalFileName), jpgBytes);
+
+                // 업로드 작업 시작
+                await UploadImageAsync(jpgBytes, finalFileName);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PhotoCompositor] 합성 중 예외: {e.Message}");
+            }
+            finally
+            {
+                if (resultTex) Destroy(resultTex);
+                if (rt) RenderTexture.ReleaseTemporary(rt);
+                IsProcessing = false; // 작업 성공 여부와 관계없이 플래그 해제 보장
+            }
+        }
+
+        /// <summary> 
+        /// 서버 업로드를 UniTask 기반으로 처리하여 try-finally 관리를 용이하게 합니다. 
+        /// </summary>
+        private async UniTask UploadImageAsync(byte[] imageBytes, string fileName)
         {
             int idxUser = 0;
             string uid = "";
@@ -153,56 +171,32 @@ namespace My.Scripts.Utils
             {
                 idxUser = SessionManager.Instance.CurrentUserId;
                 uid = SessionManager.Instance.PlayerAUid; 
-                
                 if (GameManager.Instance && GameManager.Instance.ApiConfig != null)
-                {
                     baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
-                }
                 if (!string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode))
-                {
                     moduleCode = SessionManager.Instance.CurrentModuleCode.ToLower();
-                }
             }
 
-            if (string.IsNullOrEmpty(baseUrl))
-            {
-                Debug.LogWarning("[PhotoCompositor] API 설정(baseUrl)이 없어 업로드를 건너뜁니다.");
-                yield break;
-            }
-
-            if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid))
-            {
-                Debug.LogWarning("[PhotoCompositor] idx_user/uid가 유효하지 않아 업로드를 건너뜁니다.");
-                yield break;
-            }
+            if (string.IsNullOrEmpty(baseUrl) || idxUser <= 0 || string.IsNullOrWhiteSpace(uid)) return;
             
             string encodedUid = UnityWebRequest.EscapeURL(uid);
-            
             int safeUploadCount = Mathf.Max(1, uploadCount);
             string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={safeUploadCount}";
-            Debug.Log($"[PhotoCompositor] 사진 업로드 시도 중...");
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
-                UploadHandlerRaw uploadHandler = new UploadHandlerRaw(imageBytes);
-                uploadHandler.contentType = "image/jpeg"; 
-                
-                webRequest.uploadHandler = uploadHandler;
+                // 메모리 복사 최소화를 위해 Raw 데이터를 직접 업로드 핸들러에 전달
+                webRequest.uploadHandler = new UploadHandlerRaw(imageBytes);
+                webRequest.uploadHandler.contentType = "image/jpeg"; 
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
-                webRequest.timeout = 10;
+                webRequest.timeout = 15;
 
-                yield return webRequest.SendWebRequest();
+                await webRequest.SendWebRequest().ToUniTask();
 
-                if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
-                    webRequest.result == UnityWebRequest.Result.ProtocolError)
-                {
+                if (webRequest.result != UnityWebRequest.Result.Success)
                     Debug.LogError($"[PhotoCompositor] 업로드 실패: {webRequest.error}");
-                }
                 else
-                {
-                    string responseJson = webRequest.downloadHandler.text;
-                    Debug.Log($"[PhotoCompositor] 업로드 성공! status={webRequest.responseCode}");
-                }
+                    Debug.Log($"[PhotoCompositor] 업로드 성공: {webRequest.responseCode}");
             }
         }
 
@@ -218,23 +212,12 @@ namespace My.Scripts.Utils
             catch { return null; }
         }
 
-        private void SaveToFile(byte[] bytes, string fileName, string rootPath)
-        {
-            if (!Directory.Exists(rootPath)) Directory.CreateDirectory(rootPath);
-
-            string path = Path.Combine(rootPath, fileName);
-            File.WriteAllBytes(path, bytes);
-        }
-
         private string GetRootPath()
         {
             string dataPath = Application.dataPath;
             DirectoryInfo parentDir = Directory.GetParent(dataPath);
             string rootPath = parentDir != null ? parentDir.FullName : dataPath;
-            
-            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            
-            return Path.Combine(rootPath, saveFolderName, dateFolder);
+            return Path.Combine(rootPath, saveFolderName, DateTime.Now.ToString("yyyy-MM-dd"));
         }
     }
 }
