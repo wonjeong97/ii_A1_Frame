@@ -144,7 +144,7 @@ namespace My.Scripts._00_Title
             if (!SoundManager.Instance) yield break;
 
             SoundManager.Instance.StopBGM();
-            yield return CoroutineData.GetWaitForSeconds(5.0f);
+            yield return CoroutineData.GetWaitForSeconds(1.0f);
             SoundManager.Instance.PlayBGM("MainBGM");
         }
 
