@@ -73,6 +73,9 @@ namespace My.Scripts.Timelapse
         private bool _isRealtimeRecordingActive;
 
         private float _timelapseTimer;
+        
+        // [추가] 파일 쓰기(File.WriteAllBytesAsync)의 동시 진행 작업 수를 추적하여 안전한 정리를 보장합니다.
+        private int _activeDiskWrites = 0;
 
         // --- 외부 제어 및 상태 프로퍼티 ---
         public bool EnableTimelapseCapture { get; set; } = false;
@@ -163,6 +166,12 @@ namespace My.Scripts.Timelapse
 
         public void ClearRecordingData()
         {
+            ClearRecordingDataAsync().Forget();
+        }
+
+        // [수정] 대기 큐뿐만 아니라 현재 진행 중인 디스크 I/O 작업(_activeDiskWrites)까지 모두 완료될 때까지 안전하게 대기
+        private async UniTaskVoid ClearRecordingDataAsync()
+        {
             _globalFrameIndex = 0;
             _realtimeFrameIndex = 0;
 
@@ -177,6 +186,8 @@ namespace My.Scripts.Timelapse
             _isRealtimeRecordingActive = false;
 
             while (_saveQueue.TryDequeue(out _)) { }
+
+            await UniTask.WaitUntil(() => _activeDiskWrites == 0);
 
             ClearFolder(_sourceImageFolderPath);
             ClearFolder(_realtimeSourcePath);
@@ -250,14 +261,12 @@ namespace My.Scripts.Timelapse
 
                     Graphics.Blit(_webCam, captureRT);
                     
-                    // var 제거 및 명시적 타입 지정
                     AsyncGPUReadbackRequest request = AsyncGPUReadback.Request(captureRT);
                     await request.ToUniTask();
 
                     if (_captureRT != captureRT) break;
                     if (request.hasError) continue;
 
-                    // var 제거
                     NativeArray<byte> nativeData = request.GetData<byte>();
 
                     NativeArray<byte> encodedNativeData = ImageConversion.EncodeNativeArrayToJPG(
@@ -298,11 +307,21 @@ namespace My.Scripts.Timelapse
             {
                 while (!_cts.IsCancellationRequested)
                 {
-                    // var 제거
                     if (_saveQueue.TryDequeue(out SaveTaskData task))
                     {
-                        try { await File.WriteAllBytesAsync(task.path, task.data); }
-                        catch (Exception e) { Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패: {e.Message}"); }
+                        Interlocked.Increment(ref _activeDiskWrites);
+                        try 
+                        { 
+                            await File.WriteAllBytesAsync(task.path, task.data); 
+                        }
+                        catch (Exception e) 
+                        { 
+                            Debug.LogError($"[TimeLapseRecorder] 파일 쓰기 실패: {e.Message}"); 
+                        }
+                        finally 
+                        { 
+                            Interlocked.Decrement(ref _activeDiskWrites); 
+                        }
                     }
                     else await UniTask.Delay(50, cancellationToken: _cts.Token);
                 }
@@ -372,7 +391,8 @@ namespace My.Scripts.Timelapse
         {
             try
             {
-                await UniTask.WaitUntil(() => _saveQueue.IsEmpty);
+                // [수정] 변환 시작 전 큐에 남은 파일과 실제 디스크 I/O가 완벽히 종료될 때까지 대기
+                await UniTask.WaitUntil(() => _saveQueue.IsEmpty && _activeDiskWrites == 0);
 
                 if (string.IsNullOrEmpty(sourceFolder) || string.IsNullOrEmpty(outputFolder))
                 {
@@ -519,7 +539,7 @@ namespace My.Scripts.Timelapse
 
         private void OnDestroy()
         {
-            if (_cts != null) // C# 표준 객체이므로 != null 사용
+            if (_cts != null) 
             {
                 _cts.Cancel();
                 long timeoutTicks = DateTime.Now.Ticks + 1000 * 10000; 

@@ -287,8 +287,6 @@ namespace My.Scripts.Global
 
         #region 프로그램 강제 종료 시 예외 처리
 
-
-        // [수정됨] Thread.Sleep을 사용한 동기 대기 방식을 폐기하고, Application.wantsToQuit을 활용한 비동기 안전 종료 처리로 교체합니다.
         private bool WantsToQuit()
         {
             if (_isQuitSafe) return true;
@@ -299,7 +297,7 @@ namespace My.Scripts.Global
                 StartCoroutine(QuitRoutine());
             }
             
-            return false; // 통신과 폴더 정리가 끝날 때까지 1차적인 종료를 캔슬
+            return false; 
         }
 
         private IEnumerator QuitRoutine()
@@ -346,17 +344,30 @@ namespace My.Scripts.Global
                 string timelapseSource = Path.Combine(rootPath, "Timelapse", "Timelapse_Source", dateFolder);
                 string realtimeSource = Path.Combine(rootPath, "Timelapse", "Realtime_Source", dateFolder);
 
+                // [수정] 여러 파일을 삭제할 때 하나라도 예외가 발생하면 전체가 중단되는 현상을 막기 위해 루프 내에서 개별적으로 try-catch 처리합니다.
                 if (Directory.Exists(timelapseSource))
-                    foreach (string file in Directory.GetFiles(timelapseSource)) File.Delete(file);
+                {
+                    foreach (string file in Directory.GetFiles(timelapseSource))
+                    {
+                        try { File.Delete(file); }
+                        catch (Exception ex) { Debug.LogWarning($"[GameManager] 타임랩스 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
+                    }
+                }
 
                 if (Directory.Exists(realtimeSource))
-                    foreach (string file in Directory.GetFiles(realtimeSource)) File.Delete(file);
+                {
+                    foreach (string file in Directory.GetFiles(realtimeSource))
+                    {
+                        try { File.Delete(file); }
+                        catch (Exception ex) { Debug.LogWarning($"[GameManager] 리얼타임 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
+                    }
+                }
 
                 Debug.Log("[GameManager] 앱 종료 시 소스 폴더 정리 완료");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[GameManager] 앱 종료 시 소스 폴더 정리 중 오류: {e.Message}");
+                Debug.LogWarning($"[GameManager] 앱 종료 시 소스 폴더 접근 오류: {e.Message}");
             }
         }
 

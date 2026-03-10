@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Text.RegularExpressions; // [추가됨] Regex를 사용하기 위한 네임스페이스
+using System.Text.RegularExpressions; 
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
@@ -131,7 +131,6 @@ namespace My.Scripts.Core
         private int ParseLevelNumber(string id)
         {
             if (string.IsNullOrEmpty(id)) return 0;
-            // [수정됨] 오타 수정
             string numStr = Regex.Replace(id, "[^0-9]", "");
             if (int.TryParse(numStr, out int num)) return num;
             return 0;
@@ -257,13 +256,14 @@ namespace My.Scripts.Core
             }
         }
 
+        // [수정] SessionManager.Instance 직접 Null 체크 대신 HasActiveSession 프로퍼티를 활용합니다.
         private void SetCameraFileName()
         {
             if (pages.Length <= 4) return;
             Page_Camera cameraPage = pages[4] as Page_Camera;
             if (!cameraPage) return;
             
-            string userIdStr = SessionManager.Instance ? SessionManager.Instance.CurrentUserId.ToString() : "0";
+            string userIdStr = HasActiveSession ? SessionManager.Instance.CurrentUserId.ToString() : "0";
             cameraPage.SetPhotoFilename($"{userIdStr}_{levelID}");
         }
 

@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace My.Scripts.Global
 {
-    // GameManager에 있던 UserType을 데이터 관리자인 SessionManager 쪽으로 이동
     public enum UserType
     {
         A, B, C, D, E, F
@@ -46,8 +45,8 @@ namespace My.Scripts.Global
         public int PieceD1 { get; set; }
         public int PieceD2 { get; set; }
         public int PieceD3 { get; set; }
-
-        public int TotalPieces => PieceA2 + PieceA3 + 
+        
+        public int TotalPieces => PieceA1 + PieceA2 + PieceA3 + 
                                   PieceB1 + PieceB2 + PieceB3 + 
                                   PieceC1 + PieceC2 + PieceC3 + 
                                   PieceD1 + PieceD2 + PieceD3;

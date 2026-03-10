@@ -42,14 +42,14 @@ namespace My.Scripts._18_Ending.Pages
             
             if (textCanvasGroup) textCanvasGroup.alpha = 0;
             if (imageCanvasGroup) imageCanvasGroup.alpha = 0f;
-
-            UpdateTotalPiecesText();
-
-            if (GameManager.Instance && !_hasSentPieceUpdate)
+            
+            if (GameManager.Instance && SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && !_hasSentPieceUpdate)
             {
                 GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
                 _hasSentPieceUpdate = true; 
             }
+
+            UpdateTotalPiecesText();
             
             StartCoroutine(SequenceRoutine());
         }
@@ -59,8 +59,9 @@ namespace My.Scripts._18_Ending.Pages
             if (text2 && _data?.descriptionText2 != null)
             {
                 if (!GameManager.Instance || !SessionManager.Instance) return;
+                
                 int existingPieces = SessionManager.Instance.TotalPieces;
-                int pendingReward = _hasSentPieceUpdate ? 0 : PagePieceReward;
+                int pendingReward = _hasSentPieceUpdate ? PagePieceReward : 0;
                 int totalPieces = existingPieces + pendingReward;
 
                 string originalText = _data.descriptionText2.text;
