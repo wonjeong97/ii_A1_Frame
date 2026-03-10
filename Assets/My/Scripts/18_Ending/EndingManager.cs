@@ -10,7 +10,7 @@ using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending
 {
-    /// <summary> JSON 파싱용 엔딩 전체 설정 데이터 컨테이너 </summary>
+    /// <summary> JSON 파일(Ending.json) 역직렬화를 위한 데이터 래핑 컨테이너 </summary>
     [Serializable]
     public class EndingLevelSetting
     {
@@ -22,15 +22,15 @@ namespace My.Scripts._18_Ending
     }
 
     /// <summary> 
-    /// 엔딩 씬의 전체적인 흐름과 백그라운드 리소스 작업(이미지 합성, 업로드)을 관리합니다.
-    /// 모든 페이지가 종료된 후 데이터 무결성을 위해 작업 완료 여부를 체크합니다.
+    /// 엔딩 씬의 전체 페이지 흐름을 제어하고, 
+    /// 화면 밖에서 진행되는 무거운 리소스 처리(사진 합성, 영상 인코딩)의 동기화를 책임지는 매니저입니다.
     /// </summary>
     public class EndingManager : BaseFlowManager
     {   
         [Header("Compositor")]
         [SerializeField] private PhotoCompositor[] compositors;
         
-        /// <summary> 엔딩 씬 진입 즉시 시간이 소요되는 이미지 합성 작업을 백그라운드에서 개시합니다. </summary>
+        /// <summary> 씬 진입 즉시 대기 시간을 줄이기 위해 사진 합성 작업을 백그라운드에서 선제적으로 가동합니다. </summary>
         protected override void Start()
         {
             base.Start(); 
@@ -45,7 +45,7 @@ namespace My.Scripts._18_Ending
             }
         }
         
-        /// <summary> 현재 세션의 유저 ID를 파일 식별용 문자열로 변환합니다. </summary>
+        /// <summary> 로컬 파일 저장 및 서버 매핑에 사용할 현재 유저의 고유 식별자 문자열을 안전하게 반환합니다. </summary>
         private string GetUserIdString()
         {
             if (GameManager.Instance && SessionManager.Instance) 
@@ -53,7 +53,7 @@ namespace My.Scripts._18_Ending
             return "0"; 
         }
         
-        /// <summary> 각 엔딩 페이지 컨트롤러에 필요한 JSON 데이터를 주입합니다. </summary>
+        /// <summary> 각 엔딩 페이지 컨트롤러(1~5)에 필요한 텍스트 및 UI 설정 JSON 데이터를 로드하여 주입합니다. </summary>
         protected override void LoadSettings()
         {   
             EndingLevelSetting setting = JsonLoader.Load<EndingLevelSetting>("JSON/Ending");
@@ -69,8 +69,8 @@ namespace My.Scripts._18_Ending
         }
 
         /// <summary> 
-        /// 모든 페이지 시퀀스가 완료되었을 때 실행됩니다.
-        /// 즉시 이동하지 않고 백그라운드 작업 완료를 대기하는 가드 로직을 실행합니다.
+        /// 모든 페이지 시퀀스가 완료되었을 때 즉시 전환하지 않고, 
+        /// 데이터 유실을 막기 위해 백그라운드 작업 종료 대기 가드 로직을 실행합니다.
         /// </summary>
         protected override void OnAllFinished()
         {
@@ -79,19 +79,19 @@ namespace My.Scripts._18_Ending
         }
 
         /// <summary> 
-        /// 이미지 합성, 업로드 및 영상 변환 작업이 모두 완료될 때까지 대기한 후 타이틀로 전환합니다.
-        /// 네트워크 지연 등으로 인한 무한 대기를 방지하기 위해 10초 타임아웃을 적용합니다.
+        /// 사진 합성, 업로드, 영상 인코딩이 모두 끝날 때까지 대기한 후 타이틀 씬으로 돌아갑니다.
+        /// 무한 대기(프리징)를 방지하기 위해 최대 10초의 하드 타임아웃을 적용합니다.
         /// </summary>
         private IEnumerator WaitAndReturnToTitleRoutine()
         {
-            float timeout = 10.0f; // 최대 대기 허용 시간
+            float timeout = 10.0f; 
             float startWaitTime = Time.time;
 
             while (Time.time - startWaitTime < timeout)
             {
                 bool isAnyBusy = false;
 
-                // 1. 사진 합성 및 업로드 진행 상태 확인
+                // 1. 사진 합성 모듈 작업 상태 체크
                 if (compositors != null)
                 {
                     foreach (PhotoCompositor compositor in compositors)
@@ -104,22 +104,28 @@ namespace My.Scripts._18_Ending
                     }
                 }
 
-                // 2. 타임랩스/리얼타임 영상 변환 진행 상태 확인
+                // 2. 비디오 인코딩 모듈 작업 상태 체크
                 if (!isAnyBusy && TimeLapseRecorder.Instance && TimeLapseRecorder.Instance.IsProcessing)
                 {
                     isAnyBusy = true;
                 }
 
-                // 모든 백그라운드 프로세스가 종료되면 대기 종료
+                // 모든 작업이 끝났다면 즉시 루프 탈출
                 if (!isAnyBusy) break;
 
-                yield return null; // 다음 프레임까지 대기
+                yield return null; 
             }
 
             if (Time.time - startWaitTime >= timeout)
                 Debug.LogWarning("[EndingManager] 작업 대기 타임아웃 발생. 데이터 유실 가능성이 있으나 강제 종료합니다.");
 
-            // 세션 종료 및 타이틀로 복귀
+            // 이전 유저의 데이터가 다음 플레이어에게 노출되거나 API가 잘못 전송되는 것을 막기 위해 세션 완전 삭제 보장
+            if (SessionManager.Instance) 
+            {
+                SessionManager.Instance.ClearSession();
+            }
+
+            // 모든 정리가 완료된 후 안전하게 타이틀로 씬 전환
             if (GameManager.Instance) GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
         }
     }
