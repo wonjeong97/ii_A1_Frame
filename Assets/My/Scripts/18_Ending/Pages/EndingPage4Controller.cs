@@ -32,8 +32,8 @@ namespace My.Scripts._18_Ending.Pages
         protected override void SetupData(EndingPage4Data data)
         {
             _data = data;
-            if (text1) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
-            if (text2) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
+            if (text1 && UIManager.Instance) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
+            if (text2 && UIManager.Instance) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
         }
 
         public override void OnEnter()
