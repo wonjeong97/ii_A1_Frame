@@ -33,6 +33,7 @@ namespace My.Scripts.Core
         private int _currentQuestionNumber;
         
         public int CurrentQuestionNumber => _currentQuestionNumber;
+        private bool HasActiveSession =>  SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0;
         
         private void Awake()
         {
@@ -86,7 +87,7 @@ namespace My.Scripts.Core
             }
             else
             {
-                UserType uType = SessionManager.Instance ? SessionManager.Instance.CurrentUserType : levelType;
+                UserType uType = HasActiveSession ? SessionManager.Instance.CurrentUserType : levelType;
                 StandardLevelSetting sSetting = LevelDataLoader.LoadStandardLevel(levelID, uType);
                 if (sSetting != null)
                 {
@@ -108,9 +109,10 @@ namespace My.Scripts.Core
         
         private string GetPlayerNameOrDefault(bool isPlayerA)
         {
-            if (SessionManager.Instance)
+            if (HasActiveSession)
             {
-                return isPlayerA ? SessionManager.Instance.PlayerALastName : SessionManager.Instance.PlayerBLastName;
+                string lastName = isPlayerA ? SessionManager.Instance.PlayerALastName : SessionManager.Instance.PlayerBLastName;
+                if (!string.IsNullOrWhiteSpace(lastName)) return lastName;
             }
             return isPlayerA ? "PlayerA" : "PlayerB";
         }

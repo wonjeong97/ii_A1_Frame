@@ -89,7 +89,8 @@ namespace My.Scripts.Core.Data
         }
 
         private static void MergeCommonData(ILevelSetting specific, StandardLevelSetting common)
-        {
+        {   
+            if (common == null) return;
             if (specific.Page1 == null) specific.Page1 = new GridPageData();
             if (common.Page1 != null)
             {

@@ -70,9 +70,24 @@ namespace My.Scripts.Global
             CurrentUserId = 0;
             PlayerAUid = string.Empty;
             PlayerBUid = string.Empty;
+            CurrentLanguage = "ko";
+            
             PlayerALastName = "NoNameA";
             PlayerBLastName = "NoNameB";
+            
+            PlayerAColor = ColorData.NotSet;
+            PlayerBColor = ColorData.NotSet;
+
+            CurrentUserType = UserType.A;
+            CurrentModuleCode = GameConstants.Module.Code;
+            Cartridge = string.Empty;
+            
             IsOtherCartridgeContentsCleared = false;
+
+            PieceA1 = 0; PieceA2 = 0; PieceA3 = 0;
+            PieceB1 = 0; PieceB2 = 0; PieceB3 = 0;
+            PieceC1 = 0; PieceC2 = 0; PieceC3 = 0;
+            PieceD1 = 0; PieceD2 = 0; PieceD3 = 0;
         }
     }
 }

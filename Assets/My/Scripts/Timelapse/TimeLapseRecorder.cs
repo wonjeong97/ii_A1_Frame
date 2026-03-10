@@ -482,8 +482,11 @@ namespace My.Scripts.Timelapse
 
             if (GameManager.Instance)
             {
-                idxUser = SessionManager.Instance.CurrentUserId;
-                uid = SessionManager.Instance.PlayerAUid;
+                if (SessionManager.Instance)
+                {
+                    idxUser = SessionManager.Instance.CurrentUserId;
+                    uid = SessionManager.Instance.PlayerAUid;
+                }
                 if (GameManager.Instance.ApiConfig != null) baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
             }
 
@@ -507,7 +510,7 @@ namespace My.Scripts.Timelapse
 
         private string GetUserIdString()
         {
-            if (GameManager.Instance)
+            if (GameManager.Instance && SessionManager.Instance)
             {
                 return SessionManager.Instance.CurrentUserId.ToString();
             }

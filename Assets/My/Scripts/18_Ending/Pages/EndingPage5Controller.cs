@@ -59,7 +59,7 @@ namespace My.Scripts._18_Ending.Pages
 
             _isAllFinished = false;
 
-            if (GameManager.Instance)
+            if (GameManager.Instance&& SessionManager.Instance)
             {
                 // 페이지 진입 시점의 최신 상태값을 평가
                 _isAllFinished = SessionManager.Instance.IsOtherCartridgeContentsCleared;
@@ -78,7 +78,7 @@ namespace My.Scripts._18_Ending.Pages
             }
             else
             {
-                Debug.LogWarning("[EndingPage4Controller] _data 값이 null입니다.");
+                Debug.LogWarning("[EndingPage5Controller] _data 값이 null입니다.");
             }
 
             // 4페이지 진입 시 종료 시간 및 퇴장 업데이트
@@ -86,11 +86,11 @@ namespace My.Scripts._18_Ending.Pages
             {
                 if (SessionManager.Instance.CurrentUserId == 0)
                 {
-                    Debug.LogWarning("[EndingPage4] CurrentUserId가 없어 API 전송을 보류합니다.");
+                    Debug.LogWarning("[EndingPage5] CurrentUserId가 없어 API 전송을 보류합니다.");
                 }
                 else
                 {
-                    Debug.Log("[EndingPage4] OnEnter: 종료(end) 시간 및 퇴장(exitRoom) 업데이트 호출");
+                    Debug.Log("[EndingPage5] OnEnter: 종료(end) 시간 및 퇴장(exitRoom) 업데이트 호출");
                     GameManager.Instance.SendTimeUpdateAPI();
                     GameManager.Instance.SendExitRoomAPI();
                     _hasSentEndTime = true;

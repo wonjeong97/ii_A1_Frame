@@ -53,7 +53,7 @@ namespace My.Scripts._18_Ending
         /// </summary>
         private string GetUserIdString()
         {
-            if (GameManager.Instance) 
+            if (GameManager.Instance && SessionManager.Instance) 
             {
                 return SessionManager.Instance.CurrentUserId.ToString(); 
             }

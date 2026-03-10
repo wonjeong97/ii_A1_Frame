@@ -154,11 +154,10 @@ namespace My.Scripts.Utils
                 idxUser = SessionManager.Instance.CurrentUserId;
                 uid = SessionManager.Instance.PlayerAUid; 
                 
-                if (GameManager.Instance.ApiConfig != null)
+                if (GameManager.Instance && GameManager.Instance.ApiConfig != null)
                 {
                     baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
                 }
-
                 if (!string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode))
                 {
                     moduleCode = SessionManager.Instance.CurrentModuleCode.ToLower();

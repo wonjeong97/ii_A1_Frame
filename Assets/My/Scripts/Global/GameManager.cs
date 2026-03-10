@@ -27,6 +27,8 @@ namespace My.Scripts.Global
         private bool _isTransitioning;
         private float _inactivityLimit = 60f;
         private float _fadeTime = 1.0f;
+        private bool _isQuitting;
+        private bool _isQuitSafe;
 
         public int firstTaggedPlayer = 0;
         public ApiSettings ApiConfig { get; private set; }
@@ -47,6 +49,9 @@ namespace My.Scripts.Global
                     GameObject sessionObj = new GameObject("SessionManager");
                     sessionObj.AddComponent<SessionManager>();
                 }
+                
+                // 앱 종료를 지연시키고 비동기 정리를 실행하기 위한 이벤트 구독
+                Application.wantsToQuit += WantsToQuit; 
             }
             else
             {
@@ -62,6 +67,14 @@ namespace My.Scripts.Global
             Cursor.visible = false;
             LoadSettings();
             if (reporter && reporter.show) reporter.show = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Application.wantsToQuit -= WantsToQuit;
+            }
         }
 
         public Sprite GetColorSprite(ColorData color)
@@ -274,37 +287,51 @@ namespace My.Scripts.Global
 
         #region 프로그램 강제 종료 시 예외 처리
 
-        private void OnApplicationQuit()
+
+        // [수정됨] Thread.Sleep을 사용한 동기 대기 방식을 폐기하고, Application.wantsToQuit을 활용한 비동기 안전 종료 처리로 교체합니다.
+        private bool WantsToQuit()
+        {
+            if (_isQuitSafe) return true;
+
+            if (!_isQuitting)
+            {
+                _isQuitting = true;
+                StartCoroutine(QuitRoutine());
+            }
+            
+            return false; // 통신과 폴더 정리가 끝날 때까지 1차적인 종료를 캔슬
+        }
+
+        private IEnumerator QuitRoutine()
         {
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
             {   
                 int uid = SessionManager.Instance.CurrentUserId;
+                
                 string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
                 using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
                 {   
                     req.timeout = 2;
-                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
-                    float deadline = Time.realtimeSinceStartup + 2.5f;
-                    while (!op.isDone && Time.realtimeSinceStartup < deadline)
-                    {
-                        System.Threading.Thread.Sleep(10);
-                    }
+                    yield return req.SendWebRequest();
                 }
 
                 string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
                 using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
                 {   
                     req.timeout = 2;
-                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
-                    float deadline = Time.realtimeSinceStartup + 2.5f;
-                    while (!op.isDone && Time.realtimeSinceStartup < deadline)
-                    {
-                        System.Threading.Thread.Sleep(10);
-                    }
+                    yield return req.SendWebRequest();
                 }
             }
 
             ClearSourceFolders();
+            
+            _isQuitSafe = true;
+            
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit(); // 정리가 완료된 후 실제 종료 호출
+#endif
         }
 
         private void ClearSourceFolders()

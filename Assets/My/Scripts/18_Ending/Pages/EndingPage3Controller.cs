@@ -165,7 +165,7 @@ namespace My.Scripts._18_Ending.Pages
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
             
             string userIdStr = "0";
-            if (GameManager.Instance)
+            if (GameManager.Instance && SessionManager.Instance)
             {
                 userIdStr = SessionManager.Instance.CurrentUserId.ToString();
             }

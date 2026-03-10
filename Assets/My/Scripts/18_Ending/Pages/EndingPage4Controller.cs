@@ -58,7 +58,7 @@ namespace My.Scripts._18_Ending.Pages
         {
             if (text2 && _data?.descriptionText2 != null)
             {
-                if (!GameManager.Instance) return;
+                if (!GameManager.Instance || !SessionManager.Instance) return;
                 int existingPieces = SessionManager.Instance.TotalPieces;
                 int pendingReward = _hasSentPieceUpdate ? 0 : PagePieceReward;
                 int totalPieces = existingPieces + pendingReward;
