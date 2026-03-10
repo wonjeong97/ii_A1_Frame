@@ -17,6 +17,10 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting descriptionText; 
     }
     
+    /// <summary> 
+    /// 엔딩 씬의 영상 변환 대기 페이지.
+    /// 리얼타임 영상과 타임랩스 영상의 순차적 인코딩을 관리하며, 모든 작업이 완료될 때까지 대기합니다.
+    /// </summary>
     public class EndingPage2Controller : GamePage<EndingPage2Data>
     {
         [Header("UI References")]
@@ -26,7 +30,7 @@ namespace My.Scripts._18_Ending.Pages
         [Header("Sound Settings")]
         [SerializeField] private float loadingSoundInterval = 7.0f;
         [Header("Timeout Settings")]
-        [SerializeField] private float conversionTimeout = 40.0f;
+        [SerializeField] private float conversionTimeout = 40.0f; // UI 진행률 연출을 위한 기준 시간
         
         private Coroutine _loadingSoundRoutine;
 
@@ -47,6 +51,9 @@ namespace My.Scripts._18_Ending.Pages
             StartCoroutine(ProcessRealtimeVideoRoutine());
         }
 
+        /// <summary> 
+        /// 영상 변환 시퀀스 제어. 리얼타임 변환 완료 -> 타임랩스 변환 개시 -> 최종 완료 순으로 진행됩니다. 
+        /// </summary>
         private IEnumerator ProcessRealtimeVideoRoutine()
         {
             if (!TimeLapseRecorder.Instance)
@@ -59,6 +66,7 @@ namespace My.Scripts._18_Ending.Pages
 
             yield return CoroutineData.GetWaitForSeconds(0.5f); 
 
+            // 1. 리얼타임 영상 변환 시작
             if (!TimeLapseRecorder.Instance.IsRealtimeProcessing && string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastRealtimeVideoPath))
                 TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
 
@@ -66,6 +74,7 @@ namespace My.Scripts._18_Ending.Pages
             _loadingSoundRoutine = StartCoroutine(LoadingSoundLoopRoutine());
 
             float startWaitTime = Time.time;
+            // UI 업데이트 루프 (타임아웃 시 루프는 탈출하나 실제 변환은 기다림)
             while (TimeLapseRecorder.Instance.IsRealtimeProcessing)
             {
                 if (Time.time - startWaitTime > conversionTimeout) break;
@@ -73,10 +82,25 @@ namespace My.Scripts._18_Ending.Pages
                     loadingFillImage.fillAmount = Mathf.Lerp(loadingFillImage.fillAmount, TimeLapseRecorder.Instance.RealtimeProgress, Time.deltaTime * 5f);
                 yield return null;
             }
+            
+            // 타임아웃과 무관하게 리얼타임 변환이 실제로 끝날 때까지 대기 보장
+            if (TimeLapseRecorder.Instance.IsRealtimeProcessing)
+            {
+                yield return new WaitUntil(() => !TimeLapseRecorder.Instance.IsRealtimeProcessing);
+            }
+
+            // 리얼타임 종료 후 즉시 타임랩스 변환 큐잉 및 대기
+            if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsTimelapseProcessing)
+            {
+                TimeLapseRecorder.Instance.ConvertToVideo();
+                // 타임랩스 변환이 시작되었다면 완료될 때까지 페이지 전환 보류
+                yield return new WaitUntil(() => !TimeLapseRecorder.Instance.IsTimelapseProcessing);
+            }
 
             if (_loadingSoundRoutine != null) { StopCoroutine(_loadingSoundRoutine); _loadingSoundRoutine = null; }
             if (loadingFillImage) loadingFillImage.fillAmount = 1f;
             yield return CoroutineData.GetWaitForSeconds(1.5f);
+            
             CompleteStep();
         }
         
@@ -94,8 +118,8 @@ namespace My.Scripts._18_Ending.Pages
             if (_loadingSoundRoutine != null) { StopCoroutine(_loadingSoundRoutine); _loadingSoundRoutine = null; }
             base.OnExit();
             
-            // # FIX: 리얼타임 변환이 끝난 경우에만 타임랩스 변환 시작
-            if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsRealtimeProcessing)
+            // 루틴이 아닌 다른 경로로 종료될 때를 대비한 최종 안전 가드
+            if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsRealtimeProcessing && !TimeLapseRecorder.Instance.IsTimelapseProcessing)
             {
                 TimeLapseRecorder.Instance.ConvertToVideo();
             }

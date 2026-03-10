@@ -181,8 +181,30 @@ namespace My.Scripts.Core
                         
                         // 데이터 로드 완료 가시성 확보를 위해 Piece 데이터 일괄 주입
                         userData.PIECE_A1 = ParseIntSafe(colMap, firstRow, "PIECE_A1");
+                        userData.PIECE_A2 = ParseIntSafe(colMap, firstRow, "PIECE_A2");
+                        userData.PIECE_A3 = ParseIntSafe(colMap, firstRow, "PIECE_A3");
+                        userData.PIECE_B1 = ParseIntSafe(colMap, firstRow, "PIECE_B1");
+                        userData.PIECE_B2 = ParseIntSafe(colMap, firstRow, "PIECE_B2");
+                        userData.PIECE_B3 = ParseIntSafe(colMap, firstRow, "PIECE_B3");
+                        userData.PIECE_C1 = ParseIntSafe(colMap, firstRow, "PIECE_C1");
+                        userData.PIECE_C2 = ParseIntSafe(colMap, firstRow, "PIECE_C2");
+                        userData.PIECE_C3 = ParseIntSafe(colMap, firstRow, "PIECE_C3");
+                        userData.PIECE_D1 = ParseIntSafe(colMap, firstRow, "PIECE_D1");
+                        userData.PIECE_D2 = ParseIntSafe(colMap, firstRow, "PIECE_D2");
+                        userData.PIECE_D3 = ParseIntSafe(colMap, firstRow, "PIECE_D3");
+                        
                         SessionManager.Instance.PieceA1 = Mathf.Max(0, userData.PIECE_A1);
-                        // ... (기타 PIECE 필드 동일 패턴으로 할당)
+                        SessionManager.Instance.PieceA2 = Mathf.Max(0, userData.PIECE_A2);
+                        SessionManager.Instance.PieceA3 = Mathf.Max(0, userData.PIECE_A3);
+                        SessionManager.Instance.PieceB1 = Mathf.Max(0, userData.PIECE_B1);
+                        SessionManager.Instance.PieceB2 = Mathf.Max(0, userData.PIECE_B2);
+                        SessionManager.Instance.PieceB3 = Mathf.Max(0, userData.PIECE_B3);
+                        SessionManager.Instance.PieceC1 = Mathf.Max(0, userData.PIECE_C1);
+                        SessionManager.Instance.PieceC2 = Mathf.Max(0, userData.PIECE_C2);
+                        SessionManager.Instance.PieceC3 = Mathf.Max(0, userData.PIECE_C3);
+                        SessionManager.Instance.PieceD1 = Mathf.Max(0, userData.PIECE_D1);
+                        SessionManager.Instance.PieceD2 = Mathf.Max(0, userData.PIECE_D2);
+                        SessionManager.Instance.PieceD3 = Mathf.Max(0, userData.PIECE_D3);
 
                         SessionManager.Instance.IsOtherCartridgeContentsCleared = false;
                         if (!string.IsNullOrWhiteSpace(userData.CARTRIDGE))
