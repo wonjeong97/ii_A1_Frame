@@ -32,7 +32,7 @@ namespace My.Scripts.Global
         private bool _isQuitSafe;
 
         public int firstTaggedPlayer = 0;
-        public ApiSettings ApiConfig { get; private set; }
+        public ApiSettings ApiConfig { get; set; }
         
         [Header("Player Color Sprites")]
         public Sprite[] playerColorSprites;
