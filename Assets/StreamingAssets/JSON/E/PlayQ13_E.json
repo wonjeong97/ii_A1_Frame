@@ -3,57 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 160, "y": -960},
+        "position": {"x": 1280, "y": -540},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대방이",
+        "text": "상대방이 나의 감정을 존중하려고\n노력할 때, 그것을 잘 알아차린다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 160, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나의 감정을",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 1290, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "존중하려고 노력할 때,",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 800, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "그것을",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "잘 알아차린다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 0, "y": 4},
-      {"x": 0, "y": 0},
-      {"x": 3, "y": 1},
-      {"x": 4, "y": 1},
-      {"x": 2, "y": 3},
-      {"x": 4, "y": 3}
+      {"x": 3, "y": 2},
+      {"x": 4, "y": 2}
     ]
   },
   "page2": {

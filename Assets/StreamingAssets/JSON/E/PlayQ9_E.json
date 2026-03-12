@@ -3,57 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1120, "y": -325},
+        "position": {"x": 160, "y": -540},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "우리는",
+        "text": "우리는 함께 있을 때\n자연스럽게 감정과\n생각을 주고 받는다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 1440, "y": -215},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "함께 있을 때",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 800, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "감정과 생각을",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 480, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "자연스럽게",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "주고받는다",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 1 },
-      { "x": 4, "y": 0 },
-      { "x": 4, "y": 1 },
-      { "x": 1, "y": 0 },
-      { "x": 2, "y": 3 },
-      { "x": 4, "y": 4 }
+      { "x": 0, "y": 2 }
     ]
   },
   "page2": {

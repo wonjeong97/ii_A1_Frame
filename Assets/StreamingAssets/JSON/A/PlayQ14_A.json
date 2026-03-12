@@ -3,47 +3,15 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1760, "y": -970},
+        "position": {"x": 1440, "y": -760},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는 상대와",
+        "text": "나는 상대와\n함께한 뒤에 더 마음이\n편안해지는 편이다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 800, "y": -645},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "함께한 뒤에",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 1600, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "더 마음이 편해지는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 1450, "y": -755},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "편이다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 5, "y": 4},
-      {"x": 2, "y": 2},
-      {"x": 2, "y": 3},
-      {"x": 4, "y": 1},
-      {"x": 5, "y": 1},
       {"x": 4, "y": 3}
     ]
   },

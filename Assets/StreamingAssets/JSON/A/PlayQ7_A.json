@@ -3,57 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 160, "y": -975},
+        "position": {"x": 1280, "y": -110},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는 상대가",
+        "text": "나는 상대가 조용했던 순간에\n대해 종종 생각해 보곤 한다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 1280, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "조용했던 순간에 대해",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 160, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "종종",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 800, "y": -750},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "생각해 보곤",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -750},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "한다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 0, "y": 4 },
       { "x": 3, "y": 0 },
-      { "x": 4, "y": 0 },
-      { "x": 0, "y": 0 },
-      { "x": 2, "y": 3 },
-      { "x": 4, "y": 3 }
+      { "x": 4, "y": 0 }
     ]
   },
   "page2": {

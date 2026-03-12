@@ -461,7 +461,7 @@ namespace My.Scripts.Timelapse
                 if (fps < 1.0f) fps = 10f;
 
                 string fpsStr = fps.ToString("F2", CultureInfo.InvariantCulture);
-                string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 \"{outputPath}\"";
+                string args = $"-framerate {fpsStr} -i \"{inputPattern}\" -c:v libx264 -profile:v baseline -pix_fmt yuv420p -x264-params colorprim=bt709:transfer=bt709:colormatrix=bt709 -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv \"{outputPath}\"";
 
                 // 메인 스레드 프리징을 막기 위해 외부 프로세스 실행 및 대기를 스레드 풀에서 수행
                 await UniTask.SwitchToThreadPool();

@@ -3,68 +3,17 @@
     "questions": [
         {
           "name": "01",
-          "position": {"x": 1120, "y": -105},
+          "position": {"x": 1280, "y": -110},
           "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "상대방의",
+          "text": "상대방의 표정이나 말투가 평소와 다를 때,\n그 변화가 먼저 눈에 들어온다.",
           "fontName": "font7",
-          "fontSize": 55,
-          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-        },
-        {
-          "name": "02",
-          "position": {"x": 1560, "y": -540},
-          "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "표정이나 말투가",
-          "fontName": "font7",
-          "fontSize": 55,
-          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-        },
-        {
-          "name": "03",
-          "position": {"x": 310, "y": -960},
-          "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "평소와 다를 때,",
-          "fontName": "font7",
-          "fontSize": 55,
-          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-        },
-        {
-          "name": "04",
-          "position": {"x": 480, "y": -325},
-          "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "그 변화가",
-          "fontName": "font7",
-          "fontSize": 55,
-          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-        },
-        {
-          "name": "05",
-          "position": {"x": 800, "y": -760},
-          "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "먼저 눈에",
-          "fontName": "font7",
-          "fontSize": 55,
-          "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-        },
-        {
-          "name": "06",
-          "position": {"x": 1440, "y": -325},
-          "scale": {"x": 1, "y": 1, "z": 1},
-          "text": "들어온다.",
-          "fontName": "font7",
-          "fontSize": 55,
+          "fontSize": 35,
           "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
         }
     ],
     "questionSpots": [
       { "x": 3, "y": 0 },
-      { "x": 4, "y": 2 },
-      { "x": 5, "y": 2 },
-      { "x": 0, "y": 4 },
-      { "x": 1, "y": 4 },
-      { "x": 1, "y": 1 },
-      { "x": 2, "y": 3 },
-      { "x": 4, "y": 1 }
+      { "x": 4, "y": 0 }
     ]
   },
   "page2": {

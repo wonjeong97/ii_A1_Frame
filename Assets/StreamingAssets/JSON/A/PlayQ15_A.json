@@ -3,58 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1760, "y": -215},
+        "position": {"x": 480, "y": -540},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "우리는 함께",
+        "text": "우리는 함께 있어도\n감정적으로 크게\n지치지 않는 편이다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 160, "y": -110},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "있어도",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 1280, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "감정적으로 크게",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 480, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "지치지 않는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 480, "y": -755},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "편이다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 5, "y": 0},
-      {"x": 5, "y": 1},
-      {"x": 0, "y": 0},
-      {"x": 3, "y": 2},
-      {"x": 4, "y": 2},
-      {"x": 1, "y": 1},
-      {"x": 1, "y": 3}
+      {"x": 1, "y": 2}
     ]
   },
   "page2": {

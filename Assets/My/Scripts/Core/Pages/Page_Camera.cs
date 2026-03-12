@@ -1,7 +1,8 @@
 using System;
 using System.Collections;
 using System.IO;
-using Cysharp.Threading.Tasks; // UniTask 사용을 위해 추가
+using Cysharp.Threading.Tasks; 
+using My.Scripts.Hardware; 
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,10 +11,6 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
-    /// <summary>
-    /// 웹캠 화면 출력, 사진 촬영, 카운트다운 및 플래시 연출을 전담하는 페이지 컨트롤러입니다.
-    /// 로컬 파일 저장과 타임랩스/리얼타임 녹화 모듈과의 동기화를 관리합니다.
-    /// </summary>
     public class Page_Camera : GamePage
     {
         [Header("UI References")] 
@@ -47,7 +44,6 @@ namespace My.Scripts.Core.Pages
         private const int PhotoWidth = 1920;
         private const int PhotoHeight = 1080;
 
-        /// <summary> 초기화 시 외부 매니저의 설정(Configure) 개입이 없었을 경우에만 기본값을 할당합니다. </summary>
         protected override void Awake()
         {
             base.Awake();
@@ -59,7 +55,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 물리적 카메라의 설치 방향 및 전/후면 여부에 맞춰 UI 상의 영상을 올바르게 반전 및 회전시킵니다. </summary>
         private void Update()
         {
             if (_webCamTexture && _webCamTexture.isPlaying && cameraDisplay)
@@ -72,22 +67,18 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 상속 구조 유지를 위한 빈 구현부 </summary>
         public override void SetupData(object data) { }
 
-        /// <summary> 로컬에 저장될 사진 파일명 지정 </summary>
         public void SetPhotoFilename(string fileName)
         {
             _photoFileName = fileName;
         }
 
-        /// <summary> 타임랩스 기록 및 관리에 사용될 레벨 ID 지정 </summary>
         public void SetLevelID(string id)
         {
             _levelID = id;
         }
 
-        /// <summary> 외부 매니저에서 카메라 옵션(마스킹 재질, 저장 여부 등)을 동적으로 주입하기 위해 사용합니다. </summary>
         public void Configure(bool shouldSave, Material maskMat = null, bool triggerEncoding = false)
         {
             _shouldSavePhoto = shouldSave;
@@ -96,14 +87,12 @@ namespace My.Scripts.Core.Pages
             _isConfigured = true; 
         }
 
-        /// <summary> 화면 등장 전 카메라 하드웨어 로딩 지연을 숨기기 위해 미리 가동합니다. </summary>
         public void PreloadCamera()
         {
             StartWebCam();
             SetRawImageAlpha(cameraDisplay, 0f); 
         }
 
-        /// <summary> 페이지 진입 시 이전 잔상을 제거하고 연출 시퀀스를 가동합니다. </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -128,11 +117,21 @@ namespace My.Scripts.Core.Pages
             CleanupPhotoUI();
             StartWebCam(); 
 
+            if (LevelManager.Instance)
+            {
+                int qNum = LevelManager.Instance.CurrentQuestionNumber;
+                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
+                {
+                    RGBColor randomColor = HueManager.Instance.PopRandomColor();
+                    HueManager.Instance.SetLightColorRGBAsync(1, randomColor).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(2, randomColor).Forget();
+                }
+            }
+
             StartCoroutine(FadeInCameraRoutine());
             StartCoroutine(CountdownRoutine());
         }
 
-        /// <summary> 페이지 퇴장 시 리소스 누수 방지를 위해 카메라를 즉시 종료합니다. </summary>
         public override void OnExit()
         {
             StopAllCoroutines();
@@ -140,14 +139,34 @@ namespace My.Scripts.Core.Pages
             
             StopWebCam();
             CleanupPhotoUI();
+
+            // 예기치 않게 씬을 벗어날 때를 대비한 안전 가드
+            if (LevelManager.Instance)
+            {
+                int qNum = LevelManager.Instance.CurrentQuestionNumber;
+                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
+                {
+                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                }
+            }
         }
 
-        /// <summary> 객체 파괴 시 카메라 하드웨어 점유를 강제로 해제하고 재사용 버퍼 메모리를 반환합니다. </summary>
         private void OnDestroy()
         {
             StopAllCoroutines();
             StopWebCam();
             
+            if (LevelManager.Instance)
+            {
+                int qNum = LevelManager.Instance.CurrentQuestionNumber;
+                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
+                {
+                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                }
+            }
+
             if (_capturedPhoto)
             {
                 Destroy(_capturedPhoto);
@@ -155,7 +174,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 웹캠 초기화 시 발생하는 프레임 드랍 및 끊김 현상을 숨기기 위해 부드럽게 페이드인합니다. </summary>
         private IEnumerator FadeInCameraRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(cameraFadeDelay);
@@ -176,7 +194,6 @@ namespace My.Scripts.Core.Pages
             SetRawImageAlpha(cameraDisplay, 1f);
         }
 
-        /// <summary> 5초 카운트다운을 진행하며, 타임랩스와 리얼타임 녹화의 생명주기를 타이밍에 맞춰 동기화합니다. </summary>
         private IEnumerator CountdownRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
@@ -212,7 +229,6 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(FlashAndCaptureRoutine());
         }
 
-        /// <summary> 사진 촬영 순간의 시각적 피드백(플래시)을 연출하고 실제 촬영 로직을 호출합니다. </summary>
         private IEnumerator FlashAndCaptureRoutine()
         {
             float maxAlpha = 0.8f;
@@ -230,6 +246,17 @@ namespace My.Scripts.Core.Pages
 
             CapturePhoto();
 
+            // [추가] 사진이 찍힌 직후 바로 조명을 끕니다.
+            if (LevelManager.Instance)
+            {
+                int qNum = LevelManager.Instance.CurrentQuestionNumber;
+                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
+                {
+                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                }
+            }
+
             if (flashImage)
             {
                 float t = 0f;
@@ -246,10 +273,6 @@ namespace My.Scripts.Core.Pages
             CompleteStep();
         }
 
-        /// <summary> 
-        /// WebCamTexture의 픽셀 데이터를 읽어와 마스킹 재질을 적용한 뒤 메모리에 고정시킵니다.
-        /// 가비지 컬렉션 스파이크를 방지하기 위해 단일 텍스처 인스턴스를 재사용합니다.
-        /// </summary>
         private void CapturePhoto()
         {
             if (_webCamTexture && _webCamTexture.isPlaying)
@@ -278,7 +301,6 @@ namespace My.Scripts.Core.Pages
 
                 if (_shouldSavePhoto)
                 {
-                    // 비동기(UniTask) 사진 저장 호출 (Fire and Forget)
                     SavePhotoToCustomFolderAsync(_capturedPhoto).Forget();
                 }
 
@@ -286,10 +308,6 @@ namespace My.Scripts.Core.Pages
             }
         }
     
-        /// <summary> 
-        /// 메인 스레드 멈춤(프리징) 현상을 방지하기 위해 UniTask를 활용하여 
-        /// PNG 인코딩 및 디스크 I/O를 스레드 풀에서 비동기로 처리합니다.
-        /// </summary>
         private async UniTaskVoid SavePhotoToCustomFolderAsync(Texture2D photo)
         {
             if (!photo)
@@ -298,7 +316,6 @@ namespace My.Scripts.Core.Pages
                 return;
             }
             
-            // 메인 스레드 종속적인 Raw 데이터와 포맷 정보만 미리 추출
             byte[] rawData = photo.GetRawTextureData();
             int width = photo.width;
             int height = photo.height;
@@ -309,7 +326,6 @@ namespace My.Scripts.Core.Pages
 
             try
             {
-                // UniTask를 통해 유니티 메인 스레드 부하 없이 백그라운드 스레드에서 무거운 작업 실행
                 await UniTask.RunOnThreadPool(() =>
                 {
                     byte[] bytes = UnityEngine.ImageConversion.EncodeArrayToPNG(rawData, format, (uint)width, (uint)height);
@@ -334,7 +350,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 이전 촬영 결과물이 UI에 번쩍이며 나타나는 현상을 방지하기 위해 텍스처 참조만 해제합니다. </summary>
         private void CleanupPhotoUI()
         {
             if (cameraDisplay && cameraDisplay.texture == _capturedPhoto)
@@ -343,7 +358,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 카운트다운 숫자를 표시하고 서서히 투명해지는 연출을 수행합니다. </summary>
         private IEnumerator ShowAndFadeNumber(string n)
         {
             if (countdownText)
@@ -390,7 +404,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 연결된 카메라 장치를 검색하고 하드웨어를 가동합니다. </summary>
         private void StartWebCam()
         {
             if (_webCamTexture && _webCamTexture.isPlaying)
@@ -433,7 +446,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 카메라 하드웨어 작동 중지 </summary>
         private void StopWebCam()
         {
             if (_webCamTexture && _webCamTexture.isPlaying) _webCamTexture.Stop();

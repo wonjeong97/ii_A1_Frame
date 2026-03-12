@@ -43,6 +43,24 @@
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
     },
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": -698, "y": 80},
+      "text": "{nameA}님",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 698, "y": 80},
+      "text": "{nameB}님",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
     "answerTexts": [
       {
         "name": "Text_Ans1",
@@ -93,38 +111,7 @@
     "warningMessage": "답변해 주세요.",
     "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
-  "page3": {
-    "nicknamePlayerA": {
-      "name": "Text_PlayerA",
-      "position": {"x": 748.4, "y": -330},
-      "text": "{nameA}님",
-      "fontName": "font8",
-      "fontSize": 55,
-      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 4
-    },
-    "nicknamePlayerB": {
-      "name": "Text_PlayerB",
-      "position": {"x": 1198, "y": -330},
-      "text": "{nameB}님",
-      "fontName": "font8",
-      "fontSize": 55,
-      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
-      "alignment": 4
-    },
-    "waitText": {
-      "name": "Text_WaitForAnother",
-      "position": {"x": 960, "y": -875},
-      "text": "상대방의 답변을 기다리는 중입니다.",
-      "fontName": "font4",
-      "fontSize": 55,
-      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
-    },
-    "warningMessage": "답변해 주세요.",
-    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
-  },
-  "page4":
-  {
+  "page4": {
     "descriptionText": {
       "name": "Text_답변이 완료되었습니다.",
       "position": {"x": 960, "y": -300},
@@ -138,9 +125,8 @@
     "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
   "page5": {},
-  "page6":  {
-    "descriptionText":
-    {
+  "page6": {
+    "descriptionText": {
       "name": "Text_사진이 기록되었습니다.",
       "position": {"x": 960, "y": -265},
       "scale": {"x": 1, "y": 1, "z": 1},

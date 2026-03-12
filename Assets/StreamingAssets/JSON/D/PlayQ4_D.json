@@ -3,67 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 160, "y": -760},
+        "position": {"x": 320, "y": -760},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는 대화가",
+        "text": "나는 대화가 끝난 뒤,‘그때 왜 그런\n느낌이 들었을까’를 떠올려 볼 때가 있다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 800, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "끝난 뒤,‘그때",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 1440, "y": -215},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "왜 그런 느낌이",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 480, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "들었을까’를",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "떠올려",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "06",
-        "position": {"x": 1760, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "볼 때가 있다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
       { "x": 0, "y": 3 },
-      { "x": 2, "y": 2 },
-      { "x": 4, "y": 0 },
-      { "x": 4, "y": 1 },
-      { "x": 1, "y": 1 },
-      { "x": 4, "y": 4 },
-      { "x": 5, "y": 0 }
+      { "x": 1, "y": 3 }
     ]
   },
   "page2": {
@@ -71,7 +21,7 @@
       "name": "Text_Question",
       "position": {"x": 0, "y": 0},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "Q.나는 대화가 끝난 뒤,'그때 왜 그런 느낌이 들었을까'를 떠올려 볼 때가 있다.",
+      "text": "Q.나는 대화가 끝난 뒤,‘그때 왜 그런 느낌이 들었을까’를 떠올려 볼 때가 있다.",
       "fontName": "font7",
       "fontSize": 40,
       "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}

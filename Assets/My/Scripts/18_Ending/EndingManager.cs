@@ -126,7 +126,10 @@ namespace My.Scripts._18_Ending
             }
 
             // 모든 정리가 완료된 후 안전하게 타이틀로 씬 전환
-            if (GameManager.Instance) GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
+            if (GameManager.Instance)
+            {
+                GameManager.Instance.ChangeScene(GameConstants.Scene.Title);
+            }
         }
     }
 }

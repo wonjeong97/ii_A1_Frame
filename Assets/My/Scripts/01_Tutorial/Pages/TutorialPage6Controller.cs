@@ -44,7 +44,7 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private float minY = -200f;
         [SerializeField] private float maxY = 250f;
         
-        private readonly float fadeDuration = 1.0f;
+        private readonly float fadeDuration = 0.5f;
 
         private Vector2 _initialPos;
         private Vector2 _targetPos; 
@@ -59,12 +59,12 @@ namespace My.Scripts._01_Tutorial.Pages
         private Coroutine _stageSequenceRoutine;
 
         private int _lastP1Key = -1;
-        private int _p1StepCount = 0; 
+        private int _p1StepCount; 
         private float _p1LastTime;
         private int _p1LastDir;
 
         private int _lastP2Key = -1;
-        private int _p2StepCount = 0; 
+        private int _p2StepCount; 
         private float _p2LastTime;
         private int _p2LastDir;
 
@@ -274,7 +274,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
-                    // 조작이 감지되면 일정 시간(5초) 후 다음 단계로 넘어가도록 코루틴 시작
+                    // 조작이 감지되면 일정 시간(3초) 후 다음 단계로 넘어가도록 코루틴 시작
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
@@ -330,7 +330,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 // P1 종료 문구 연출 및 P2 시작 준비
                 yield return StartCoroutine(TextChangeSequence(_data.txtA_Info));
-                yield return CoroutineData.GetWaitForSeconds(4.0f);
+                yield return CoroutineData.GetWaitForSeconds(3.0f);
                 yield return StartCoroutine(TextChangeSequence(_data.txtB_Start));
 
                 _currentStage = 1;
@@ -347,7 +347,7 @@ namespace My.Scripts._01_Tutorial.Pages
             {
                 // P2 종료 문구 연출 후 페이지 완료 처리
                 yield return StartCoroutine(TextChangeSequence(_data.txtB_Info));
-                yield return CoroutineData.GetWaitForSeconds(4.0f);
+                yield return CoroutineData.GetWaitForSeconds(3.0f);
                 CompleteStep(); 
                 _stageSequenceRoutine = null;
             }

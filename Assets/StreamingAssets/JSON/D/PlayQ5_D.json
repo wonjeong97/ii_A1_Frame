@@ -3,68 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1120, "y": -110},
+        "position": {"x": 1600, "y": -970},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대방이",
+        "text": "상대방이 직접 언급하지 않는\n미묘한 분위기 변화를 잘 알아차리는 편이다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 1600, "y": -755},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "직접 언급하지 않는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 300, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "미묘한 분위기를",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 160, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "잘",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1760, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "알아차리는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "06",
-        "position": {"x": 800, "y": -535},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "편이다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 0 },
-      { "x": 4, "y": 3 },
-      { "x": 5, "y": 3 },
-      { "x": 0, "y": 4 },
-      { "x": 1, "y": 4 },
-      { "x": 0, "y": 1 },
-      { "x": 5, "y": 4 },
-      { "x": 2, "y": 2 }
+      { "x": 4, "y": 4 },
+      { "x": 5, "y": 4 }
     ]
   },
   "page2": {

@@ -3,57 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1600, "y": -540},
+        "position": {"x": 960, "y": -965},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "문득 스쳐지나간",
+        "text": "문득 스쳐지나간 상대방의 반응이\n떠올라 돌아보게 되는 때가 있다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 800, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대방의 반응이",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 800, "y": -320},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "떠올라",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 480, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "돌아보게 되는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -750},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "때가 있다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 4, "y": 2 },
-      { "x": 5, "y": 2 },
       { "x": 2, "y": 4 },
-      { "x": 2, "y": 1 },
-      { "x": 1, "y": 2 },
-      { "x": 4, "y": 3 }
+      { "x": 3, "y": 4 }
     ]
   },
   "page2": {
