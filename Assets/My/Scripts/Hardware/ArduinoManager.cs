@@ -23,12 +23,17 @@ namespace My.Scripts.Hardware
         private SerialPort _rightPort;
 
         // 백그라운드 스레드에서 수신된 데이터를 메인 스레드로 안전하게 넘기기 위한 스레드-세이프 큐
-        private ConcurrentQueue<(string input, bool isLeft)> _inputQueue = new ConcurrentQueue<(string input, bool isLeft)>();
+        private ConcurrentQueue<(string input, bool isLeft)> _inputQueue =
+            new ConcurrentQueue<(string input, bool isLeft)>();
+
         private Thread _readThread;
         private bool _isRunning = false;
 
         public bool IsLeftConnected => _leftPort != null && _leftPort.IsOpen;
         public bool IsRightConnected => _rightPort != null && _rightPort.IsOpen;
+
+        // 양쪽 아두이노가 모두 연결되었는지 확인하는 프로퍼티
+        public bool AreBothConnected => IsLeftConnected && IsRightConnected;
 
         /// <summary> 씬 전환 시에도 시리얼 통신 연결이 끊어지지 않도록 영속성(DontDestroyOnLoad) 보장 </summary>
         private void Awake()
@@ -86,8 +91,8 @@ namespace My.Scripts.Hardware
 
             foreach (string portName in portNames)
             {
-                if (IsLeftConnected && IsRightConnected) break;
-                
+                if (AreBothConnected) break;
+
                 // 각 포트의 연결 시도 및 대기를 백그라운드 스레드 풀에서 안전하게 순차 실행
                 await TryConnectPortAsync(portName);
             }
@@ -108,12 +113,15 @@ namespace My.Scripts.Hardware
             await UniTask.RunOnThreadPool(async () =>
             {
                 SerialPort tempPort = new SerialPort(portName, 9600);
-                tempPort.ReadTimeout = 2000; 
-                
-                // 아두이노 보드의 자동 리셋 기능을 활용하여 연결 즉시 초기화 신호(식별 문자열)를 유도하기 위해 DTR 신호 활성화
-                tempPort.DtrEnable = true; 
+                tempPort.ReadTimeout = 2000;
 
-                try { tempPort.Open(); }
+                // 아두이노 보드의 자동 리셋 기능을 활용하여 연결 즉시 초기화 신호(식별 문자열)를 유도하기 위해 DTR 신호 활성화
+                tempPort.DtrEnable = true;
+
+                try
+                {
+                    tempPort.Open();
+                }
                 catch (Exception e)
                 {
                     Debug.LogWarning($"[ArduinoManager] 포트 열기 실패 ({portName}): {e.Message}");
@@ -126,13 +134,19 @@ namespace My.Scripts.Hardware
                 string response = string.Empty;
                 try
                 {
-                    if (tempPort.BytesToRead > 0) 
+                    if (tempPort.BytesToRead > 0)
                     {
-                        response = tempPort.ReadExisting(); 
+                        response = tempPort.ReadExisting();
                     }
                 }
-                catch (TimeoutException) { Debug.LogWarning($"[ArduinoManager] 응답 타임아웃 ({portName})"); }
-                catch (Exception e) { Debug.LogWarning($"[ArduinoManager] 읽기 예외 ({portName}): {e.Message}"); }
+                catch (TimeoutException)
+                {
+                    Debug.LogWarning($"[ArduinoManager] 응답 타임아웃 ({portName})");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[ArduinoManager] 읽기 예외 ({portName}): {e.Message}");
+                }
 
                 // 유니티 오브젝트 필드 할당의 안전성을 보장하기 위해 메인 스레드로 강제 복귀
                 await UniTask.SwitchToMainThread();
@@ -140,7 +154,7 @@ namespace My.Scripts.Hardware
                 // 식별 완료된 포트는 타임아웃을 짧게 줄여 실시간 게임 조작 시 딜레이를 최소화함
                 if (response.Contains(GameConstants.Hardware.LeftArduino))
                 {
-                    tempPort.ReadTimeout = 10; 
+                    tempPort.ReadTimeout = 10;
                     _leftPort = tempPort;
                     Debug.Log($"[ArduinoManager] Left 아두이노 연결 성공: {portName}");
                 }
@@ -187,8 +201,12 @@ namespace My.Scripts.Hardware
                             }
                         }
                     }
-                    catch (TimeoutException) { }
-                    catch (Exception) { }
+                    catch (TimeoutException)
+                    {
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
 
                 if (IsRightConnected)
@@ -204,12 +222,16 @@ namespace My.Scripts.Hardware
                             }
                         }
                     }
-                    catch (TimeoutException) { }
-                    catch (Exception) { }
+                    catch (TimeoutException)
+                    {
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
 
                 // CPU 코어 점유율 폭주(100%) 방지를 위한 미세한 휴식
-                Thread.Sleep(5); 
+                Thread.Sleep(50);
             }
         }
 
@@ -218,8 +240,14 @@ namespace My.Scripts.Hardware
         {
             if (IsRightConnected)
             {
-                try { _rightPort.WriteLine(command); }
-                catch (Exception e) { Debug.LogError($"[ArduinoManager] Right 전송 오류: {e.Message}"); }
+                try
+                {
+                    _rightPort.WriteLine(command);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[ArduinoManager] Right 전송 오류: {e.Message}");
+                }
             }
         }
 
@@ -228,8 +256,14 @@ namespace My.Scripts.Hardware
         {
             if (IsLeftConnected)
             {
-                try { _leftPort.WriteLine(command); }
-                catch (Exception e) { Debug.LogError($"[ArduinoManager] Left 전송 오류: {e.Message}"); }
+                try
+                {
+                    _leftPort.WriteLine(command);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[ArduinoManager] Left 전송 오류: {e.Message}");
+                }
             }
         }
 

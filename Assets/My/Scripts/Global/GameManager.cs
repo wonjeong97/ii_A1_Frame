@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using Cysharp.Threading.Tasks; // 비동기 백그라운드 처리를 위해 추가
+using Cysharp.Threading.Tasks; 
 using My.Scripts.Core;
 using My.Scripts.Core.Data;
 using My.Scripts.Hardware;
@@ -14,7 +14,7 @@ using Wonjeong.UI;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Global
-{   
+{
     /// <summary>
     /// 게임 전반의 상태(씬 전환, 대기 시간 체크, 공통 API 호출, 강제 종료 방어)를 관리하는 전역 싱글톤 매니저입니다.
     /// 플레이어 개인 데이터는 단일 책임 원칙에 따라 SessionManager에서 분리하여 관리합니다.
@@ -34,7 +34,7 @@ namespace My.Scripts.Global
 
         public int firstTaggedPlayer = 0;
         public ApiSettings ApiConfig { get; set; }
-        
+
         [Header("Player Color Sprites")]
         public Sprite[] playerColorSprites;
 
@@ -45,16 +45,16 @@ namespace My.Scripts.Global
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                
+
                 // 전역 데이터 무결성을 위해 SessionManager가 없을 경우 동적 생성
                 if (!SessionManager.Instance)
                 {
                     GameObject sessionObj = new GameObject("SessionManager");
                     sessionObj.AddComponent<SessionManager>();
                 }
-                
+
                 // 사용자가 창을 닫거나 강제 종료를 시도할 때, 서버에 퇴장 신호를 보내기 위해 종료 프로세스를 가로챔
-                Application.wantsToQuit += WantsToQuit; 
+                Application.wantsToQuit += WantsToQuit;
             }
             else
             {
@@ -90,13 +90,14 @@ namespace My.Scripts.Global
             {
                 return playerColorSprites[index];
             }
+
             return null;
         }
 
         /// <summary> 환경 설정 및 API 엔드포인트 JSON 파일을 파싱하여 메모리에 캐싱합니다. </summary>
         private void LoadSettings()
         {
-            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting); 
+            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
             if (settings != null)
             {
                 _fadeTime = settings.fadeTime;
@@ -107,7 +108,7 @@ namespace My.Scripts.Global
                 _inactivityLimit = 60f;
                 _fadeTime = 1.0f;
             }
-            
+
             ApiConfig = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
             if (ApiConfig == null) Debug.LogError("[GameManager] API.json 설정 파일을 로드하지 못했습니다.");
         }
@@ -123,6 +124,7 @@ namespace My.Scripts.Global
             else if (Input.GetKeyDown(KeyCode.M)) Cursor.visible = !Cursor.visible;
 
             if (_isTransitioning) return;
+
             HandleInactivity();
         }
 
@@ -143,11 +145,12 @@ namespace My.Scripts.Global
                 if (_currentInactivityTimer >= _inactivityLimit) ReturnToTitle();
             }
         }
-    
+
         /// <summary> 씬 전환 중복 호출 방지 플래그를 세팅하고 페이드 아웃 연출을 동반한 비동기 로딩을 시작합니다. </summary>
         public void ChangeScene(string sceneName)
         {
             if (_isTransitioning) return;
+
             _isTransitioning = true;
             Debug.Log($"[GameManager] Scene Transition Requested: {sceneName}");
             StartCoroutine(ChangeSceneRoutine(sceneName));
@@ -178,27 +181,29 @@ namespace My.Scripts.Global
         public void ReturnToTitle()
         {
             if (_isTransitioning) return;
+
             Debug.Log("[GameManager] 타이틀로 돌아감");
 
             SendResetStartAPI();
             SendExitRoomAPI();
-            
+
             if (ArduinoManager.Instance)
             {
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
             }
+
             if (HueManager.Instance)
             {
                 HueManager.Instance.SetLightStateAsync(1, false).Forget();
                 HueManager.Instance.SetLightStateAsync(2, false).Forget();
             }
 
-            firstTaggedPlayer = 0; 
+            firstTaggedPlayer = 0;
             _currentInactivityTimer = 0f;
-            
+
             // 기존 플레이어의 잔존 데이터가 다음 플레이어에게 노출되지 않도록 세션 초기화
-            if (SessionManager.Instance) SessionManager.Instance.ClearSession(); 
+            if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
             ChangeScene(GameConstants.Scene.Title);
         }
@@ -206,25 +211,26 @@ namespace My.Scripts.Global
         /// <summary> 유저 타입(A~F)과 현재 진행 중인 문제 번호에 맞춰 분기될 씬 이름의 접미사(Suffix)를 결정합니다. </summary>
         public string GetLevelSuffix(int questionNumber)
         {
-            if (questionNumber <= 0 || !SessionManager.Instance) return ""; 
-            
+            if (questionNumber <= 0 || !SessionManager.Instance) return "";
+
             // 기획된 플로우 차트에 따라 특정 문항에서만 분기가 갈리도록 하드코딩된 규칙 적용
             switch (SessionManager.Instance.CurrentUserType)
             {
-                case UserType.A: return "_A"; 
+                case UserType.A: return "_A";
                 case UserType.B: return (questionNumber == 4) ? "_B" : "_A";
                 case UserType.C:
-                    if (questionNumber == 4 || questionNumber == 10 || questionNumber == 11 || 
+                    if (questionNumber == 4 || questionNumber == 10 || questionNumber == 11 ||
                         questionNumber == 13 || questionNumber == 14 || questionNumber == 15) return "_C";
+
                     return "_A";
-                case UserType.D: return "_D"; 
-                case UserType.E: return "_E"; 
+                case UserType.D: return "_D";
+                case UserType.E: return "_E";
                 case UserType.F: return "_F";
                 default: return "_A";
             }
         }
 
-       #region API 호출 로직
+        #region API 호출 로직
 
         /// <summary> 공통 GET 방식 API 요청을 수행하는 단일 코루틴입니다. 중복 코드를 제거하고 유지보수성을 높입니다. </summary>
         private IEnumerator SendGetRequestRoutine(string url)
@@ -233,7 +239,7 @@ namespace My.Scripts.Global
             {
                 req.timeout = 10;
                 yield return req.SendWebRequest();
-                
+
                 if (req.result != UnityWebRequest.Result.Success)
                 {
                     Debug.LogWarning($"[GameManager] API 전송 실패: {req.error} (URL: {url})");
@@ -245,7 +251,9 @@ namespace My.Scripts.Global
         public void SendResetStartAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.ResetStartUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}";
+
+            string url =
+                $"{ApiConfig.ResetStartUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}";
             StartCoroutine(SendGetRequestRoutine(url));
         }
 
@@ -253,7 +261,9 @@ namespace My.Scripts.Global
         public void SendExitRoomAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={SessionManager.Instance.CurrentUserId}";
+
+            string url =
+                $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={SessionManager.Instance.CurrentUserId}";
             StartCoroutine(SendGetRequestRoutine(url));
         }
 
@@ -261,7 +271,9 @@ namespace My.Scripts.Global
         public void SendTimeUpdateAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={SessionManager.Instance.CurrentUserId}&option=end&code={GameConstants.Module.Code.ToLower()}";
+
+            string url =
+                $"{ApiConfig.UpdateTimeUrl}?idx_user={SessionManager.Instance.CurrentUserId}&option=end&code={GameConstants.Module.Code.ToLower()}";
             StartCoroutine(SendGetRequestRoutine(url));
         }
 
@@ -269,15 +281,20 @@ namespace My.Scripts.Global
         public void SendValueUpdateAPI(int qNo, string side, int value)
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={SessionManager.Instance.CurrentUserId}&q_no={qNo}&side={side}&code={GameConstants.Module.Code.ToLower()}&value={value}";
+
+            string url =
+                $"{ApiConfig.UpdateValueUrl}?idx_user={SessionManager.Instance.CurrentUserId}&q_no={qNo}&side={side}&code={GameConstants.Module.Code.ToLower()}&value={value}";
             StartCoroutine(SendGetRequestRoutine(url));
         }
 
         /// <summary> 획득한 마음 조각 보상 개수를 서버 데이터에 누적시키는 API 호출 </summary>
         public void SendPieceUpdateAPI(int value)
         {
-            if (value < 0 || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}&value={value}";
+            if (value < 0 || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 ||
+                ApiConfig == null) return;
+
+            string url =
+                $"{ApiConfig.UpdatePieceUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}&value={value}";
             StartCoroutine(SendGetRequestRoutine(url));
         }
 
@@ -298,27 +315,42 @@ namespace My.Scripts.Global
                 _isQuitting = true;
                 StartCoroutine(QuitRoutine());
             }
-            
-            return false; 
+
+            return false;
         }
 
         /// <summary> 종료 전 룸 상태 초기화, 퇴장 API 전송 및 불필요한 로컬 더미 파일 정리를 순차적으로 실행합니다. </summary>
         private IEnumerator QuitRoutine()
         {
+            // 종료 시 아두이노 LED 즉시 강제 소등
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            }
+
+            // 종료 시 휴(Hue) 조명 즉시 강제 소등
+            if (HueManager.Instance)
+            {
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+            }
+
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
-            {   
+            {
                 int uid = SessionManager.Instance.CurrentUserId;
-                
-                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
+
+                string resetUrl =
+                    $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
                 using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
-                {   
+                {
                     req.timeout = 2; // 종료 지연 최소화를 위한 짧은 타임아웃
                     yield return req.SendWebRequest();
                 }
 
                 string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
                 using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
-                {   
+                {
                     req.timeout = 2;
                     yield return req.SendWebRequest();
                 }
@@ -326,13 +358,13 @@ namespace My.Scripts.Global
 
             // 백그라운드 파일 삭제가 완료될 때까지 코루틴을 일시 정지하여 앱이 메인 스레드를 유지하도록 보장
             yield return ClearSourceFoldersAsync().ToCoroutine();
-            
+
             _isQuitSafe = true; // 안전 종료 플래그 활성화
-            
+
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Application.Quit(); 
+            Application.Quit();
 #endif
         }
 
@@ -345,17 +377,31 @@ namespace My.Scripts.Global
         {
             if (_isQuitSafe) return; // 이미 일반 종료 루틴이 완료되었다면 무시
 
+            // 에디터 강제 정지 시에도 아두이노 및 휴 조명 소등
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            }
+
+            if (HueManager.Instance)
+            {
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+            }
+
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
-            {   
+            {
                 int uid = SessionManager.Instance.CurrentUserId;
-                
-                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
+
+                string resetUrl =
+                    $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
                 using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
-                {   
+                {
                     req.timeout = 2;
                     UnityWebRequestAsyncOperation op = req.SendWebRequest();
                     float deadline = Time.realtimeSinceStartup + 2.0f;
-                    
+
                     // 비동기 오퍼레이션이 완료될 때까지 메인 스레드 강제 대기 (에디터 전용 꼼수)
                     while (!op.isDone && Time.realtimeSinceStartup < deadline)
                     {
@@ -365,7 +411,7 @@ namespace My.Scripts.Global
 
                 string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
                 using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
-                {   
+                {
                     req.timeout = 2;
                     UnityWebRequestAsyncOperation op = req.SendWebRequest();
                     float deadline = Time.realtimeSinceStartup + 2.0f;
@@ -407,8 +453,14 @@ namespace My.Scripts.Global
                         string[] tFiles = Directory.GetFiles(timelapseSource);
                         foreach (string file in tFiles)
                         {
-                            try { File.Delete(file); }
-                            catch (Exception ex) { Debug.LogWarning($"[GameManager] 타임랩스 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
+                            try
+                            {
+                                File.Delete(file);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning($"[GameManager] 타임랩스 소스 파일 삭제 실패 ({file}): {ex.Message}");
+                            }
                         }
                     }
 
@@ -417,8 +469,14 @@ namespace My.Scripts.Global
                         string[] rFiles = Directory.GetFiles(realtimeSource);
                         foreach (string file in rFiles)
                         {
-                            try { File.Delete(file); }
-                            catch (Exception ex) { Debug.LogWarning($"[GameManager] 리얼타임 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
+                            try
+                            {
+                                File.Delete(file);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.LogWarning($"[GameManager] 리얼타임 소스 파일 삭제 실패 ({file}): {ex.Message}");
+                            }
                         }
                     }
 

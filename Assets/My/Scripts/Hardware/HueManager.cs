@@ -112,7 +112,6 @@ namespace My.Scripts.Hardware
             return selectedColor;
         }
 
-        // 수정됨: url 변수 선언 추가 및 통일된 ct 변수명 사용
         public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
@@ -120,8 +119,7 @@ namespace My.Scripts.Hardware
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
             await SendPutRequestAsync(url, jsonBody, ct);
         }
-
-        // 수정됨: CancellationToken ct 매개변수 추가
+        
         public async UniTask SetLightColorRGBAsync(int lightId, RGBColor rgb, int bri = -1, int transitionTime = 4, CancellationToken ct = default)
         {
             if (rgb == null || Config == null) return;
@@ -144,8 +142,7 @@ namespace My.Scripts.Hardware
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
             await SendPutRequestAsync(url, jsonBody, ct);
         }
-
-        // 수정됨: UniTask 버전 충돌을 피하기 위해 request.Abort()를 활용한 안전한 취소 로직 적용
+        
         private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken ct = default)
         {
             using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
@@ -173,8 +170,8 @@ namespace My.Scripts.Hardware
                 }
                 catch (OperationCanceledException)
                 {
-                    // 취소 요청 시 예외로 떨어지므로 로그를 남기거나 조용히 무시합니다.
-                    // Debug.Log($"[HueManager] 휴 통신 취소됨");
+                    // 취소 요청 시 예외로 떨어지므로 로그를 남긴다.
+                    Debug.Log($"[HueManager] 휴 통신 취소됨");
                 }
                 catch (Exception e)
                 {

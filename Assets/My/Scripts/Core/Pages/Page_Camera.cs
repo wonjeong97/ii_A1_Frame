@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Threading; // CancellationTokenSource를 위해 추가
+using System.Threading; 
 using Cysharp.Threading.Tasks; 
 using My.Scripts.Hardware; 
 using My.Scripts.Timelapse;
@@ -126,14 +126,23 @@ namespace My.Scripts.Core.Pages
             _hueCts?.Dispose();
             _hueCts = new CancellationTokenSource();
 
-            if (LevelManager.Instance)
+            if (LevelManager.Instance && HueManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
+                
+                // Q6 ~ Q10 구간: 섞어둔 5가지 색상 중 랜덤으로 뽑아 점등
+                if (qNum >= 6 && qNum <= 10)
                 {
                     RGBColor randomColor = HueManager.Instance.PopRandomColor();
                     HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
+                }
+                else
+                {
+                    // 그 외의 모든 촬영 구간: 백색등(White) 점등
+                    RGBColor whiteColor = new RGBColor { r = 255, g = 255, b = 255 };
+                    HueManager.Instance.SetLightColorRGBAsync(1, whiteColor, -1, 4, _hueCts.Token).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(2, whiteColor, -1, 4, _hueCts.Token).Forget();
                 }
             }
 
@@ -152,14 +161,11 @@ namespace My.Scripts.Core.Pages
             // 퇴장 시 이전 통신이 지연되고 있다면 즉시 취소시켜 덮어씌워짐 방지
             _hueCts?.Cancel();
 
-            if (LevelManager.Instance)
+            // 카메라 페이지를 벗어날 때는 문항 번호와 무관하게 무조건 소등
+            if (HueManager.Instance)
             {
-                int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
-                {
-                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
-                }
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
             }
         }
 
@@ -172,14 +178,11 @@ namespace My.Scripts.Core.Pages
             _hueCts?.Dispose();
             _hueCts = null;
             
-            if (LevelManager.Instance)
+            // 안전 가드: 오브젝트가 파괴될 때도 무조건 소등
+            if (HueManager.Instance)
             {
-                int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
-                {
-                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
-                }
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
             }
 
             if (_capturedPhoto)
@@ -261,17 +264,14 @@ namespace My.Scripts.Core.Pages
 
             CapturePhoto();
 
-            // [추가] 끄기 명령 전, 켜기 통신이 아직 네트워크 지연 중이라면 무시되도록 강제 취소합니다.
+            // 끄기 명령 전, 켜기 통신이 아직 네트워크 지연 중이라면 무시되도록 강제 취소합니다.
             _hueCts?.Cancel();
 
-            if (LevelManager.Instance)
+            // 사진 촬영 직후 문항 번호와 무관하게 무조건 소등
+            if (HueManager.Instance)
             {
-                int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
-                {
-                    HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                    HueManager.Instance.SetLightStateAsync(2, false).Forget();
-                }
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
             }
 
             if (flashImage)

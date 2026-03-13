@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
+using My.Scripts.Hardware; 
 using My.Scripts.Timelapse; 
 using UnityEngine;
 using UnityEngine.Networking; 
@@ -50,6 +52,12 @@ namespace My.Scripts._00_Title
                 TimeLapseRecorder.Instance.ClearRecordingData();
             }
 
+            // 아두이노 LED 초기화 코루틴 가동
+            StartCoroutine(TurnOffArduinoLedsRoutine());
+            
+            // 휴(Hue) 조명 즉시 소등 가동
+            TurnOffHueLights();
+
             _pollCoroutine = StartCoroutine(PollRoomStateRoutine());
         }
 
@@ -62,6 +70,38 @@ namespace My.Scripts._00_Title
             {
                 Debug.LogWarning("[TitleManager] Settings.json 로드 실패.");
             }
+        }
+        
+        /// <summary> 휴(Hue) 조명을 비동기로 즉시 소등합니다. </summary>
+        private void TurnOffHueLights()
+        {
+            if (HueManager.Instance)
+            {
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+            }
+        }
+
+        /// <summary> 아두이노가 연결될 때까지 대기한 후 모든 LED를 끄는 명령을 전송합니다. </summary>
+        private IEnumerator TurnOffArduinoLedsRoutine()
+        {
+            // ArduinoManager가 초기화될 때까지 대기
+            while (!ArduinoManager.Instance) yield return null;
+
+            // 좌/우 아두이노 중 최소 하나라도 연결될 때까지 대기
+            while (!ArduinoManager.Instance.IsLeftConnected && !ArduinoManager.Instance.IsRightConnected)
+            {
+                yield return null;
+            }
+
+            // 나머지 한쪽 아두이노도 마저 연결되고 통신이 안정화될 수 있도록 잠시 대기
+            yield return CoroutineData.GetWaitForSeconds(1.5f);
+
+            // 전체 LED 및 샷(Shot) 버튼 LED 소등 명령 하달
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            
+            Debug.Log("[TitleManager] 아두이노 연결 확인. 모든 LED 소등 완료.");
         }
 
         /// <summary> 
