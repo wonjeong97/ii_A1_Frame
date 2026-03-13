@@ -3,48 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1120, "y": -430},
+        "position": {"x": 1440, "y": -325},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는 상대의",
+        "text": "나는 상대의 반응이\n애매할 때,\n마음이 복잡해 진다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 1600, "y": -320},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "반응이 애매할 때,",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 160, "y": -975},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "마음이",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 480, "y": -750},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "복잡해 진다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 1 },
-      { "x": 3, "y": 2 },
-      { "x": 4, "y": 1 },
-      { "x": 5, "y": 1 },
-      { "x": 0, "y": 4 },
-      { "x": 1, "y": 3 }
+      { "x": 4, "y": 1 }
     ]
   },
   "page2": {

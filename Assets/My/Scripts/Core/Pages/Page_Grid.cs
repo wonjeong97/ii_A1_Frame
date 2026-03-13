@@ -17,9 +17,11 @@ namespace My.Scripts.Core.Pages
     public class Page_Grid : PopupGamePage<GridPageData>
     {
         [Header("UI References")] 
-        [SerializeField] private Text textMain; 
+        [SerializeField] private Text textMain; // 데이터 주입용 명시적 텍스트
+        [SerializeField] private CanvasGroup mainTextGroup; // 텍스트 묶음 동시 페이드아웃용 캔버스 그룹
         [SerializeField] private Text textSub; 
         [SerializeField] private Text[] questionTexts; 
+        [SerializeField] private Text textCounting; // 문항 카운팅 텍스트 (1/15 등)
 
         [Header("Interaction")] 
         [SerializeField] private Image imageBlack; 
@@ -102,13 +104,13 @@ namespace My.Scripts.Core.Pages
         {
             if (data == null) return;
 
+            // 캔버스 그룹 내부 자동 검색을 제거하고 명시적으로 할당된 textMain에만 데이터를 덮어씌웁니다.
             if (textMain) UIManager.Instance.SetText(textMain.gameObject, data.descriptionText1);
             if (textSub) UIManager.Instance.SetText(textSub.gameObject, data.descriptionText2);
 
             _defaultTextSub = data.descriptionText2;
             _warningText = data.descriptionText3;
 
-            // 유효하지 않은 격자 밖의 좌표 데이터 필터링 (안전성 보장)
             if (data.questionSpots != null && data.questionSpots.Count > 0)
             {
                 HashSet<Vector2Int> filtered = new HashSet<Vector2Int>();
@@ -143,6 +145,26 @@ namespace My.Scripts.Core.Pages
         public override void OnEnter()
         {
             base.OnEnter();
+
+            // 문항 카운팅 텍스트 초기화 (튜토리얼은 0번으로 취급되어 빈칸 처리됨)
+            if (textCounting)
+            {
+                int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
+                textCounting.text = qNum > 0 ? $"{qNum}/15" : "";
+            }
+
+            // 페이지 재진입 시 텍스트 상태 초기화 보장
+            if (mainTextGroup) 
+            {
+                mainTextGroup.gameObject.SetActive(true);
+                mainTextGroup.alpha = 1f;
+            }
+            if (textMain) 
+            {
+                textMain.gameObject.SetActive(true);
+                Color c = textMain.color; c.a = 1f; textMain.color = c;
+            }
+
             _hasMoved = false;
             _isInputBlocked = false;
 
@@ -162,7 +184,6 @@ namespace My.Scripts.Core.Pages
             int startX = GetGridCenterX();
             int startY = GetGridCenterY();
 
-            // 시작 좌표가 우연히 정답 위치일 경우 스포일러 방지를 위해 인접한 빈 칸으로 자동 이동
             if (_questionMap != null && _questionMap[startX, startY])
             {
                 bool foundSafeSpot = false;
@@ -201,7 +222,6 @@ namespace My.Scripts.Core.Pages
             SetFocusToGrid(startX, startY, true);
         }
 
-        /// <summary> 그리드 분할 및 지우개 효과를 위한 동적 텍스처/매터리얼을 생성합니다. </summary>
         private bool InitializeGame()
         {
             if (!imageBlack) return false;
@@ -246,7 +266,6 @@ namespace My.Scripts.Core.Pages
             _eraserMaterial = Instantiate(imageBlack.material);
             imageBlack.material = _eraserMaterial;
             
-            // 픽셀 단위로 알파(투명도)를 수정하여 지우개 연출 구현
             _maskTexture = new Texture2D(gridSizeX, gridSizeY, TextureFormat.R8, false) { filterMode = FilterMode.Point };
             _maskTexture.SetPixels32(new Color32[gridSizeX * gridSizeY]);
             _maskTexture.Apply();
@@ -263,10 +282,8 @@ namespace My.Scripts.Core.Pages
             return true;
         }
 
-        /// <summary> 매 프레임 입력, 무응답 타임아웃, 마스크 페이드 애니메이션을 갱신합니다. </summary>
         private void Update()
         {
-            // 디버깅 및 시연용 강제 완료 치트
             if (Input.GetKeyDown(KeyCode.Space) && !_isStageCompleted)
             {
                 _isStageCompleted = true;
@@ -310,7 +327,6 @@ namespace My.Scripts.Core.Pages
                 {
                     currentIdleTime += Time.deltaTime;
 
-                    // 일정 시간 무응답 시 주의 환기를 위한 텍스트 깜빡임 연출
                     if (currentIdleTime >= BlinkThreshold && currentIdleTime < inactivityThreshold)
                     {
                         if (!_is1stWarningDone && _textBlinkRoutine == null && _simultaneousWarningRoutine == null)
@@ -384,7 +400,6 @@ namespace My.Scripts.Core.Pages
             _textBlinkRoutine = null;
         }
 
-        /// <summary> 다이얼 및 방향키 입력을 그리드 좌표 이동 로직으로 변환합니다. </summary>
         private void HandleMovement()
         {
             if (_isInputBlocked || _isStageCompleted) return;
@@ -404,7 +419,6 @@ namespace My.Scripts.Core.Pages
             bool blockP1 = false;
             bool blockP2 = false;
 
-            // 충돌 방지: 한 플레이어 조작 중 다른 플레이어 조작 시 입력을 무시하고 경고 연출
             if (p1Key != -1 && p2Key != -1) 
             {
                 blockP1 = true;
@@ -420,7 +434,7 @@ namespace My.Scripts.Core.Pages
                 }
                 else 
                 {
-                    _p1InputTimer = 0.5f; 
+                    _p1InputTimer = 0.3f; 
                 }
             }
             else if (p2Key != -1)
@@ -432,7 +446,7 @@ namespace My.Scripts.Core.Pages
                 }
                 else 
                 {
-                    _p2InputTimer = 0.5f;
+                    _p2InputTimer = 0.3f;
                 }
             }
 
@@ -450,7 +464,6 @@ namespace My.Scripts.Core.Pages
                     else if (diff == 3) dir = -1;
                     else if (diff == 2)
                     {
-                        // 관성 보정 (빠른 바운스 무시)
                         if (now - _p1LastTime < FastInputThreshold && _p1LastDir != 0) 
                             dir = _p1LastDir;
                     }
@@ -462,7 +475,7 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dy = (dir == 1) ? 1 : -1; // P1은 Y축(상하) 이동
+                        dy = (dir == 1) ? 1 : -1; 
                         _p1LastDir = dir;
                         _p1LastTime = now;
                     }
@@ -484,7 +497,6 @@ namespace My.Scripts.Core.Pages
                     else if (diff == 3) dir = -1;
                     else if (diff == 2)
                     {
-                        // 관성 보정 (빠른 바운스 무시)
                         if (now - _p2LastTime < FastInputThreshold && _p2LastDir != 0) 
                             dir = _p2LastDir;
                     }
@@ -496,7 +508,7 @@ namespace My.Scripts.Core.Pages
 
                     if (dir != 0)
                     {
-                        dx = (dir == 1) ? 1 : -1; // P2는 X축(좌우) 이동
+                        dx = (dir == 1) ? 1 : -1; 
                         _p2LastDir = dir;
                         _p2LastTime = now;
                     }
@@ -515,16 +527,23 @@ namespace My.Scripts.Core.Pages
                 if (!_hasMoved)
                 {
                     _hasMoved = true;
-                    // 첫 이동 시 가이드 텍스트 숨김
-                    if (textMain && textMain.gameObject.activeSelf)
-                        StartCoroutine(FadeTo(textMain, 0f, 1f, () => textMain.gameObject.SetActive(false)));
+                    
+                    // 그룹이 등록되어 있다면 그룹 전체를 페이드아웃, 없다면 기존처럼 개별 텍스트(textMain) 페이드아웃 처리
+                    if (mainTextGroup && mainTextGroup.gameObject.activeSelf)
+                    {
+                        StartCoroutine(FadeGroupTo(mainTextGroup, 0f, 0.3f, () => mainTextGroup.gameObject.SetActive(false)));
+                    }
+                    else if (textMain && textMain.gameObject.activeSelf)
+                    {
+                        StartCoroutine(FadeTo(textMain, 0f, 0.3f, () => textMain.gameObject.SetActive(false)));
+                    }
                 }
 
                 if (textSub && textSub.gameObject.activeSelf)
                 {
                     if (_textFadeRoutine == null && _simultaneousWarningRoutine == null && _textBlinkRoutine == null) 
                     {
-                        _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 1f, () =>
+                        _textFadeRoutine = StartCoroutine(FadeTo(textSub, 0f, 0.3f, () =>
                         {
                             textSub.gameObject.SetActive(false);
                             _textFadeRoutine = null;
@@ -535,7 +554,6 @@ namespace My.Scripts.Core.Pages
 
                 int nextX = _currentGridX + dx, nextY = _currentGridY + dy;
                 
-                // 그리드 밖으로 벗어나지 않는 경우에만 이동 확정
                 if (nextX >= 0 && nextX < gridSizeX && nextY >= 0 && nextY < gridSizeY) 
                     SetFocusToGrid(nextX, nextY);
             }
@@ -574,7 +592,6 @@ namespace My.Scripts.Core.Pages
             _simultaneousWarningRoutine = null;
         }
 
-        /// <summary> 여러 키가 동시에 눌렸을 때 관성 방향을 바탕으로 논리적인 단일 입력 키를 추론합니다. </summary>
         private int GetPressedKeyIndex(int start, int end, int lastKey, int lastDir)
         {
             List<int> pressedKeys = new List<int>();
@@ -634,12 +651,24 @@ namespace My.Scripts.Core.Pages
             onComplete?.Invoke();
         }
 
-        /// <summary> 이동된 좌표의 마스크 픽셀 알파값을 조절하여 해당 영역 이미지를 노출시킵니다. </summary>
+        private IEnumerator FadeGroupTo(CanvasGroup target, float targetAlpha, float duration, Action onComplete = null)
+        {
+            if (!target) yield break;
+            float startAlpha = target.alpha, timer = 0f;
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                target.alpha = Mathf.Lerp(startAlpha, targetAlpha, timer / duration);
+                yield return null;
+            }
+            target.alpha = targetAlpha;
+            onComplete?.Invoke();
+        }
+
         private void SetFocusToGrid(int x, int y, bool isFirstInit = false)
         {
             if (!isFirstInit)
             {
-                // 이전 위치가 정답이 아니면 다시 숨기고, 정답이면 계속 보이게 유지
                 if (!_questionMap[_currentGridX, _currentGridY]) 
                     StartCellFade(_currentGridX, _currentGridY, 0.0f); 
                 else 
@@ -660,7 +689,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 현재 위치가 정답 칸인지 판별하고, 모든 정답을 찾으면 완료 시퀀스를 호출합니다. </summary>
         private void CheckQuestionFound(int x, int y)
         {
             if (_questionMap[x, y])
@@ -679,7 +707,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 정답을 다 찾았을 때 전체 이미지를 노출시키고 다음 페이지로 전환합니다. </summary>
         private IEnumerator ShowCompletionRoutine()
         {   
             SoundManager.Instance?.PlaySFX("카메라_3");
@@ -746,8 +773,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 활성화된 셀들의 마스크 알파값을 프레임 단위로 갱신하여 페이드/숨쉬기 연출 적용 </summary>
-        // # TODO: 리스트 순회 및 삭제(RemoveAt) 비용 방지를 위해 배열 기반의 풀링 적용 권장
         private void UpdateCellFades()
         {
             bool needsApply = false;
@@ -770,7 +795,6 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            // 정답 칸 위에 머무를 때 점멸(Breath) 효과 부여
             if (!_isStageCompleted && _questionMap != null)
             {
                 if (_questionMap[_currentGridX, _currentGridY])
@@ -806,8 +830,7 @@ namespace My.Scripts.Core.Pages
         private float GetMaskPixelValue(int x, int y) =>
             _maskTexture ? _maskTexture.GetPixel(x, (gridSizeY - 1) - y).r : 0f;
 
-        /// <summary> Texture2D 픽셀을 갱신합니다. Y축이 반전되는 유니티 텍스처 좌표계 특성을 고려하여 Y값을 매핑합니다. </summary>
-                private void UpdateMaskPixelInstant(int x, int y, float v, bool a = true)
+        private void UpdateMaskPixelInstant(int x, int y, float v, bool a = true)
         {
             if (_maskTexture)
             {
@@ -828,7 +851,6 @@ namespace My.Scripts.Core.Pages
             CleanupResources();
         }
 
-        /// <summary> 동적으로 생성된 텍스처와 매터리얼 메모리 누수 방지용 클린업 </summary>
         private void CleanupResources()
         {
             if (_maskTexture) Destroy(_maskTexture);

@@ -3,68 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1120, "y": -325},
+        "position": {"x": 320, "y": -540},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "우리는 서로의",
+        "text": "우리는 서로의 마음을 이미 안다고 생각해서\n마음을 전하는 표현이 줄어들 때가 있다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 160, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "마음을 이미",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 960, "y": -110},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "안다고 생각해서,",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 1440, "y": -965},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "마음을 전하는",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 800, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "표현이",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "06",
-        "position": {"x": 1590, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "줄어들 때가 있다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 1 },
       { "x": 0, "y": 2 },
-      { "x": 2, "y": 0 },
-      { "x": 3, "y": 0 },
-      { "x": 4, "y": 4 },
-      { "x": 2, "y": 3 },
-      { "x": 4, "y": 2 },
-      { "x": 5, "y": 2 }
+      { "x": 1, "y": 2 }
     ]
   },
   "page2": {

@@ -9,27 +9,27 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
-    /// <summary> 
+    /// <summary>
     /// 양측 플레이어의 하드웨어 입력(준비 상태)을 대기하고 점등 연출을 수행하는 페이지 컨트롤러.
-    /// 두 플레이어의 조명이 모두 켜져야 다음 시퀀스로 넘어갑니다. 
+    /// 두 플레이어의 조명이 모두 켜져야 다음 시퀀스로 넘어갑니다.
     /// </summary>
-    public class Page_Check : PopupGamePage<CheckPageData>, ITriggerReceiver
+    public class Page_Check : /*PopupGamePage<CheckPageData>, ITriggerReceiver*/ MonoBehaviour
     {
-        [Header("UI References")] 
-        [SerializeField] private Text nicknameA; 
-        [SerializeField] private Text nicknameB; 
-        [SerializeField] private Text waitText;  
+        /*[Header("UI References")]
+        [SerializeField] private Text nicknameA;
+        [SerializeField] private Text nicknameB;
+        [SerializeField] private Text waitText;
 
-        [Header("Check Images")] 
-        [SerializeField] private CanvasGroup cgLightA; 
-        [SerializeField] private Image imgLightA; 
-        [SerializeField] private CanvasGroup cgLightB; 
-        [SerializeField] private Image imgLightB; 
+        [Header("Check Images")]
+        [SerializeField] private CanvasGroup cgLightA;
+        [SerializeField] private Image imgLightA;
+        [SerializeField] private CanvasGroup cgLightB;
+        [SerializeField] private Image imgLightB;
 
-        private bool isLightOnA; 
-        private bool isLightOnB; 
-        private bool _completionStarted; 
-        private float _enterTime; 
+        private bool isLightOnA;
+        private bool isLightOnB;
+        private bool _completionStarted;
+        private float _enterTime;
 
         /// <summary> JSON 설정 데이터 주입. 런타임 오류 방지를 위해 값이 널(null)일 경우 Fallback 대신 명시적 경고 로그 출력 </summary>
         protected override void SetupData(CheckPageData data)
@@ -51,26 +51,26 @@ namespace My.Scripts.Core.Pages
         {
             base.OnEnter();
             StopAllCoroutines();
-            
+
             isLightOnA = false;
             isLightOnB = false;
             _completionStarted = false;
-            _enterTime = Time.time; 
+            _enterTime = Time.time;
 
             ResetIdleState(true);
 
-            if (cgLightA) 
+            if (cgLightA)
             {
                 cgLightA.alpha = 0f;
                 cgLightA.gameObject.SetActive(false);
             }
-            
-            if (cgLightB) 
+
+            if (cgLightB)
             {
                 cgLightB.alpha = 0f;
                 cgLightB.gameObject.SetActive(false);
             }
-            
+
             if (SessionManager.Instance && GameManager.Instance)
             {
                 Sprite spriteA = GameManager.Instance.GetColorSprite(SessionManager.Instance.PlayerAColor);
@@ -84,20 +84,20 @@ namespace My.Scripts.Core.Pages
         /// <summary> 프레임 단위 무응답 타임아웃 갱신 및 키보드 예외 입력 감지 </summary>
         private void Update()
         {
-            if (_completionStarted) return; 
+            if (_completionStarted) return;
 
             bool inputDetected = ProcessCommonKeyboardInput();
 
             if (inputDetected || Input.anyKey || Input.touchCount > 0)
             {
-                ResetIdleState(false); 
+                ResetIdleState(false);
             }
             else
             {
                 UpdateInactivity();
             }
         }
-        
+
         /// <summary> ITriggerReceiver 구현부: 이전 페이지(QnA 등)의 선택 결과를 바탕으로 조명 즉시 활성화 </summary>
         public void ReceiveTrigger(int triggerInfo)
         {
@@ -178,7 +178,7 @@ namespace My.Scripts.Core.Pages
 
         /// <summary> 양쪽 플레이어의 조명이 모두 켜졌는지 검사하여 다음 단계(완료) 트리거 </summary>
         private void CheckCompletion()
-        {   
+        {
             if (isLightOnA && isLightOnB && !_completionStarted)
             {
                 _completionStarted = true;
@@ -188,7 +188,7 @@ namespace My.Scripts.Core.Pages
 
         /// <summary> 완료 사운드 재생 후 연출 여운을 주기 위한 1초 대기 코루틴 </summary>
         private IEnumerator CompleteRoutine()
-        {   
+        {
             if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_22");
             yield return CoroutineData.GetWaitForSeconds(1.0f);
             CompleteStep();
@@ -198,14 +198,14 @@ namespace My.Scripts.Core.Pages
         private IEnumerator LightOnRoutine(CanvasGroup cg, float delay)
         {
             if (!cg) yield break;
-            
+
             if (delay > 0f) yield return CoroutineData.GetWaitForSeconds(delay);
 
             cg.gameObject.SetActive(true);
             cg.alpha = 0f;
 
             float t = 0f;
-            float duration = 1.0f; 
+            float duration = 1.0f;
 
             while (t < duration)
             {
@@ -215,8 +215,8 @@ namespace My.Scripts.Core.Pages
             }
 
             cg.alpha = 1f;
-            
+
             CheckCompletion();
-        }
+        }*/
     }
 }

@@ -168,7 +168,6 @@ namespace My.Scripts.Core.Pages
             
             if (waitForShotButton && ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdSoundOn);
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOn);
             }
 

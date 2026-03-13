@@ -3,47 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1120, "y": -105},
+        "position": {"x": 1600, "y": -760},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대방의 말투나",
+        "text": "상대방의 말투나 반응을 혼자\n여러 번 떠올리게 될 때가 있다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 1120, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "반응을 혼자",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 635, "y": -540},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "여러 번 떠올리게",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 160, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "될 때가 있다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 0 },
-      { "x": 3, "y": 3 },
-      { "x": 1, "y": 2 },
-      { "x": 2, "y": 2 },
-      { "x": 0, "y": 4 }
+      { "x": 4, "y": 3 },
+      { "x": 5, "y": 3 }
     ]
   },
   "page2": {

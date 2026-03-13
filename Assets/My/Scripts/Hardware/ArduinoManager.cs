@@ -11,7 +11,6 @@ namespace My.Scripts.Hardware
 {
     /// <summary>
     /// PC에 연결된 가용 COM 포트를 스캔하여 좌/우 아두이노 장치를 자동 식별하고, 시리얼 통신(제어 명령 송수신)을 전담하는 싱글톤 매니저입니다.
-    /// 메인 스레드 프레임 드랍을 막기 위해 100% 비동기 및 멀티 스레딩 기반으로 구동됩니다.
     /// </summary>
     public class ArduinoManager : MonoBehaviour
     {

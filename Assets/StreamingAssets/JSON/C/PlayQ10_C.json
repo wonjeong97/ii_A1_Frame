@@ -3,47 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 305, "y": -105},
+        "position": {"x": 1280, "y": -540},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "함께 있을 때의",
+        "text": "함께 있을 때의 감정 흐름이\n자연스럽다고 느낀다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 480, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "감정 흐름이",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 1440, "y": -970},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "자연스럽다고",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 800, "y": -755},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "느낀다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 0, "y": 0 },
-      { "x": 1, "y": 0 },
-      { "x": 1, "y": 1 },
-      { "x": 4, "y": 4 },
-      { "x": 2, "y": 3 }
+      { "x": 3, "y": 2 },
+      { "x": 4, "y": 2 }
     ]
   },
   "page2": {

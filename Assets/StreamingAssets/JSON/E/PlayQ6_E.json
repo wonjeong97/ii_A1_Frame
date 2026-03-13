@@ -3,56 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1440, "y": -540},
+        "position": {"x": 960, "y": -970},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대가 평소와",
+        "text": "상대가 평소와 다른 반응을\n보이면, 그 의미를 곱씹게 된다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 160, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "다른",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 480, "y": -325},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "반응을 보이면,",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 1120, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "그 의미를",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 800, "y": -760},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "곱씹게 된다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 4, "y": 2 },
-      { "x": 0, "y": 4 },
-      { "x": 1, "y": 1 },
-      { "x": 3, "y": 0 },
-      { "x": 2, "y": 3 }
+      { "x": 2, "y": 4 },
+      { "x": 3, "y": 4 }
     ]
   },
   "page2": {

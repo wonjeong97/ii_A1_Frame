@@ -19,7 +19,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
     /// <summary> 
     /// 튜토리얼 7페이지 컨트롤러.
-    /// 유저 조작 없이 두 개의 안내 텍스트를 보여준 뒤, 지정된 시간(4초) 후 자동으로 다음 페이지로 전환합니다.
+    /// 유저 조작 없이 두 개의 안내 텍스트를 보여준 뒤, 지정된 시간 후 자동으로 다음 페이지로 전환합니다.
     /// </summary>
     public class TutorialPage7Controller : GamePage<TutorialPage7Data>
     {
@@ -48,10 +48,10 @@ namespace My.Scripts._01_Tutorial.Pages
             _endSequenceRoutine = StartCoroutine(EndSequence());
         }
 
-        /// <summary> 유저가 텍스트를 충분히 인지할 수 있도록 4초간 대기 후 완료 신호 전송 </summary>
+        /// <summary> 유저가 텍스트를 충분히 인지할 수 있도록 3초간 대기 후 완료 신호 전송 </summary>
         private IEnumerator EndSequence()
         {
-            yield return CoroutineData.GetWaitForSeconds(4.0f);
+            yield return CoroutineData.GetWaitForSeconds(3.0f);
             CompleteStep();
             _endSequenceRoutine = null; 
         }

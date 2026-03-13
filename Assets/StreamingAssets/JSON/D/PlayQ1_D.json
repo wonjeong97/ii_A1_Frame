@@ -3,57 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 480, "y": -105},
+        "position": {"x": 640, "y": -110},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "상대방과",
+        "text": "상대방과 대화할 때, 말의 내용보다\n느낌에 더 영향을 받는 편이다.",
         "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "02",
-        "position": {"x": 800, "y": -335},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "대화할 때,",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "03",
-        "position": {"x": 480, "y": -545},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "말의 내용보다",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "04",
-        "position": {"x": 960, "y": -960},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "느낌에 더 영향을",
-        "fontName": "font7",
-        "fontSize": 55,
-        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
-      },
-      {
-        "name": "05",
-        "position": {"x": 1440, "y": -105},
-        "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "받는 편이다.",
-        "fontName": "font7",
-        "fontSize": 55,
+        "fontSize": 35,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
       { "x": 1, "y": 0 },
-      { "x": 2, "y": 1 },
-      { "x": 1, "y": 2 },
-      { "x": 2, "y": 4 },
-      { "x": 3, "y": 4 },
-      { "x": 4, "y": 0 }
+      { "x": 2, "y": 0 }
     ]
   },
   "page2": {

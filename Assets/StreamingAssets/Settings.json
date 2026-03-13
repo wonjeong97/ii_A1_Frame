@@ -7,7 +7,7 @@
     "resetClickTime": 3.0,
     "imageAlpha": 0.0
   },
-  "fadeTime": 1,
+  "fadeTime": 0.5,
   "fontMap": {
     "font1": "Fonts/Freesentation-1Thin.ttf",
     "font2": "Fonts/Freesentation-2ExtraLight.ttf",
@@ -20,7 +20,7 @@
     "font9": "Fonts/Freesentation-9Black.ttf"
   },
   "sounds": [
-    {"key": "MainBGM", "clipPath": "Sound/Anous_Sound_A1카메라_공간BGM_1.mp3", "volume": 1.0},
+    {"key": "MainBGM", "clipPath": "Sound/Anous_Sound_A1카메라_공간BGM_1.mp3", "volume": 0.4},
     {"key": "카메라_1", "clipPath": "Sound/Anous_Sound_카메라_1.mp3", "volume": 1.0},
     {"key": "카메라_2", "clipPath": "Sound/Anous_Sound_카메라_2.mp3", "volume": 1.0},
     {"key": "카메라_3", "clipPath": "Sound/Anous_Sound_카메라_3.mp3", "volume": 1.0},

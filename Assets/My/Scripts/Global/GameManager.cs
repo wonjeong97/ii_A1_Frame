@@ -4,6 +4,7 @@ using System.IO;
 using Cysharp.Threading.Tasks; // 비동기 백그라운드 처리를 위해 추가
 using My.Scripts.Core;
 using My.Scripts.Core.Data;
+using My.Scripts.Hardware;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
@@ -27,7 +28,7 @@ namespace My.Scripts.Global
         private float _currentInactivityTimer;
         private bool _isTransitioning;
         private float _inactivityLimit = 60f;
-        private float _fadeTime = 1.0f;
+        private float _fadeTime = 0.5f;
         private bool _isQuitting;
         private bool _isQuitSafe;
 
@@ -128,7 +129,8 @@ namespace My.Scripts.Global
         /// <summary> 타이틀 화면을 제외한 모든 씬에서 일정 시간 입력이 없을 경우 타이틀로 자동 회귀(리셋)시킵니다. </summary>
         private void HandleInactivity()
         {
-            if (SceneManager.GetActiveScene().name == GameConstants.Scene.Title)
+            if (SceneManager.GetActiveScene().name == GameConstants.Scene.Title ||
+                SceneManager.GetActiveScene().name == GameConstants.Scene.Ending)
             {
                 _currentInactivityTimer = 0f;
                 return;
@@ -180,6 +182,17 @@ namespace My.Scripts.Global
 
             SendResetStartAPI();
             SendExitRoomAPI();
+            
+            if (ArduinoManager.Instance)
+            {
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            }
+            if (HueManager.Instance)
+            {
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+            }
 
             firstTaggedPlayer = 0; 
             _currentInactivityTimer = 0f;

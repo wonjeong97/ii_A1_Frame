@@ -1256,7 +1256,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &702496518
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1918,6 +1918,8 @@ MonoBehaviour:
   resetPopupDuration: 3
   descriptionText: {fileID: 72155147}
   apiManager: {fileID: 1149758332}
+  basePollInterval: 1
+  maxPollInterval: 10
 --- !u!1 &1173698246
 GameObject:
   m_ObjectHideFlags: 0

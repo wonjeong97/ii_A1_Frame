@@ -1,12 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking; 
 using My.Scripts.Global;      
-using Cysharp.Threading.Tasks; // UniTask 활용을 위한 네임스페이스 추가
+using Cysharp.Threading.Tasks;
 
 namespace My.Scripts.Utils
 {
@@ -128,8 +127,17 @@ namespace My.Scripts.Utils
                 RenderTexture.ReleaseTemporary(rt);
                 rt = null;
 
-                // 인코딩 연산(CPU 집약적)을 스레드 풀로 넘겨 메인 스레드 프리징 차단
-                byte[] jpgBytes = await UniTask.RunOnThreadPool(() => resultTex.EncodeToJPG(85));
+                // # FIX: 메인 스레드에서만 접근 가능한 텍스처 데이터를 먼저 바이트 배열로 추출합니다.
+                byte[] rawData = resultTex.GetRawTextureData();
+                int texWidth = resultTex.width;
+                int texHeight = resultTex.height;
+                UnityEngine.Experimental.Rendering.GraphicsFormat format = resultTex.graphicsFormat;
+
+                // 백그라운드 스레드에서는 추출된 byte[] 배열만 가지고 인코딩을 수행하여 에러를 방지합니다.
+                byte[] jpgBytes = await UniTask.RunOnThreadPool(() => 
+                {
+                    return ImageConversion.EncodeArrayToJPG(rawData, format, (uint)texWidth, (uint)texHeight, 0, 85);
+                });
 
                 if (jpgBytes == null || jpgBytes.Length == 0)
                 {
@@ -153,7 +161,7 @@ namespace My.Scripts.Utils
             {
                 if (resultTex) Destroy(resultTex);
                 if (rt) RenderTexture.ReleaseTemporary(rt);
-                IsProcessing = false; // 작업 성공 여부와 관계없이 플래그 해제 보장
+                IsProcessing = false; 
             }
         }
 
@@ -185,7 +193,6 @@ namespace My.Scripts.Utils
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
-                // 메모리 복사 최소화를 위해 Raw 데이터를 직접 업로드 핸들러에 전달
                 webRequest.uploadHandler = new UploadHandlerRaw(imageBytes);
                 webRequest.uploadHandler.contentType = "image/jpeg"; 
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
