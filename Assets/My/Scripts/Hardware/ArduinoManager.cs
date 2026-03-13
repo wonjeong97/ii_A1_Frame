@@ -108,6 +108,8 @@ namespace My.Scripts.Hardware
             {
                 SerialPort tempPort = new SerialPort(portName, 9600);
                 tempPort.ReadTimeout = 2000;
+
+                // 아두이노 강제 리셋을 위한 DTR 활성화
                 tempPort.DtrEnable = true;
 
                 try
@@ -121,25 +123,41 @@ namespace My.Scripts.Hardware
                     return;
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(2.5f));
+                // 아두이노가 재부팅되는 최소 시간(1.5초)은 무조건 대기
+                await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
 
                 string response = string.Empty;
-                try
+                float maxWaitTime = 10.0f; // 최대 10초까지 넉넉하게 기다림
+                float elapsedTime = 1.5f;
+
+                // 남은 시간 동안 1초 간격으로 확인 (Polling)
+                while (elapsedTime < maxWaitTime)
                 {
-                    if (tempPort.BytesToRead > 0)
+                    try
                     {
-                        response = tempPort.ReadExisting();
+                        if (tempPort.BytesToRead > 0)
+                        {
+                            response += tempPort.ReadExisting();
+
+                            // 만약 버퍼에 "Arduino"라는 단어가 도착했다면, 더 이상 기다릴 필요 없이 즉시 루프 탈출!
+                            if (response.Contains("Arduino"))
+                            {
+                                break;
+                            }
+                        }
                     }
-                }
-                catch (TimeoutException)
-                {
-                    Debug.LogWarning($"[ArduinoManager] 응답 타임아웃 ({portName})");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[ArduinoManager] 읽기 예외 ({portName}): {e.Message}");
+                    catch (TimeoutException)
+                    {
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    await UniTask.Delay(TimeSpan.FromSeconds(1.0f)); // 1초 대기
+                    elapsedTime += 1.0f;
                 }
 
+                // 유니티 오브젝트 할당을 위해 메인 스레드로 복귀
                 await UniTask.SwitchToMainThread();
 
                 if (response.Contains(GameConstants.Hardware.LeftArduino))
