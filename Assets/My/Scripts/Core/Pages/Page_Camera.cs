@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Threading; 
-using Cysharp.Threading.Tasks; 
-using My.Scripts.Hardware; 
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,19 +14,19 @@ namespace My.Scripts.Core.Pages
 {
     public class Page_Camera : GamePage
     {
-        [Header("UI References")] 
+        [Header("UI References")]
         [SerializeField] private RawImage cameraDisplay;
         [SerializeField] private Text countdownText;
 
-        [Header("Effects")] 
+        [Header("Effects")]
         [SerializeField] private Image flashImage;
         [SerializeField] private CanvasGroup contentCanvasGroup;
 
-        [Header("Default Settings")] 
+        [Header("Default Settings")]
         [SerializeField] private Material defaultMaskingMaterial;
         [SerializeField] private bool defaultSavePhoto = true;
 
-        [Header("Transition")] 
+        [Header("Transition")]
         [SerializeField] private float cameraFadeDelay = 0.5f;
         [SerializeField] private float cameraFadeDuration = 0.5f;
 
@@ -36,11 +36,11 @@ namespace My.Scripts.Core.Pages
         private bool _isConfigured;
 
         private WebCamTexture _webCamTexture;
-        private WebCamDevice _selectedDevice; 
+        private WebCamDevice _selectedDevice;
         private Texture2D _capturedPhoto;
         private string _photoFileName = "Default_Photo";
-        
-        private string _levelID; 
+
+        private string _levelID;
 
         // 비동기 통신 취소용 토큰 제어기
         private CancellationTokenSource _hueCts;
@@ -51,7 +51,7 @@ namespace My.Scripts.Core.Pages
         protected override void Awake()
         {
             base.Awake();
-            
+
             if (!_isConfigured)
             {
                 _currentMaskingMaterial = defaultMaskingMaterial;
@@ -71,7 +71,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        public override void SetupData(object data) { }
+        public override void SetupData(object data)
+        {
+        }
 
         public void SetPhotoFilename(string fileName)
         {
@@ -88,13 +90,13 @@ namespace My.Scripts.Core.Pages
             _shouldSavePhoto = shouldSave;
             _currentMaskingMaterial = maskMat;
             _triggerEncodingOnCapture = triggerEncoding;
-            _isConfigured = true; 
+            _isConfigured = true;
         }
 
         public void PreloadCamera()
         {
             StartWebCam();
-            SetRawImageAlpha(cameraDisplay, 0f); 
+            SetRawImageAlpha(cameraDisplay, 0f);
         }
 
         public override void OnEnter()
@@ -119,7 +121,7 @@ namespace My.Scripts.Core.Pages
             if (contentCanvasGroup) contentCanvasGroup.alpha = 1f;
 
             CleanupPhotoUI();
-            StartWebCam(); 
+            StartWebCam();
 
             // 진입 시 이전 진행 토큰 해제 및 신규 생성
             _hueCts?.Cancel();
@@ -129,7 +131,7 @@ namespace My.Scripts.Core.Pages
             if (LevelManager.Instance && HueManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                
+
                 // Q6 ~ Q10 구간: 섞어둔 5가지 색상 중 랜덤으로 뽑아 점등
                 if (qNum >= 6 && qNum <= 10)
                 {
@@ -150,18 +152,9 @@ namespace My.Scripts.Core.Pages
             StartCoroutine(CountdownRoutine());
         }
 
-        public override void OnExit()
+        /// <summary> 공통 휴 조명 소등 헬퍼 메서드 </summary>
+        private void TurnOffHueLights()
         {
-            StopAllCoroutines();
-            base.OnExit();
-            
-            StopWebCam();
-            CleanupPhotoUI();
-
-            // 퇴장 시 이전 통신이 지연되고 있다면 즉시 취소시켜 덮어씌워짐 방지
-            _hueCts?.Cancel();
-
-            // 카메라 페이지를 벗어날 때는 문항 번호와 무관하게 무조건 소등
             if (HueManager.Instance)
             {
                 HueManager.Instance.SetLightStateAsync(1, false).Forget();
@@ -169,21 +162,32 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        public override void OnExit()
+        {
+            StopAllCoroutines();
+            base.OnExit();
+
+            StopWebCam();
+            CleanupPhotoUI();
+
+            // 퇴장 시 이전 통신이 지연되고 있다면 즉시 취소시켜 덮어씌워짐 방지
+            _hueCts?.Cancel();
+
+            // 카메라 페이지를 벗어날 때는 문항 번호와 무관하게 무조건 소등
+            TurnOffHueLights();
+        }
+
         private void OnDestroy()
         {
             StopAllCoroutines();
             StopWebCam();
-            
+
             _hueCts?.Cancel();
             _hueCts?.Dispose();
             _hueCts = null;
-            
+
             // 안전 가드: 오브젝트가 파괴될 때도 무조건 소등
-            if (HueManager.Instance)
-            {
-                HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                HueManager.Instance.SetLightStateAsync(2, false).Forget();
-            }
+            TurnOffHueLights();
 
             if (_capturedPhoto)
             {
@@ -223,9 +227,9 @@ namespace My.Scripts.Core.Pages
                 TimeLapseRecorder.Instance.EnableRealtimeCapture = true;
                 TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
             }
-            
-            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_5초"); 
-            
+
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_5초");
+
             yield return StartCoroutine(ShowAndFadeNumber("5"));
             yield return StartCoroutine(ShowAndFadeNumber("4"));
             yield return StartCoroutine(ShowAndFadeNumber("3"));
@@ -252,7 +256,7 @@ namespace My.Scripts.Core.Pages
             float maxAlpha = 0.8f;
 
             if (flashImage)
-            {   
+            {
                 if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_11");
                 flashImage.gameObject.SetActive(true);
                 SetImageAlpha(flashImage, maxAlpha);
@@ -260,7 +264,7 @@ namespace My.Scripts.Core.Pages
 
             if (contentCanvasGroup) contentCanvasGroup.alpha = 0f;
 
-            yield return CoroutineData.GetWaitForSeconds(0.05f); 
+            yield return CoroutineData.GetWaitForSeconds(0.05f);
 
             CapturePhoto();
 
@@ -268,11 +272,7 @@ namespace My.Scripts.Core.Pages
             _hueCts?.Cancel();
 
             // 사진 촬영 직후 문항 번호와 무관하게 무조건 소등
-            if (HueManager.Instance)
-            {
-                HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                HueManager.Instance.SetLightStateAsync(2, false).Forget();
-            }
+            TurnOffHueLights();
 
             if (flashImage)
             {
@@ -283,10 +283,12 @@ namespace My.Scripts.Core.Pages
                     SetImageAlpha(flashImage, Mathf.Lerp(maxAlpha, 0f, t / 0.5f));
                     yield return null;
                 }
+
                 flashImage.gameObject.SetActive(false);
             }
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
+
             CompleteStep();
         }
 
@@ -324,7 +326,7 @@ namespace My.Scripts.Core.Pages
                 StopWebCam();
             }
         }
-    
+
         private async UniTaskVoid SavePhotoToCustomFolderAsync(Texture2D photo)
         {
             if (!photo)
@@ -332,12 +334,12 @@ namespace My.Scripts.Core.Pages
                 Debug.LogError("[Page_Camera] 캡처된 텍스처가 존재하지 않아 저장을 취소합니다.");
                 return;
             }
-            
+
             byte[] rawData = photo.GetRawTextureData();
             int width = photo.width;
             int height = photo.height;
             UnityEngine.Experimental.Rendering.GraphicsFormat format = photo.graphicsFormat;
-            
+
             string dataPath = Application.dataPath;
             string photoName = _photoFileName;
 
@@ -345,19 +347,20 @@ namespace My.Scripts.Core.Pages
             {
                 await UniTask.RunOnThreadPool(() =>
                 {
-                    byte[] bytes = UnityEngine.ImageConversion.EncodeArrayToPNG(rawData, format, (uint)width, (uint)height);
-                    
+                    byte[] bytes =
+                        UnityEngine.ImageConversion.EncodeArrayToPNG(rawData, format, (uint)width, (uint)height);
+
                     DirectoryInfo parentDir = Directory.GetParent(dataPath);
                     string rootPath = parentDir != null ? parentDir.FullName : dataPath;
 
                     string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                     string folder = Path.Combine(rootPath, "Pictures", dateFolder);
-                    
+
                     if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
                     string path = Path.Combine(folder, $"{photoName}.png");
                     File.WriteAllBytes(path, bytes);
-                    
+
                     Debug.Log($"[Page_Camera] 비동기 사진 저장 완료: {path}");
                 });
             }
@@ -438,7 +441,7 @@ namespace My.Scripts.Core.Pages
                     if (devices[i].name == "USB Video")
                     {
                         selectedDeviceName = devices[i].name;
-                        _selectedDevice = devices[i]; 
+                        _selectedDevice = devices[i];
                         break;
                     }
                 }
@@ -446,7 +449,7 @@ namespace My.Scripts.Core.Pages
                 if (string.IsNullOrEmpty(selectedDeviceName) && devices.Length > 0)
                 {
                     selectedDeviceName = devices[0].name;
-                    _selectedDevice = devices[0]; 
+                    _selectedDevice = devices[0];
                 }
 
                 if (!string.IsNullOrEmpty(selectedDeviceName))
