@@ -41,7 +41,7 @@ namespace My.Scripts._01_Tutorial.Pages
             autoNextStepRoutine = StartCoroutine(AutoNextStep());
         }
 
-        /// <summary> 유저가 텍스트를 충분히 읽고 인지할 수 있도록 4초간 대기 후 완료 신호 전송 </summary>
+        /// <summary> 유저가 텍스트를 충분히 읽고 인지할 수 있도록 일정시간 대기 후 완료 신호 전송 </summary>
         private IEnumerator AutoNextStep()
         {
             yield return CoroutineData.GetWaitForSeconds(4f);

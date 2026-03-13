@@ -1,6 +1,7 @@
 using System;
 using System.Text;
-using System.Collections.Generic; // List 사용을 위해 추가
+using System.Collections.Generic; 
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
@@ -36,9 +37,8 @@ namespace My.Scripts.Hardware
     {
         public static HueManager Instance;
 
-       public HueConfig Config { get; private set; }
+        public HueConfig Config { get; private set; }
 
-        // --- 랜덤 색상(Q6~Q10) 관리를 위한 변수 ---
         private List<RGBColor> _shuffledColors;
         private int _colorIndex = 0;
 
@@ -62,19 +62,7 @@ namespace My.Scripts.Hardware
             
             if (Config == null)
             {
-                Debug.LogWarning("[HueManager] JSON/HueConfig.json 파일을 찾을 수 없어 기본값을 사용합니다.");
-                Config = new HueConfig
-                {
-                    bridgeIp = "192.168.0.127",
-                    apiKey = "MGt9ykYRMUMg4Lbffsw-YkqrxIiWcd9H-YN0AtxP",
-                    defaultBrightness = 254,
-                    defaultSaturation = 254,
-                    color1 = new RGBColor { r = 133, g = 189, b = 52 },
-                    color2 = new RGBColor { r = 254, g = 143, b = 0 },
-                    color3 = new RGBColor { r = 133, g = 67, b = 190 },
-                    color4 = new RGBColor { r = 2, g = 144, b = 202 },
-                    color5 = new RGBColor { r = 237, g = 83, b = 204 }
-                };
+                Debug.LogError("[HueManager] JSON/HueConfig.json 파일을 찾을 수 없습니다. Hue 기능이 비활성화됩니다.");
             }
             else
             {
@@ -82,7 +70,6 @@ namespace My.Scripts.Hardware
             }
         }
 
-        /// <summary> 5가지 색상을 중복 없이 랜덤하게 섞습니다. </summary>
         public void InitRandomColors()
         {
             if (Config == null) return;
@@ -96,7 +83,6 @@ namespace My.Scripts.Hardware
                 Config.color5 
             };
 
-            // Fisher-Yates 셔플 알고리즘으로 리스트 섞기
             for (int i = 0; i < _shuffledColors.Count; i++)
             {
                 int rnd = UnityEngine.Random.Range(i, _shuffledColors.Count);
@@ -108,7 +94,6 @@ namespace My.Scripts.Hardware
             Debug.Log("[HueManager] Q6~Q10 랜덤 색상 리스트 셔플 완료");
         }
 
-        /// <summary> 섞인 색상 리스트에서 하나씩 순차적으로 뽑아옵니다. </summary>
         public RGBColor PopRandomColor()
         {
             // 혹시라도 초기화되지 않았거나 인덱스를 초과했다면 다시 셔플하여 안전성 확보
@@ -117,33 +102,40 @@ namespace My.Scripts.Hardware
                 InitRandomColors();
             }
             
+            // Config가 null이면 InitRandomColors가 조기 반환하므로 재확인 필요
+            if (_shuffledColors == null || _shuffledColors.Count == 0)
+            {
+                Debug.LogWarning("[HueManager] Config가 없어 랜덤 색상을 반환할 수 없습니다.");
+                return null;
+            }
+            
             RGBColor selectedColor = _shuffledColors[_colorIndex];
             _colorIndex++;
             return selectedColor;
         }
 
-        public async UniTask SetLightStateAsync(int lightId, bool isOn)
+        // CancellationToken 파라미터 추가
+        public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken cancellationToken = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp)) return;
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
-            await SendPutRequestAsync(url, jsonBody);
+            await SendPutRequestAsync(url, jsonBody, cancellationToken);
         }
 
         public async UniTask SetLightColorRGBAsync(int lightId, RGBColor rgb, int bri = -1, int transitionTime = 4)
         {
-            if (rgb == null) return;
+            if (rgb == null || Config == null) return;
             Color color = new Color(rgb.r / 255f, rgb.g / 255f, rgb.b / 255f);
             Color.RGBToHSV(color, out float h, out float s, out float v);
             
             int hueValue = Mathf.RoundToInt(h * 65535f);
             int satValue = Mathf.RoundToInt(s * 254f);
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
-
             await SetLightColorAsync(lightId, hueValue, satValue, finalBri, transitionTime);
         }
 
-        public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4)
+        public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4, CancellationToken cancellationToken = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp)) return;
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
@@ -151,10 +143,10 @@ namespace My.Scripts.Hardware
 
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
-            await SendPutRequestAsync(url, jsonBody);
+            await SendPutRequestAsync(url, jsonBody, cancellationToken);
         }
 
-        private async UniTask SendPutRequestAsync(string url, string jsonBody)
+        private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken cancellationToken = default)
         {
             using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
             {
@@ -166,11 +158,17 @@ namespace My.Scripts.Hardware
 
                 try
                 {
-                    await request.SendWebRequest().ToUniTask();
+                    // 토큰을 전달하여 취소 가능하도록 구성
+                    await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
                     if (request.result != UnityWebRequest.Result.Success)
                     {
                         Debug.LogError($"[HueManager] 통신 실패: {request.error} | URL: {url}");
                     }
+                }
+                catch (OperationCanceledException)
+                {
+                    // 취소 요청 시 예외로 떨어지므로 로그를 남기거나 조용히 무시합니다.
+                    Debug.Log($"[HueManager] 휴 통신 취소됨: {url}");
                 }
                 catch (Exception e)
                 {

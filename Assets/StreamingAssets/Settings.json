@@ -7,7 +7,7 @@
     "resetClickTime": 3.0,
     "imageAlpha": 0.0
   },
-  "fadeTime": 1,
+  "fadeTime": 0.5,
   "fontMap": {
     "font1": "Fonts/Freesentation-1Thin.ttf",
     "font2": "Fonts/Freesentation-2ExtraLight.ttf",

@@ -112,15 +112,20 @@ namespace My.Scripts.Core.Data
             if (specific.Page3 == null) specific.Page3 = new TransitionPageData();
             if (common.Page3 != null)
             {
-                if (specific.Page3.descriptionText == null) specific.Page3.descriptionText = common.Page3.descriptionText;
+                if (specific.Page3.descriptionText == null || string.IsNullOrEmpty(specific.Page3.descriptionText.text))
+                    specific.Page3.descriptionText = common.Page3.descriptionText;
                 if (string.IsNullOrEmpty(specific.Page3.warningMessage)) specific.Page3.warningMessage = common.Page3.warningMessage;
                 if (string.IsNullOrEmpty(specific.Page3.resetMessage)) specific.Page3.resetMessage = common.Page3.resetMessage;
             }
 
+
             if (specific.Page5 == null) specific.Page5 = new TransitionPageData();
             if (common.Page5 != null)
             {
-                if (specific.Page5.descriptionText == null) specific.Page5.descriptionText = common.Page5.descriptionText;
+                if (specific.Page5.descriptionText == null || string.IsNullOrEmpty(specific.Page5.descriptionText.text))
+                    specific.Page5.descriptionText = common.Page5.descriptionText;
+                if (string.IsNullOrEmpty(specific.Page5.warningMessage)) specific.Page5.warningMessage = common.Page5.warningMessage;
+                if (string.IsNullOrEmpty(specific.Page5.resetMessage)) specific.Page5.resetMessage = common.Page5.resetMessage;
             }
         }
     }

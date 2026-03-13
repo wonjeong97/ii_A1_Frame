@@ -274,7 +274,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
-                    // 조작이 감지되면 일정 시간(3초) 후 다음 단계로 넘어가도록 코루틴 시작
+                    // 조작이 감지되면 일정 시간 후 다음 단계로 넘어가도록 코루틴 시작
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
@@ -308,7 +308,7 @@ namespace My.Scripts._01_Tutorial.Pages
         }
 
         /// <summary> 
-        /// 조작 감지 후 일정 시간(5초) 대기, 초점 이미지 중앙 복귀, 안내 텍스트 교체(P1 -> P2 -> 완료) 등 
+        /// 조작 감지 후 일정 시간 대기, 초점 이미지 중앙 복귀, 안내 텍스트 교체(P1 -> P2 -> 완료) 등 
         /// 각 플레이어의 턴을 제어하는 단계별 연출 시퀀스입니다.
         /// </summary>
         private IEnumerator ProcessStageSequence()
