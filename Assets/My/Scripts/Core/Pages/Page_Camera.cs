@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Threading; // CancellationTokenSource를 위해 추가
 using Cysharp.Threading.Tasks; 
 using My.Scripts.Hardware; 
 using My.Scripts.Timelapse;
@@ -40,6 +41,9 @@ namespace My.Scripts.Core.Pages
         private string _photoFileName = "Default_Photo";
         
         private string _levelID; 
+
+        // 비동기 통신 취소용 토큰 제어기
+        private CancellationTokenSource _hueCts;
 
         private const int PhotoWidth = 1920;
         private const int PhotoHeight = 1080;
@@ -117,14 +121,19 @@ namespace My.Scripts.Core.Pages
             CleanupPhotoUI();
             StartWebCam(); 
 
+            // 진입 시 이전 진행 토큰 해제 및 신규 생성
+            _hueCts?.Cancel();
+            _hueCts?.Dispose();
+            _hueCts = new CancellationTokenSource();
+
             if (LevelManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
                 if (qNum >= 6 && qNum <= 10 && HueManager.Instance)
                 {
                     RGBColor randomColor = HueManager.Instance.PopRandomColor();
-                    HueManager.Instance.SetLightColorRGBAsync(1, randomColor).Forget();
-                    HueManager.Instance.SetLightColorRGBAsync(2, randomColor).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
                 }
             }
 
@@ -140,7 +149,9 @@ namespace My.Scripts.Core.Pages
             StopWebCam();
             CleanupPhotoUI();
 
-            // 예기치 않게 씬을 벗어날 때를 대비한 안전 가드
+            // 퇴장 시 이전 통신이 지연되고 있다면 즉시 취소시켜 덮어씌워짐 방지
+            _hueCts?.Cancel();
+
             if (LevelManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
@@ -156,6 +167,10 @@ namespace My.Scripts.Core.Pages
         {
             StopAllCoroutines();
             StopWebCam();
+            
+            _hueCts?.Cancel();
+            _hueCts?.Dispose();
+            _hueCts = null;
             
             if (LevelManager.Instance)
             {
@@ -246,7 +261,9 @@ namespace My.Scripts.Core.Pages
 
             CapturePhoto();
 
-            // [추가] 사진이 찍힌 직후 바로 조명을 끕니다.
+            // [추가] 끄기 명령 전, 켜기 통신이 아직 네트워크 지연 중이라면 무시되도록 강제 취소합니다.
+            _hueCts?.Cancel();
+
             if (LevelManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;

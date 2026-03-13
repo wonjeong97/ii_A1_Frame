@@ -37,13 +37,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.collab-proxy": {
-      "version": "2.11.2",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
     "com.unity.ext.nunit": {
       "version": "1.0.6",
       "depth": 1,
@@ -200,7 +193,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "a7a1e3fc045f66e4e778cdcac88a2fbbbf2b1f1e"
+      "hash": "8db9c2f8e56081acb8f48c953b37054496079155"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

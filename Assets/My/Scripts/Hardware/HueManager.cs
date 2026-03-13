@@ -96,13 +96,11 @@ namespace My.Scripts.Hardware
 
         public RGBColor PopRandomColor()
         {
-            // 혹시라도 초기화되지 않았거나 인덱스를 초과했다면 다시 셔플하여 안전성 확보
             if (_shuffledColors == null || _shuffledColors.Count == 0 || _colorIndex >= _shuffledColors.Count)
             {
                 InitRandomColors();
             }
             
-            // Config가 null이면 InitRandomColors가 조기 반환하므로 재확인 필요
             if (_shuffledColors == null || _shuffledColors.Count == 0)
             {
                 Debug.LogWarning("[HueManager] Config가 없어 랜덤 색상을 반환할 수 없습니다.");
@@ -114,16 +112,17 @@ namespace My.Scripts.Hardware
             return selectedColor;
         }
 
-        // CancellationToken 파라미터 추가
-        public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken cancellationToken = default)
+        // 수정됨: url 변수 선언 추가 및 통일된 ct 변수명 사용
+        public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken ct = default)
         {
-            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp)) return;
+            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
-            await SendPutRequestAsync(url, jsonBody, cancellationToken);
+            await SendPutRequestAsync(url, jsonBody, ct);
         }
 
-        public async UniTask SetLightColorRGBAsync(int lightId, RGBColor rgb, int bri = -1, int transitionTime = 4)
+        // 수정됨: CancellationToken ct 매개변수 추가
+        public async UniTask SetLightColorRGBAsync(int lightId, RGBColor rgb, int bri = -1, int transitionTime = 4, CancellationToken ct = default)
         {
             if (rgb == null || Config == null) return;
             Color color = new Color(rgb.r / 255f, rgb.g / 255f, rgb.b / 255f);
@@ -132,21 +131,22 @@ namespace My.Scripts.Hardware
             int hueValue = Mathf.RoundToInt(h * 65535f);
             int satValue = Mathf.RoundToInt(s * 254f);
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
-            await SetLightColorAsync(lightId, hueValue, satValue, finalBri, transitionTime);
+            await SetLightColorAsync(lightId, hueValue, satValue, finalBri, transitionTime, ct);
         }
 
-        public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4, CancellationToken cancellationToken = default)
+        public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4, CancellationToken ct = default)
         {
-            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp)) return;
+            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
 
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
-            await SendPutRequestAsync(url, jsonBody, cancellationToken);
+            await SendPutRequestAsync(url, jsonBody, ct);
         }
 
-        private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken cancellationToken = default)
+        // 수정됨: UniTask 버전 충돌을 피하기 위해 request.Abort()를 활용한 안전한 취소 로직 적용
+        private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken ct = default)
         {
             using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
             {
@@ -158,9 +158,15 @@ namespace My.Scripts.Hardware
 
                 try
                 {
-                    // 토큰을 전달하여 취소 가능하도록 구성
-                    await request.SendWebRequest().ToUniTask(cancellationToken: cancellationToken);
-                    if (request.result != UnityWebRequest.Result.Success)
+                    var op = request.SendWebRequest();
+                    
+                    // 토큰 취소 요청이 들어오면 즉시 통신을 강제 중단(Abort)합니다.
+                    using (ct.Register(() => { if (!op.isDone) request.Abort(); }))
+                    {
+                        await op.ToUniTask();
+                    }
+
+                    if (request.result != UnityWebRequest.Result.Success && !ct.IsCancellationRequested)
                     {
                         Debug.LogError($"[HueManager] 통신 실패: {request.error} | URL: {url}");
                     }
@@ -168,11 +174,14 @@ namespace My.Scripts.Hardware
                 catch (OperationCanceledException)
                 {
                     // 취소 요청 시 예외로 떨어지므로 로그를 남기거나 조용히 무시합니다.
-                    Debug.Log($"[HueManager] 휴 통신 취소됨: {url}");
+                    // Debug.Log($"[HueManager] 휴 통신 취소됨");
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[HueManager] 휴 통신 예외 발생: {e.Message}");
+                    if (!ct.IsCancellationRequested)
+                    {
+                        Debug.LogError($"[HueManager] 휴 통신 예외 발생: {e.Message}");
+                    }
                 }
             }
         }
