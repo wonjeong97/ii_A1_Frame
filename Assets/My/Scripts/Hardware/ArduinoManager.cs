@@ -27,12 +27,14 @@ namespace My.Scripts.Hardware
             new ConcurrentQueue<(string input, bool isLeft)>();
 
         private Thread _readThread;
-        private bool _isRunning = false;
+
+        // 다중 스레드 동기화 접근을 위한 volatile 키워드 부여
+        private volatile bool _isRunning = false;
 
         // 예외 로그 스로틀링용 변수
         private DateTime _leftLastWarnTime = DateTime.MinValue;
         private DateTime _rightLastWarnTime = DateTime.MinValue;
-        private readonly TimeSpan WarnThrottle = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan warnThrottle = TimeSpan.FromSeconds(5);
 
         public bool IsLeftConnected => _leftPort != null && _leftPort.IsOpen;
         public bool IsRightConnected => _rightPort != null && _rightPort.IsOpen;
@@ -143,12 +145,39 @@ namespace My.Scripts.Hardware
                 if (response.Contains(GameConstants.Hardware.LeftArduino))
                 {
                     tempPort.ReadTimeout = 10;
+
+                    // 기존에 할당된 포트가 있었다면 Handle Leak을 막기 위해 확실하게 해제
+                    if (_leftPort != null && _leftPort != tempPort)
+                    {
+                        try
+                        {
+                            _leftPort.Close();
+                            _leftPort.Dispose();
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     _leftPort = tempPort;
                     Debug.Log($"[ArduinoManager] Left 아두이노 연결 성공: {portName}");
                 }
                 else if (response.Contains(GameConstants.Hardware.RightArduino))
                 {
                     tempPort.ReadTimeout = 10;
+
+                    if (_rightPort != null && _rightPort != tempPort)
+                    {
+                        try
+                        {
+                            _rightPort.Close();
+                            _rightPort.Dispose();
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     _rightPort = tempPort;
                     Debug.Log($"[ArduinoManager] Right 아두이노 연결 성공: {portName}");
                 }
@@ -195,7 +224,7 @@ namespace My.Scripts.Hardware
                     catch (Exception e)
                     {
                         DateTime now = DateTime.UtcNow;
-                        if (now - _leftLastWarnTime > WarnThrottle)
+                        if (now - _leftLastWarnTime > warnThrottle)
                         {
                             _leftLastWarnTime = now;
                             string bytesInfo = "N/A";
@@ -232,7 +261,7 @@ namespace My.Scripts.Hardware
                     catch (Exception e)
                     {
                         DateTime now = DateTime.UtcNow;
-                        if (now - _rightLastWarnTime > WarnThrottle)
+                        if (now - _rightLastWarnTime > warnThrottle)
                         {
                             _rightLastWarnTime = now;
                             string bytesInfo = "N/A";
@@ -254,40 +283,53 @@ namespace My.Scripts.Hardware
             }
         }
 
-        public void SendCommandToRight(string command)
+        /// <summary> 우측 기기에 제어 명령을 전송하고 성공 여부를 반환합니다. </summary>
+        public bool SendCommandToRight(string command)
         {
             if (IsRightConnected)
             {
                 try
                 {
                     _rightPort.WriteLine(command);
+                    return true;
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[ArduinoManager] Right 전송 오류: {e.Message}");
+                    return false;
                 }
             }
+
+            return false;
         }
 
-        public void SendCommandToLeft(string command)
+        /// <summary> 좌측 기기에 제어 명령을 전송하고 성공 여부를 반환합니다. </summary>
+        public bool SendCommandToLeft(string command)
         {
             if (IsLeftConnected)
             {
                 try
                 {
                     _leftPort.WriteLine(command);
+                    return true;
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[ArduinoManager] Left 전송 오류: {e.Message}");
+                    return false;
                 }
             }
+
+            return false;
         }
 
-        public void SendCommandToBoth(string command)
+        /// <summary> 양쪽 장치에 동일한 명령을 동시 하달하고 송신 성공 여부를 취합합니다. </summary>
+        public bool SendCommandToBoth(string command)
         {
-            SendCommandToLeft(command);
-            SendCommandToRight(command);
+            bool leftResult = SendCommandToLeft(command);
+            bool rightResult = SendCommandToRight(command);
+
+            return leftResult && rightResult;
         }
 
         private void OnDestroy()

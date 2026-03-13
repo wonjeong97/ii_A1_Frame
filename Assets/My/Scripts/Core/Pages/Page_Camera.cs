@@ -64,7 +64,8 @@ namespace My.Scripts.Core.Pages
             if (_webCamTexture && _webCamTexture.isPlaying && cameraDisplay)
             {
                 float sy = _webCamTexture.videoVerticallyMirrored ? -1f : 1f;
-                float sx = _selectedDevice.isFrontFacing ? -1f : 1f;
+                // 이전 DeviceName 데이터가 없는 경우를 대비한 가드 추가
+                float sx = (!string.IsNullOrEmpty(_selectedDevice.name) && _selectedDevice.isFrontFacing) ? -1f : 1f;
 
                 cameraDisplay.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_webCamTexture.videoRotationAngle);
                 cameraDisplay.rectTransform.localScale = new Vector3(sx, sy, 1f);
@@ -159,10 +160,15 @@ namespace My.Scripts.Core.Pages
         /// <summary> 공통 휴 조명 소등 헬퍼 메서드 </summary>
         private void TurnOffHueLights()
         {
+            // 진행 중이던 통신을 강제 취소하고 신규 토큰을 생성하여 끄기 명령 전송 보장
+            _hueCts?.Cancel();
+            _hueCts?.Dispose();
+            _hueCts = new CancellationTokenSource();
+
             if (HueManager.Instance)
             {
-                HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                HueManager.Instance.SetLightStateAsync(1, false, _hueCts.Token).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false, _hueCts.Token).Forget();
             }
         }
 
@@ -174,9 +180,6 @@ namespace My.Scripts.Core.Pages
             StopWebCam();
             CleanupPhotoUI();
 
-            // 퇴장 시 이전 통신이 지연되고 있다면 즉시 취소시켜 덮어씌워짐 방지
-            _hueCts?.Cancel();
-
             // 카메라 페이지를 벗어날 때는 문항 번호와 무관하게 무조건 소등
             TurnOffHueLights();
         }
@@ -185,10 +188,6 @@ namespace My.Scripts.Core.Pages
         {
             StopAllCoroutines();
             StopWebCam();
-
-            _hueCts?.Cancel();
-            _hueCts?.Dispose();
-            _hueCts = null;
 
             // 안전 가드: 오브젝트가 파괴될 때도 무조건 소등
             TurnOffHueLights();
@@ -271,9 +270,6 @@ namespace My.Scripts.Core.Pages
             yield return CoroutineData.GetWaitForSeconds(0.05f);
 
             CapturePhoto();
-
-            // 끄기 명령 전, 켜기 통신이 아직 네트워크 지연 중이라면 무시되도록 강제 취소합니다.
-            _hueCts?.Cancel();
 
             // 사진 촬영 직후 문항 번호와 무관하게 무조건 소등
             TurnOffHueLights();
@@ -434,6 +430,8 @@ namespace My.Scripts.Core.Pages
             {
                 return;
             }
+
+            _selectedDevice = default; // 이전 프론트카메라 설정값 잔존을 방지하기 위한 리셋
 
             if (cameraDisplay)
             {
