@@ -99,7 +99,7 @@ namespace My.Scripts._00_Title
         /// <summary> 아두이노가 연결될 때까지 대기한 후 모든 LED를 끄는 명령을 전송합니다. </summary>
         private IEnumerator TurnOffArduinoLedsRoutine()
         {
-            float timeout = 5.0f;
+            float timeout = 10.0f;
             float timer = 0f;
 
             // ArduinoManager가 초기화될 때까지 대기
@@ -112,8 +112,7 @@ namespace My.Scripts._00_Title
             if (!ArduinoManager.Instance) yield break;
 
             timer = 0f;
-            // 좌/우 아두이노 중 최소 하나라도 연결될 때까지 타임아웃을 적용하여 대기
-            while (!ArduinoManager.Instance.IsLeftConnected && !ArduinoManager.Instance.IsRightConnected && timer < timeout)
+            while (!ArduinoManager.Instance.AreBothConnected && timer < timeout)
             {
                 timer += Time.deltaTime;
                 yield return null;
@@ -125,7 +124,7 @@ namespace My.Scripts._00_Title
                 yield break;
             }
 
-            // 나머지 한쪽 아두이노도 마저 연결되고 통신이 안정화될 수 있도록 잠시 대기
+            // 통신이 안정화될 수 있도록 잠시 대기
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
             // 전체 LED 및 샷(Shot) 버튼 LED 소등 명령 하달

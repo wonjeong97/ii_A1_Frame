@@ -136,6 +136,10 @@ namespace My.Scripts.Core.Pages
                 if (qNum >= 6 && qNum <= 10)
                 {
                     RGBColor randomColor = HueManager.Instance.PopRandomColor();
+                    if (randomColor == null)
+                    {
+                        randomColor = new RGBColor { r = 255, g = 255, b = 255 };
+                    }
                     HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
                 }
