@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
+using My.Scripts.Hardware; 
 using My.Scripts.Timelapse; 
 using UnityEngine;
 using UnityEngine.Networking; 
@@ -50,6 +52,12 @@ namespace My.Scripts._00_Title
                 TimeLapseRecorder.Instance.ClearRecordingData();
             }
 
+            // 아두이노 LED 초기화 코루틴 가동
+            StartCoroutine(TurnOffArduinoLedsRoutine());
+            
+            // 휴(Hue) 조명 즉시 소등 가동 (비동기 초기화 대기 포함)
+            StartCoroutine(TurnOffHueLightsRoutine());
+
             _pollCoroutine = StartCoroutine(PollRoomStateRoutine());
         }
 
@@ -62,6 +70,68 @@ namespace My.Scripts._00_Title
             {
                 Debug.LogWarning("[TitleManager] Settings.json 로드 실패.");
             }
+        }
+        
+        /// <summary> 휴(Hue) 조명을 비동기로 소등합니다. 매니저 초기화를 기다리기 위해 타임아웃 처리가 포함됩니다. </summary>
+        private IEnumerator TurnOffHueLightsRoutine()
+        {
+            float timeout = 5.0f;
+            float timer = 0f;
+
+            while (!HueManager.Instance && timer < timeout)
+            {
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            if (HueManager.Instance)
+            {
+                HueManager.Instance.SetLightStateAsync(1, false).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                Debug.Log("[TitleManager] 휴(Hue) 조명 소등 완료.");
+            }
+            else
+            {
+                Debug.LogWarning("[TitleManager] 휴(Hue) 매니저를 찾지 못해 조명 소등 실패.");
+            }
+        }
+
+        /// <summary> 아두이노가 연결될 때까지 대기한 후 모든 LED를 끄는 명령을 전송합니다. </summary>
+        private IEnumerator TurnOffArduinoLedsRoutine()
+        {
+            float timeout = 10.0f;
+            float timer = 0f;
+
+            // ArduinoManager가 초기화될 때까지 대기
+            while (!ArduinoManager.Instance && timer < timeout)
+            {
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            if (!ArduinoManager.Instance) yield break;
+
+            timer = 0f;
+            while (!ArduinoManager.Instance.AreBothConnected && timer < timeout)
+            {
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            if (!ArduinoManager.Instance.IsLeftConnected && !ArduinoManager.Instance.IsRightConnected)
+            {
+                Debug.LogWarning("[TitleManager] 아두이노 연결 대기 시간 초과.");
+                yield break;
+            }
+
+            // 통신이 안정화될 수 있도록 잠시 대기
+            yield return CoroutineData.GetWaitForSeconds(1.5f);
+
+            // 전체 LED 및 샷(Shot) 버튼 LED 소등 명령 하달
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            
+            Debug.Log("[TitleManager] 아두이노 연결 확인. 모든 LED 소등 완료.");
         }
 
         /// <summary> 
