@@ -757,8 +757,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   descriptionText: {fileID: 168816114}
   redLineImage: {fileID: 1431969330}
-  maxRetries: 3
-  baseRetryDelay: 2
+  maxRetries: 10
+  retryDelay: 1
 --- !u!1 &576966230
 GameObject:
   m_ObjectHideFlags: 0
