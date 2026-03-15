@@ -42,6 +42,8 @@ namespace My.Scripts.Hardware
         // 양쪽 아두이노가 모두 연결되었는지 확인하는 프로퍼티
         public bool AreBothConnected => IsLeftConnected && IsRightConnected;
 
+        private bool _isReconnecting = false;
+
         private void Awake()
         {
             if (!Instance)
@@ -81,7 +83,43 @@ namespace My.Scripts.Hardware
             }
         }
 
-        private async UniTaskVoid AutoConnectAsync()
+        /// <summary> 모든 연결을 끊고 DTR 신호를 다시 발생시켜 아두이노를 하드웨어적으로 강제 재부팅합니다. </summary>
+        public async UniTask ReconnectAllAsync()
+        {
+            if (_isReconnecting) return;
+            _isReconnecting = true;
+
+            Debug.Log("<color=yellow>[ArduinoManager] 아두이노 하드웨어 강제 재부팅 및 재연결 시작...</color>");
+
+            // 1. 수신 스레드 안전하게 정지
+            _isRunning = false;
+            if (_readThread != null && _readThread.IsAlive)
+            {
+                await UniTask.RunOnThreadPool(() => _readThread.Join(500));
+            }
+
+            // 2. 기존 포트 닫기 및 할당 해제
+            if (_leftPort != null) { try { _leftPort.Close(); _leftPort.Dispose(); } catch { } }
+            if (_rightPort != null) { try { _rightPort.Close(); _rightPort.Dispose(); } catch { } }
+
+            _leftPort = null;
+            _rightPort = null;
+
+            // 3. OS 포트 반환 및 잔여 버퍼 데이터 소멸 대기
+            await UniTask.Delay(TimeSpan.FromSeconds(1.0f));
+
+            // 4. 수신 큐 비우기
+            while (_inputQueue.TryDequeue(out _)) { }
+
+            // 5. 재연결 시퀀스 가동 (포트가 열리면서 DTR 신호로 아두이노가 재부팅됨)
+            _isRunning = true;
+            await AutoConnectAsync();
+
+            _isReconnecting = false;
+            Debug.Log("<color=yellow>[ArduinoManager] 강제 재부팅 및 재연결 완료!</color>");
+        }
+
+        private async UniTask AutoConnectAsync()
         {
             string[] portNames = SerialPort.GetPortNames();
             Debug.Log($"[ArduinoManager] 발견된 전체 COM 포트 수: {portNames.Length}");

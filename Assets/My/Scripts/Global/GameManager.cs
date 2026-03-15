@@ -242,14 +242,32 @@ namespace My.Scripts.Global
 
         private IEnumerator SendGetRequestRoutine(string url)
         {
-            using (UnityWebRequest req = UnityWebRequest.Get(url))
-            {
-                req.timeout = 10;
-                yield return req.SendWebRequest();
+            int maxRetries = 10;      // 최대 10번까지 재시도
+            float retryDelay = 1.0f;  // 재시도 대기 시간 1초
 
-                if (req.result != UnityWebRequest.Result.Success)
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                using (UnityWebRequest req = UnityWebRequest.Get(url))
                 {
-                    Debug.LogWarning($"[GameManager] API 전송 실패: {req.error} (URL: {url})");
+                    req.timeout = 10; // 각 시도당 10초 타임아웃
+                    yield return req.SendWebRequest();
+
+                    // 성공하면 코루틴 종료
+                    if (req.result == UnityWebRequest.Result.Success)
+                    {
+                        yield break;
+                    }
+
+                    // 실패 시 로그 출력 후 딱 1초만 대기하고 다시 시도
+                    if (attempt < maxRetries - 1)
+                    {
+                        Debug.LogWarning($"[GameManager] API 전송 실패 ({attempt + 1}/{maxRetries}): {req.error}.");
+                        yield return CoroutineData.GetWaitForSeconds(retryDelay);
+                    }
+                    else
+                    {
+                        Debug.LogError($"[GameManager] API 전송 최종 실패 (URL: {url}) - {req.error}");
+                    }
                 }
             }
         }

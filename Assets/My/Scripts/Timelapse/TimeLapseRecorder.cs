@@ -550,9 +550,19 @@ namespace My.Scripts.Timelapse
                 webRequest.uploadHandler.contentType = "video/mp4"; 
 
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
-                webRequest.timeout = 60;
+                webRequest.timeout = 300;
 
                 yield return webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.ConnectionError || 
+                    webRequest.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"[TimeLapseRecorder] 영상 업로드 실패 (에러/타임아웃): {webRequest.error}");
+                }
+                else
+                {
+                    Debug.Log($"[TimeLapseRecorder] 영상 업로드 성공! (응답 코드: {webRequest.responseCode})");
+                }
             }
         }
 

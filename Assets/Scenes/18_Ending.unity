@@ -660,11 +660,11 @@ MonoBehaviour:
   uploadCount: 3
   slots:
   - fileSuffix: _Q11
-    position: {x: 0, y: 0}
-    scale: {x: 0.53, y: 0.53}
+    position: {x: -3, y: 7}
+    scale: {x: 0.54, y: 0.54}
   - fileSuffix: _Q12
-    position: {x: -1, y: -3}
-    scale: {x: 0.53, y: 0.53}
+    position: {x: -7, y: -3}
+    scale: {x: 0.54, y: 0.54}
   - fileSuffix: _Q13
     position: {x: -6.3, y: 27.5}
     scale: {x: 0.53, y: 0.53}

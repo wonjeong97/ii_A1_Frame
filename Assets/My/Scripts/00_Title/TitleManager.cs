@@ -52,7 +52,7 @@ namespace My.Scripts._00_Title
                 TimeLapseRecorder.Instance.ClearRecordingData();
             }
 
-            // 아두이노 LED 초기화 코루틴 가동
+            // 아두이노 하드웨어 리셋 및 LED 초기화 코루틴 가동
             StartCoroutine(TurnOffArduinoLedsRoutine());
 
             // 휴(Hue) 조명 즉시 소등 가동 (비동기 초기화 대기 포함)
@@ -96,7 +96,7 @@ namespace My.Scripts._00_Title
             }
         }
 
-        /// <summary> 아두이노가 연결될 때까지 대기한 후 모든 LED를 끄는 명령을 전송합니다. </summary>
+        /// <summary> 아두이노를 강제 재부팅시킨 후 연결될 때까지 대기하고 모든 LED를 끄는 명령을 전송합니다. </summary>
         private IEnumerator TurnOffArduinoLedsRoutine()
         {
             float timeout = 60.0f;
@@ -111,6 +111,10 @@ namespace My.Scripts._00_Title
 
             if (!ArduinoManager.Instance) yield break;
 
+            // 💡 1. 타이틀 진입 시 무조건 아두이노 하드웨어 재부팅(DTR) 지시
+            ArduinoManager.Instance.ReconnectAllAsync().Forget();
+
+            // 2. 아두이노가 재부팅되고 정체성을 외쳐서 다시 묶일 때까지 대기 (약 3~5초 소요됨)
             timer = 0f;
             while (!ArduinoManager.Instance.AreBothConnected && timer < timeout)
             {
@@ -118,20 +122,21 @@ namespace My.Scripts._00_Title
                 yield return null;
             }
 
+            // 타임아웃 발생 시
             if (!ArduinoManager.Instance.IsLeftConnected && !ArduinoManager.Instance.IsRightConnected)
             {
-                Debug.LogWarning("[TitleManager] 아두이노 연결 대기 시간 초과.");
+                Debug.LogWarning("[TitleManager] 아두이노 재부팅 후 연결 대기 시간 초과.");
                 yield break;
             }
 
-            // 통신이 안정화될 수 있도록 잠시 대기
+            // 3. 통신이 안정화될 수 있도록 잠시 대기
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
-            // 전체 LED 및 샷(Shot) 버튼 LED 소등 명령 하달
+            // 아두이노 상태 동기화를 위해 한 번 더 전송
             ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
             ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
 
-            Debug.Log("[TitleManager] 아두이노 연결 확인. 모든 LED 소등 완료.");
+            Debug.Log("[TitleManager] 아두이노 하드웨어 초기화(리셋) 및 상태 동기화 완료.");
         }
 
         /// <summary> 
