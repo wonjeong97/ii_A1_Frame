@@ -132,6 +132,11 @@ namespace My.Scripts.Core.Pages
             if (LevelManager.Instance && HueManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
+                
+                // HueConfig에 정의된 whiteColor를 가져오되, 값이 없으면 기존 하드코딩 값 사용 (안전장치)
+                RGBColor fallbackWhite = (HueManager.Instance.Config != null && HueManager.Instance.Config.whiteColor != null) 
+                                         ? HueManager.Instance.Config.whiteColor 
+                                         : new RGBColor { r = 191, g = 239, b = 251 };
 
                 // Q6 ~ Q10 구간: 섞어둔 5가지 색상 중 랜덤으로 뽑아 점등
                 if (qNum >= 6 && qNum <= 10)
@@ -139,7 +144,7 @@ namespace My.Scripts.Core.Pages
                     RGBColor randomColor = HueManager.Instance.PopRandomColor();
                     if (randomColor == null)
                     {
-                        randomColor = new RGBColor { r = 255, g = 255, b = 255 };
+                        randomColor = fallbackWhite;
                     }
                     HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
@@ -147,9 +152,8 @@ namespace My.Scripts.Core.Pages
                 else
                 {
                     // 그 외의 모든 촬영 구간: 백색등(White) 점등
-                    RGBColor whiteColor = new RGBColor { r = 255, g = 255, b = 255 };
-                    HueManager.Instance.SetLightColorRGBAsync(1, whiteColor, -1, 4, _hueCts.Token).Forget();
-                    HueManager.Instance.SetLightColorRGBAsync(2, whiteColor, -1, 4, _hueCts.Token).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(1, fallbackWhite, -1, 4, _hueCts.Token).Forget();
+                    HueManager.Instance.SetLightColorRGBAsync(2, fallbackWhite, -1, 4, _hueCts.Token).Forget();
                 }
             }
 
