@@ -41,6 +41,10 @@ namespace My.Scripts.Utils
         [Tooltip("서버 업로드 시 구분용 카운트 번호")]
         [Min(1)]
         public int uploadCount = 1;
+        
+        [Header("API Retry Settings")]
+        [SerializeField] private int maxRetries = 10;
+        [SerializeField] private float retryDelay = 1.0f;
 
         [Header("Layout")]
         public List<CompositeSlot> slots;
@@ -53,13 +57,14 @@ namespace My.Scripts.Utils
         [ContextMenu("Execute Composite Now")] 
         public void DebugProcessAndSave()
         {
-            ProcessAndSave(debugBaseName);
+            // 컨텍스트 메뉴로 실행 시 isDebug를 true로 전달하여 로컬 PNG 저장만 수행
+            ProcessAndSave(debugBaseName, true);
         }
 
         /// <summary> 
         /// 합성 로직을 실행합니다. 무거운 인코딩과 업로드는 비동기로 처리하여 프리징을 방지합니다.
         /// </summary>
-        public void ProcessAndSave(string baseName)
+        public void ProcessAndSave(string baseName, bool isDebug = false)
         {
             if (!baseFrame)
             {
@@ -80,13 +85,13 @@ namespace My.Scripts.Utils
                 sanitizedName = "UnknownPlayers";
             }
 
-            ExecuteCompositeAsync(sanitizedName).Forget();
+            ExecuteCompositeAsync(sanitizedName, isDebug).Forget();
         }
 
         /// <summary> 
         /// 실제 렌더링 및 비동기 파일 처리 시퀀스입니다. 
         /// </summary>
-        private async UniTaskVoid ExecuteCompositeAsync(string sanitizedName)
+        private async UniTaskVoid ExecuteCompositeAsync(string sanitizedName, bool isDebug)
         {
             string rootPath = GetRootPath();
             RenderTexture rt = null;
@@ -158,8 +163,15 @@ namespace My.Scripts.Utils
                 // 파일 쓰기도 비동기로 수행
                 await File.WriteAllBytesAsync(Path.Combine(rootPath, finalFileName), pngBytes);
 
-                // 업로드 작업 시작
-                await UploadImageAsync(pngBytes, finalFileName);
+                // 디버그 모드가 아닐 때만 서버 업로드 수행
+                if (!isDebug)
+                {
+                    await UploadImageAsync(pngBytes, finalFileName);
+                }
+                else
+                {
+                    Debug.Log($"<color=cyan>[PhotoCompositor] 디버그 모드 완료: {finalFileName} (PNG) 생성됨. 서버 업로드는 생략되었습니다.</color>");
+                }
             }
             catch (Exception e)
             {
@@ -198,23 +210,37 @@ namespace My.Scripts.Utils
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             int safeUploadCount = Mathf.Max(1, uploadCount);
             
-            // 파라미터 type=png 로 수정
+            // 파라미터 type=png 로 통신
             string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=png&count={safeUploadCount}";
 
-            using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
+            // 전역 변수로 설정된 횟수와 딜레이 사용
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                webRequest.uploadHandler = new UploadHandlerRaw(imageBytes);
-                // 헤더를 image/png 로 수정
-                webRequest.uploadHandler.contentType = "image/png"; 
-                webRequest.downloadHandler = new DownloadHandlerBuffer();
-                webRequest.timeout = 15;
+                using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
+                {
+                    webRequest.uploadHandler = new UploadHandlerRaw(imageBytes);
+                    webRequest.uploadHandler.contentType = "image/png"; 
+                    webRequest.downloadHandler = new DownloadHandlerBuffer();
+                    webRequest.timeout = 15;
 
-                await webRequest.SendWebRequest().ToUniTask();
+                    await webRequest.SendWebRequest().ToUniTask();
 
-                if (webRequest.result != UnityWebRequest.Result.Success)
-                    Debug.LogError($"[PhotoCompositor] 업로드 실패: {webRequest.error}");
-                else
-                    Debug.Log($"[PhotoCompositor] 업로드 성공: {webRequest.responseCode}");
+                    if (webRequest.result == UnityWebRequest.Result.Success)
+                    {
+                        Debug.Log($"[PhotoCompositor] 업로드 성공: {webRequest.responseCode}");
+                        return; // 성공 시 루프 종료
+                    }
+
+                    if (attempt < maxRetries - 1)
+                    {
+                        Debug.LogWarning($"[PhotoCompositor] 업로드 실패 ({attempt + 1}/{maxRetries}): {webRequest.error}. {retryDelay}초 후 재시도...");
+                        await UniTask.Delay(TimeSpan.FromSeconds(retryDelay));
+                    }
+                    else
+                    {
+                        Debug.LogError($"[PhotoCompositor] 업로드 최종 실패: {webRequest.error}");
+                    }
+                }
             }
         }
 

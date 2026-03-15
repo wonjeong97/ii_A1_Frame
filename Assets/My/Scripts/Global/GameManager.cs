@@ -33,6 +33,10 @@ namespace My.Scripts.Global
 
         [Header("Player Color Sprites")]
         public Sprite[] playerColorSprites;
+        
+        [Header("API Retry Settings")]
+        [SerializeField] private int maxRetries = 10;
+        [SerializeField] private float retryDelay = 1.0f;
 
         private void Awake()
         {
@@ -182,7 +186,7 @@ namespace My.Scripts.Global
 
             if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
-            _isTransitioning = false; // ChangeSceneRoutine 내부에서 다시 락을 검
+            _isTransitioning = false; 
             ChangeScene(GameConstants.Scene.Title);
         }
 
@@ -242,26 +246,21 @@ namespace My.Scripts.Global
 
         private IEnumerator SendGetRequestRoutine(string url)
         {
-            int maxRetries = 10;      // 최대 10번까지 재시도
-            float retryDelay = 1.0f;  // 재시도 대기 시간 1초
-
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 using (UnityWebRequest req = UnityWebRequest.Get(url))
                 {
-                    req.timeout = 10; // 각 시도당 10초 타임아웃
+                    req.timeout = 10; 
                     yield return req.SendWebRequest();
 
-                    // 성공하면 코루틴 종료
                     if (req.result == UnityWebRequest.Result.Success)
                     {
                         yield break;
                     }
 
-                    // 실패 시 로그 출력 후 딱 1초만 대기하고 다시 시도
                     if (attempt < maxRetries - 1)
                     {
-                        Debug.LogWarning($"[GameManager] API 전송 실패 ({attempt + 1}/{maxRetries}): {req.error}.");
+                        Debug.LogWarning($"[GameManager] API 전송 실패 ({attempt + 1}/{maxRetries}): {req.error}. {retryDelay}초 후 재시도...");
                         yield return CoroutineData.GetWaitForSeconds(retryDelay);
                     }
                     else
@@ -326,7 +325,6 @@ namespace My.Scripts.Global
 
         private IEnumerator QuitRoutine()
         {
-            // 하드웨어 소등을 비동기로 대기
             yield return TurnOffAllHardwareOutputsAsync().ToCoroutine();
 
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
@@ -364,7 +362,6 @@ namespace My.Scripts.Global
         {
             if (_isQuitSafe) return; 
 
-            // 에디터 강제 정지 시 백그라운드로 안전하게 소등 처리 넘김
             TurnOffAllHardwareOutputsAsync().Forget();
 
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
