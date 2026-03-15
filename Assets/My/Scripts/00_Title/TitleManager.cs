@@ -111,7 +111,7 @@ namespace My.Scripts._00_Title
 
             if (!ArduinoManager.Instance) yield break;
 
-            // 💡 1. 타이틀 진입 시 무조건 아두이노 하드웨어 재부팅(DTR) 지시
+            // 1. 타이틀 진입 시 무조건 아두이노 하드웨어 재부팅(DTR) 지시
             ArduinoManager.Instance.ReconnectAllAsync().Forget();
 
             // 2. 아두이노가 재부팅되고 정체성을 외쳐서 다시 묶일 때까지 대기 (약 3~5초 소요됨)
@@ -123,9 +123,9 @@ namespace My.Scripts._00_Title
             }
 
             // 타임아웃 발생 시
-            if (!ArduinoManager.Instance.IsLeftConnected && !ArduinoManager.Instance.IsRightConnected)
+            if (!ArduinoManager.Instance.AreBothConnected)
             {
-                Debug.LogWarning("[TitleManager] 아두이노 재부팅 후 연결 대기 시간 초과.");
+                Debug.LogWarning("[TitleManager] 아두이노 재부팅 후 양쪽 연결 대기 시간 초과.")
                 yield break;
             }
 
@@ -133,10 +133,15 @@ namespace My.Scripts._00_Title
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
             // 아두이노 상태 동기화를 위해 한 번 더 전송
-            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
-            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            bool allOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+            bool shotOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
 
+            if (!allOff || !shotOff)
+            {
+                Debug.LogWarning("[TitleManager] 아두이노 LED 초기화 명령 전송 실패.");
+            }
             Debug.Log("[TitleManager] 아두이노 하드웨어 초기화(리셋) 및 상태 동기화 완료.");
+            yield break;
         }
 
         /// <summary> 

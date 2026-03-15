@@ -24,12 +24,15 @@ namespace My.Scripts.Utils
 
     /// <summary> 
     /// 저장된 개별 플레이어 사진들을 지정된 프레임(틀) 이미지 위에 합성한 뒤,
-    /// 로컬 디스크에 저장하고 서버로 업로드하는 시퀀스를 관리합니다.
+    /// 로컬 디스크에 PNG로 저장하고 서버로 업로드하는 시퀀스를 관리합니다.
     /// </summary>
     public class PhotoCompositor : MonoBehaviour
     {
         [Header("Assets")]
         public Texture2D baseFrame; 
+        
+        [Tooltip("배경 이미지(출력 캔버스)의 스케일입니다. 화질을 높이려면 값을 키워 해상도를 증가시킬 수 있습니다.")]
+        public Vector2 baseFrameScale = Vector2.one; 
 
         [Header("Config")]
         public string saveFolderName = "Pictures";
@@ -91,14 +94,19 @@ namespace My.Scripts.Utils
 
             try
             {
-                rt = RenderTexture.GetTemporary(baseFrame.width, baseFrame.height, 0, RenderTextureFormat.ARGB32);
+                // 스케일이 적용된 최종 캔버스(해상도) 크기 계산
+                int targetWidth = Mathf.RoundToInt(baseFrame.width * baseFrameScale.x);
+                int targetHeight = Mathf.RoundToInt(baseFrame.height * baseFrameScale.y);
+
+                rt = RenderTexture.GetTemporary(targetWidth, targetHeight, 0, RenderTextureFormat.ARGB32);
                 RenderTexture prevActive = RenderTexture.active;
                 RenderTexture.active = rt;
 
                 GL.PushMatrix();
-                GL.LoadPixelMatrix(0, baseFrame.width, baseFrame.height, 0);
+                GL.LoadPixelMatrix(0, targetWidth, targetHeight, 0);
 
-                Graphics.DrawTexture(new Rect(0, 0, baseFrame.width, baseFrame.height), baseFrame);
+                // 스케일이 적용된 크기만큼 배경 텍스처 그리기
+                Graphics.DrawTexture(new Rect(0, 0, targetWidth, targetHeight), baseFrame);
 
                 foreach (CompositeSlot slot in slots)
                 {
@@ -119,39 +127,39 @@ namespace My.Scripts.Utils
 
                 GL.PopMatrix();
 
-                resultTex = new Texture2D(baseFrame.width, baseFrame.height, TextureFormat.RGB24, false);
-                resultTex.ReadPixels(new Rect(0, 0, baseFrame.width, baseFrame.height), 0, 0);
+                // 스케일이 적용된 크기만큼 결과 텍스처 생성
+                resultTex = new Texture2D(targetWidth, targetHeight, TextureFormat.RGB24, false);
+                resultTex.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
                 resultTex.Apply();
 
                 RenderTexture.active = prevActive;
                 RenderTexture.ReleaseTemporary(rt);
                 rt = null;
 
-                // # FIX: 메인 스레드에서만 접근 가능한 텍스처 데이터를 먼저 바이트 배열로 추출합니다.
                 byte[] rawData = resultTex.GetRawTextureData();
                 int texWidth = resultTex.width;
                 int texHeight = resultTex.height;
                 UnityEngine.Experimental.Rendering.GraphicsFormat format = resultTex.graphicsFormat;
 
-                // 백그라운드 스레드에서는 추출된 byte[] 배열만 가지고 인코딩을 수행하여 에러를 방지합니다.
-                byte[] jpgBytes = await UniTask.RunOnThreadPool(() => 
+                // 백그라운드 스레드에서 PNG 인코딩 수행 (무손실)
+                byte[] pngBytes = await UniTask.RunOnThreadPool(() => 
                 {
-                    return ImageConversion.EncodeArrayToJPG(rawData, format, (uint)texWidth, (uint)texHeight, 0, 85);
+                    return ImageConversion.EncodeArrayToPNG(rawData, format, (uint)texWidth, (uint)texHeight);
                 });
 
-                if (jpgBytes == null || jpgBytes.Length == 0)
+                if (pngBytes == null || pngBytes.Length == 0)
                 {
-                    Debug.LogError("[PhotoCompositor] JPG 인코딩 실패");
+                    Debug.LogError("[PhotoCompositor] PNG 인코딩 실패");
                     return;
                 }
 
-                string finalFileName = $"{sanitizedName}_{outputFileName}.jpg";
+                string finalFileName = $"{sanitizedName}_{outputFileName}.png";
                 
                 // 파일 쓰기도 비동기로 수행
-                await File.WriteAllBytesAsync(Path.Combine(rootPath, finalFileName), jpgBytes);
+                await File.WriteAllBytesAsync(Path.Combine(rootPath, finalFileName), pngBytes);
 
                 // 업로드 작업 시작
-                await UploadImageAsync(jpgBytes, finalFileName);
+                await UploadImageAsync(pngBytes, finalFileName);
             }
             catch (Exception e)
             {
@@ -189,12 +197,15 @@ namespace My.Scripts.Utils
             
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             int safeUploadCount = Mathf.Max(1, uploadCount);
-            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=jpg&count={safeUploadCount}";
+            
+            // 파라미터 type=png 로 수정
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={encodedUid}&code={moduleCode}&type=png&count={safeUploadCount}";
 
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
                 webRequest.uploadHandler = new UploadHandlerRaw(imageBytes);
-                webRequest.uploadHandler.contentType = "image/jpeg"; 
+                // 헤더를 image/png 로 수정
+                webRequest.uploadHandler.contentType = "image/png"; 
                 webRequest.downloadHandler = new DownloadHandlerBuffer();
                 webRequest.timeout = 15;
 

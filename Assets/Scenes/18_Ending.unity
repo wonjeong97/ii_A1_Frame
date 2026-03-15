@@ -655,26 +655,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseFrame: {fileID: 2800000, guid: b8074a6e6e71425468b3c1bc372f78d6, type: 3}
+  baseFrameScale: {x: 2, y: 2}
   saveFolderName: Pictures
   outputFileName: Composite_3
   uploadCount: 3
   slots:
   - fileSuffix: _Q11
-    position: {x: -3, y: 7}
-    scale: {x: 0.54, y: 0.54}
+    position: {x: -10, y: 23}
+    scale: {x: 1.1, y: 1.1}
   - fileSuffix: _Q12
-    position: {x: -7, y: -3}
-    scale: {x: 0.54, y: 0.54}
+    position: {x: -22, y: 0}
+    scale: {x: 1.1, y: 1.1}
   - fileSuffix: _Q13
-    position: {x: -6.3, y: 27.5}
-    scale: {x: 0.53, y: 0.53}
+    position: {x: -80, y: 80}
+    scale: {x: 1.1, y: 1.1}
   - fileSuffix: _Q14
-    position: {x: -85, y: 32}
-    scale: {x: 0.53, y: 0.53}
+    position: {x: -220, y: 100}
+    scale: {x: 1.1, y: 1.1}
   - fileSuffix: _Q15
-    position: {x: 15, y: 12}
-    scale: {x: 0.53, y: 0.53}
-  debugBaseName: "\uC544\uC601\uAE38\uB3D9"
+    position: {x: 125, y: 20}
+    scale: {x: 1, y: 1}
+  debugBaseName: 0
 --- !u!4 &355055030
 Transform:
   m_ObjectHideFlags: 0
@@ -913,26 +914,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseFrame: {fileID: 2800000, guid: bc56b75a19471ec45bd86b997c6318f9, type: 3}
+  baseFrameScale: {x: 3.5, y: 3.5}
   saveFolderName: Pictures
   outputFileName: Composite_2
   uploadCount: 2
   slots:
   - fileSuffix: _Q6
-    position: {x: -69, y: -57.5}
-    scale: {x: 0.285, y: 0.285}
+    position: {x: -245, y: -205}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q7
-    position: {x: 618, y: -57.5}
-    scale: {x: 0.285, y: 0.285}
+    position: {x: 2165, y: -205}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q8
-    position: {x: -69, y: -735}
-    scale: {x: 0.285, y: 0.285}
+    position: {x: -245, y: -2570}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q9
-    position: {x: 618, y: -735}
-    scale: {x: 0.285, y: 0.285}
+    position: {x: 2165, y: -2570}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q10
-    position: {x: 276, y: -397}
-    scale: {x: 0.285, y: 0.285}
-  debugBaseName: "\uC544\uC601\uAE38\uB3D9"
+    position: {x: 965, y: -1390}
+    scale: {x: 1, y: 1}
+  debugBaseName: 0
 --- !u!4 &735648582
 Transform:
   m_ObjectHideFlags: 0
@@ -1636,7 +1638,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 108.84, y: -912.48}
+  m_AnchoredPosition: {x: 108.84009, y: -912.48}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1336056395
@@ -2065,27 +2067,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 061cb3bfceb457b4bab3d59d886bdf97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseFrame: {fileID: 2800000, guid: 634eece703ee7c54ba959a1c2aa51792, type: 3}
+  baseFrame: {fileID: 2800000, guid: 82434f4d0371b9741b7e6e09eb2439a6, type: 3}
+  baseFrameScale: {x: 2, y: 2}
   saveFolderName: Pictures
   outputFileName: Composite_1
   uploadCount: 1
   slots:
   - fileSuffix: _Q1
-    position: {x: -298.7, y: 132.5}
-    scale: {x: 0.615, y: 0.62}
+    position: {x: -630, y: 300}
+    scale: {x: 1.3, y: 1.3}
   - fileSuffix: _Q2
-    position: {x: 274.3, y: -642.3}
-    scale: {x: 0.5, y: 0.45}
+    position: {x: 600, y: -1250}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q3
-    position: {x: 303, y: -27}
-    scale: {x: 0.4, y: 0.4}
+    position: {x: 550, y: -27}
+    scale: {x: 0.9, y: 0.9}
   - fileSuffix: _Q4
-    position: {x: 28.5, y: -245.7}
-    scale: {x: 0.51, y: 0.515}
+    position: {x: 28.5, y: -550}
+    scale: {x: 1, y: 1}
   - fileSuffix: _Q5
-    position: {x: -255.8, y: -600}
-    scale: {x: 0.475, y: 0.47}
-  debugBaseName: "\uC544\uC601\uAE38\uB3D9"
+    position: {x: -580, y: -1200}
+    scale: {x: 1, y: 1}
+  debugBaseName: 0
 --- !u!4 &1452569737
 Transform:
   m_ObjectHideFlags: 0
