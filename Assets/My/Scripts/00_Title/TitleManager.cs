@@ -125,7 +125,7 @@ namespace My.Scripts._00_Title
             // 타임아웃 발생 시
             if (!ArduinoManager.Instance.AreBothConnected)
             {
-                Debug.LogWarning("[TitleManager] 아두이노 재부팅 후 양쪽 연결 대기 시간 초과.")
+                Debug.LogWarning("[TitleManager] 아두이노 재부팅 후 양쪽 연결 대기 시간 초과.");
                 yield break;
             }
 
