@@ -16,18 +16,22 @@ namespace My.Scripts.Core.Pages
     {
         [Header("UI References")]
         [SerializeField] private RawImage cameraDisplay;
+
         [SerializeField] private Text countdownText;
 
         [Header("Effects")]
         [SerializeField] private Image flashImage;
+
         [SerializeField] private CanvasGroup contentCanvasGroup;
 
         [Header("Default Settings")]
         [SerializeField] private Material defaultMaskingMaterial;
+
         [SerializeField] private bool defaultSavePhoto = true;
 
         [Header("Transition")]
         [SerializeField] private float cameraFadeDelay = 0.5f;
+
         [SerializeField] private float cameraFadeDuration = 0.5f;
 
         private Material _currentMaskingMaterial;
@@ -41,8 +45,6 @@ namespace My.Scripts.Core.Pages
         private string _photoFileName = "Default_Photo";
 
         private string _levelID;
-
-        // 비동기 통신 취소용 토큰 제어기
         private CancellationTokenSource _hueCts;
 
         private const int PhotoWidth = 1920;
@@ -51,7 +53,6 @@ namespace My.Scripts.Core.Pages
         protected override void Awake()
         {
             base.Awake();
-
             if (!_isConfigured)
             {
                 _currentMaskingMaterial = defaultMaskingMaterial;
@@ -64,7 +65,6 @@ namespace My.Scripts.Core.Pages
             if (_webCamTexture && _webCamTexture.isPlaying && cameraDisplay)
             {
                 float sy = _webCamTexture.videoVerticallyMirrored ? -1f : 1f;
-                // 이전 DeviceName 데이터가 없는 경우를 대비한 가드 추가
                 float sx = (!string.IsNullOrEmpty(_selectedDevice.name) && _selectedDevice.isFrontFacing) ? -1f : 1f;
 
                 cameraDisplay.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_webCamTexture.videoRotationAngle);
@@ -104,7 +104,6 @@ namespace My.Scripts.Core.Pages
         {
             base.OnEnter();
             SetAlpha(1f);
-
             SetRawImageAlpha(cameraDisplay, 0f);
 
             if (countdownText)
@@ -122,9 +121,8 @@ namespace My.Scripts.Core.Pages
             if (contentCanvasGroup) contentCanvasGroup.alpha = 1f;
 
             CleanupPhotoUI();
-            StartWebCam();
+            StartWebCam(); // 카메라 가동
 
-            // 진입 시 이전 진행 토큰 해제 및 신규 생성
             _hueCts?.Cancel();
             _hueCts?.Dispose();
             _hueCts = new CancellationTokenSource();
@@ -132,26 +130,19 @@ namespace My.Scripts.Core.Pages
             if (LevelManager.Instance && HueManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                
-                // HueConfig에 정의된 whiteColor를 가져오되, 값이 없으면 기존 하드코딩 값 사용 (안전장치)
-                RGBColor fallbackWhite = (HueManager.Instance.Config != null && HueManager.Instance.Config.whiteColor != null) 
-                                         ? HueManager.Instance.Config.whiteColor 
-                                         : new RGBColor { r = 191, g = 239, b = 251 };
+                RGBColor fallbackWhite =
+                    (HueManager.Instance.Config != null && HueManager.Instance.Config.whiteColor != null)
+                        ? HueManager.Instance.Config.whiteColor
+                        : new RGBColor { r = 191, g = 239, b = 251 };
 
-                // Q6 ~ Q10 구간: 섞어둔 5가지 색상 중 랜덤으로 뽑아 점등
                 if (qNum >= 6 && qNum <= 10)
                 {
-                    RGBColor randomColor = HueManager.Instance.PopRandomColor();
-                    if (randomColor == null)
-                    {
-                        randomColor = fallbackWhite;
-                    }
+                    RGBColor randomColor = HueManager.Instance.PopRandomColor() ?? fallbackWhite;
                     HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
                 }
                 else
                 {
-                    // 그 외의 모든 촬영 구간: 백색등(White) 점등
                     HueManager.Instance.SetLightColorRGBAsync(1, fallbackWhite, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, fallbackWhite, -1, 4, _hueCts.Token).Forget();
                 }
@@ -161,10 +152,8 @@ namespace My.Scripts.Core.Pages
             StartCoroutine(CountdownRoutine());
         }
 
-        /// <summary> 공통 휴 조명 소등 헬퍼 메서드 </summary>
         private void TurnOffHueLights()
         {
-            // 진행 중이던 통신을 강제 취소하고 신규 토큰을 생성하여 끄기 명령 전송 보장
             _hueCts?.Cancel();
             _hueCts?.Dispose();
             _hueCts = new CancellationTokenSource();
@@ -180,11 +169,8 @@ namespace My.Scripts.Core.Pages
         {
             StopAllCoroutines();
             base.OnExit();
-
             StopWebCam();
             CleanupPhotoUI();
-
-            // 카메라 페이지를 벗어날 때는 문항 번호와 무관하게 무조건 소등
             TurnOffHueLights();
         }
 
@@ -192,10 +178,7 @@ namespace My.Scripts.Core.Pages
         {
             StopAllCoroutines();
             StopWebCam();
-
-            // 안전 가드: 오브젝트가 파괴될 때도 무조건 소등
             TurnOffHueLights();
-
             if (_capturedPhoto)
             {
                 Destroy(_capturedPhoto);
@@ -209,7 +192,13 @@ namespace My.Scripts.Core.Pages
 
             if (_webCamTexture)
             {
-                while (_webCamTexture.width <= 16) yield return null;
+                float timeout = 2.0f;
+                float waitTimer = 0f;
+                while (_webCamTexture.width <= 16 && waitTimer < timeout)
+                {
+                    waitTimer += Time.deltaTime;
+                    yield return null;
+                }
             }
 
             float timer = 0f;
@@ -227,12 +216,20 @@ namespace My.Scripts.Core.Pages
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
-            if (_shouldSavePhoto && TimeLapseRecorder.Instance && _webCamTexture)
+            // 카메라가 켜져 있을 때만 타임랩스 녹화 명령 하달
+            if (_shouldSavePhoto && TimeLapseRecorder.Instance)
             {
-                TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
-                TimeLapseRecorder.Instance.EnableTimelapseCapture = true;
-                TimeLapseRecorder.Instance.EnableRealtimeCapture = true;
-                TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
+                if (_webCamTexture != null && _webCamTexture.isPlaying)
+                {
+                    TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
+                    TimeLapseRecorder.Instance.EnableTimelapseCapture = true;
+                    TimeLapseRecorder.Instance.EnableRealtimeCapture = true;
+                    TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
+                }
+                else
+                {
+                    Debug.LogError("<color=red>[Page_Camera] 웹캠이 꺼져있어 타임랩스 녹화를 시작할 수 없습니다!</color>");
+                }
             }
 
             if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_5초");
@@ -242,9 +239,7 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(ShowAndFadeNumber("3"));
 
             if (_shouldSavePhoto && TimeLapseRecorder.Instance)
-            {
                 TimeLapseRecorder.Instance.EnableRealtimeCapture = false;
-            }
 
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
@@ -261,7 +256,6 @@ namespace My.Scripts.Core.Pages
         private IEnumerator FlashAndCaptureRoutine()
         {
             float maxAlpha = 0.8f;
-
             if (flashImage)
             {
                 if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_11");
@@ -274,8 +268,6 @@ namespace My.Scripts.Core.Pages
             yield return CoroutineData.GetWaitForSeconds(0.05f);
 
             CapturePhoto();
-
-            // 사진 촬영 직후 문항 번호와 무관하게 무조건 소등
             TurnOffHueLights();
 
             if (flashImage)
@@ -298,46 +290,44 @@ namespace My.Scripts.Core.Pages
 
         private void CapturePhoto()
         {
-            if (_webCamTexture && _webCamTexture.isPlaying)
+            if (_webCamTexture == null || !_webCamTexture.isPlaying)
             {
-                RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
-
-                Material maskToUse = _currentMaskingMaterial;
-                if (maskToUse) Graphics.Blit(_webCamTexture, rt, maskToUse);
-                else Graphics.Blit(_webCamTexture, rt);
-
-                if (!_capturedPhoto || _capturedPhoto.width != PhotoWidth || _capturedPhoto.height != PhotoHeight)
-                {
-                    if (_capturedPhoto) Destroy(_capturedPhoto);
-                    _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
-                }
-
-                RenderTexture prev = RenderTexture.active;
-                RenderTexture.active = rt;
-                _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);
-                _capturedPhoto.Apply();
-
-                RenderTexture.active = prev;
-                RenderTexture.ReleaseTemporary(rt);
-
-                if (cameraDisplay) cameraDisplay.texture = _capturedPhoto;
-
-                if (_shouldSavePhoto)
-                {
-                    SavePhotoToCustomFolderAsync(_capturedPhoto).Forget();
-                }
-
-                StopWebCam();
+                Debug.LogError("<color=red>[Page_Camera] 웹캠이 정상 작동 중이 아니어서 사진을 캡처할 수 없습니다!</color>");
+                return; // 에러 방지를 위해 조용히 빠져나가지만 위 로그가 남음
             }
+
+            RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
+            Material maskToUse = _currentMaskingMaterial;
+            if (maskToUse) Graphics.Blit(_webCamTexture, rt, maskToUse);
+            else Graphics.Blit(_webCamTexture, rt);
+
+            if (!_capturedPhoto || _capturedPhoto.width != PhotoWidth || _capturedPhoto.height != PhotoHeight)
+            {
+                if (_capturedPhoto) Destroy(_capturedPhoto);
+                _capturedPhoto = new Texture2D(PhotoWidth, PhotoHeight, TextureFormat.RGBA32, false);
+            }
+
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);
+            _capturedPhoto.Apply();
+
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+
+            if (cameraDisplay) cameraDisplay.texture = _capturedPhoto;
+
+            if (_shouldSavePhoto)
+            {
+                SavePhotoToCustomFolderAsync(_capturedPhoto).Forget();
+            }
+
+            StopWebCam();
         }
 
         private async UniTaskVoid SavePhotoToCustomFolderAsync(Texture2D photo)
         {
-            if (!photo)
-            {
-                Debug.LogError("[Page_Camera] 캡처된 텍스처가 존재하지 않아 저장을 취소합니다.");
-                return;
-            }
+            if (!photo) return;
 
             byte[] rawData = photo.GetRawTextureData();
             int width = photo.width;
@@ -365,21 +355,19 @@ namespace My.Scripts.Core.Pages
                     string path = Path.Combine(folder, $"{photoName}.png");
                     File.WriteAllBytes(path, bytes);
 
-                    Debug.Log($"[Page_Camera] 비동기 사진 저장 완료: {path}");
+                    Debug.Log($"<color=green>[Page_Camera] 비동기 원본 사진 저장 완료: {path}</color>");
                 });
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Page_Camera] 비동기 사진 저장 실패: {e.Message}");
+                Debug.LogError($"<color=red>[Page_Camera] 비동기 사진 저장 실패: {e.Message}</color>");
             }
         }
 
         private void CleanupPhotoUI()
         {
             if (cameraDisplay && cameraDisplay.texture == _capturedPhoto)
-            {
                 cameraDisplay.texture = null;
-            }
         }
 
         private IEnumerator ShowAndFadeNumber(string n)
@@ -430,21 +418,26 @@ namespace My.Scripts.Core.Pages
 
         private void StartWebCam()
         {
-            if (_webCamTexture && _webCamTexture.isPlaying)
-            {
-                return;
-            }
+            if (_webCamTexture && _webCamTexture.isPlaying) return;
 
-            _selectedDevice = default; // 이전 프론트카메라 설정값 잔존을 방지하기 위한 리셋
+            _selectedDevice = default;
 
             if (cameraDisplay)
             {
                 WebCamDevice[] devices = WebCamTexture.devices;
-                string selectedDeviceName = "";
+                if (devices.Length == 0)
+                {
+                    Debug.LogError("<color=red>[Page_Camera] PC에 인식된 카메라 장비가 하나도 없습니다!</color>");
+                    return;
+                }
 
+                string selectedDeviceName = "";
                 for (int i = 0; i < devices.Length; i++)
                 {
-                    if (devices[i].name == "USB Video")
+                    // USB Video, Webcam, Camera 이름 우선 매핑
+                    if (devices[i].name.IndexOf("USB Video", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        devices[i].name.IndexOf("Webcam", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        devices[i].name.IndexOf("Camera", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         selectedDeviceName = devices[i].name;
                         _selectedDevice = devices[i];
@@ -458,17 +451,30 @@ namespace My.Scripts.Core.Pages
                     _selectedDevice = devices[0];
                 }
 
-                if (!string.IsNullOrEmpty(selectedDeviceName))
+                try
                 {
                     _webCamTexture = new WebCamTexture(selectedDeviceName, PhotoWidth, PhotoHeight);
-                }
-                else
-                {
-                    _webCamTexture = new WebCamTexture(PhotoWidth, PhotoHeight);
-                }
+                    cameraDisplay.texture = _webCamTexture;
+                    _webCamTexture.Play();
 
-                cameraDisplay.texture = _webCamTexture;
-                _webCamTexture.Play();
+                    if (_webCamTexture.isPlaying)
+                    {
+                        Debug.Log($"<color=green>[Page_Camera] 카메라 작동 성공 ({selectedDeviceName})</color>");
+                    }
+                    else
+                    {
+                        Debug.LogError(
+                            "<color=red>[Page_Camera] 카메라 Play() 호출이 무시되었습니다. 권한 문제이거나 다른 앱이 사용 중입니다.</color>");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"<color=red>[Page_Camera] 카메라 연결 중 예외 발생: {e.Message}</color>");
+                }
+            }
+            else
+            {
+                Debug.LogError("<color=red>[Page_Camera] 카메라를 비출 RawImage가 연결되지 않았습니다!</color>");
             }
         }
 

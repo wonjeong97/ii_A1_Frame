@@ -1,12 +1,12 @@
 {
-  "bridgeIp": "192.168.0.127",
-  "apiKey": "MGt9ykYRMUMg4Lbffsw-YkqrxIiWcd9H-YN0AtxP",
+  "bridgeIp": "192.168.0.6",
+  "apiKey": "obnjKUbKNxcRNYQ5WJXDqUGPMB8cxP3ob27ac6rE",
   "defaultBrightness": 254,
   "defaultSaturation": 254,
   "whiteColor": { "r": 177, "g": 193, "b": 255 },
   "color1": {"r": 201, "g": 252, "b": 235},
   "color2": {"r": 100, "g": 130, "b": 255},
-  "color3": {"r": 212, "g": 169, "b": 248},
+  "color3": {"r": 147, "g": 112, "b": 219},
   "color4": {"r": 250, "g": 202, "b": 224},
   "color5": {"r": 250, "g": 239, "b": 134}
 }

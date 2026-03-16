@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Collections.Generic; 
 using System.Threading;
+using System.Text.RegularExpressions; // 정규식(Regex) 처리를 위해 추가
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace My.Scripts.Hardware
         public int defaultBrightness;
         public int defaultSaturation;
         
-        public RGBColor whiteColor; // JSON에서 백색 조명 설정값 관리
+        public RGBColor whiteColor;
         public RGBColor color1;
         public RGBColor color2;
         public RGBColor color3;
@@ -43,8 +44,12 @@ namespace My.Scripts.Hardware
         private List<RGBColor> _shuffledColors;
         private int _colorIndex = 0;
 
-        // 디버그 키 연타 시 이전 통신을 취소하기 위한 토큰
         private CancellationTokenSource _debugCts;
+
+        // ▼▼▼ 동적 ID 매핑용 변수 추가 ▼▼▼
+        private List<int> _physicalLightIds = new List<int>();
+        private bool _isFetchingLights = false;
+        private bool _hasFetchedLights = false;
 
         private void Awake()
         {
@@ -71,7 +76,86 @@ namespace My.Scripts.Hardware
             else
             {
                 Debug.Log($"[HueManager] 휴 설정 로드 완료 (IP: {Config.bridgeIp})");
+                // 설정 로드 후 즉시 비동기로 연결된 조명 번호들을 수집합니다.
+                EnsureLightIdsFetchedAsync().Forget();
             }
+        }
+
+        // ▼▼▼ 휴 브릿지에 연결된 실제 조명 ID를 동적으로 수집하는 함수 ▼▼▼
+        private async UniTask EnsureLightIdsFetchedAsync()
+        {
+            if (_hasFetchedLights) return; // 이미 수집했다면 패스
+            
+            // 다른 곳에서 이미 수집 중이라면 끝날 때까지 대기
+            if (_isFetchingLights) 
+            {
+                await UniTask.WaitUntil(() => !_isFetchingLights);
+                return;
+            }
+
+            _isFetchingLights = true;
+
+            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey))
+            {
+                _isFetchingLights = false;
+                return;
+            }
+
+            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights";
+
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                request.timeout = 5;
+                try
+                {
+                    await request.SendWebRequest().ToUniTask();
+
+                    if (request.result == UnityWebRequest.Result.Success)
+                    {
+                        string json = request.downloadHandler.text;
+                        _physicalLightIds.Clear();
+
+                        // 정규식을 이용해 JSON에서 "3": { ... }, "4": { ... } 형태의 최상위 숫자 ID를 추출합니다.
+                        MatchCollection matches = Regex.Matches(json, "\"(\\d+)\":\\s*\\{");
+                        foreach (Match match in matches)
+                        {
+                            if (int.TryParse(match.Groups[1].Value, out int id))
+                            {
+                                if (!_physicalLightIds.Contains(id)) _physicalLightIds.Add(id);
+                            }
+                        }
+                        
+                        _physicalLightIds.Sort(); // 낮은 번호부터 정렬 (예: 3, 4)
+                        Debug.Log($"<color=cyan>[HueManager] 동적 조명 ID 자동 매핑 완료: {string.Join(", ", _physicalLightIds)}</color>");
+                        _hasFetchedLights = true;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[HueManager] 조명 목록 조회 실패: {request.error}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[HueManager] 조명 목록 조회 중 예외: {e.Message}");
+                }
+            }
+
+            _isFetchingLights = false;
+        }
+        
+        private int GetPhysicalLightId(int logicalId)
+        {
+            // 아직 연결된 조명이 확인되지 않았다면 기존 번호 그대로 반환 (안전장치)
+            if (_physicalLightIds == null || _physicalLightIds.Count == 0) return logicalId; 
+            
+            // logicalId 1번은 리스트의 [0]번째, 2번은 [1]번째를 가져옴
+            int index = logicalId - 1; 
+            if (index >= 0 && index < _physicalLightIds.Count) 
+            {
+                return _physicalLightIds[index];
+            }
+            
+            return logicalId; // 범위를 초과하면 그대로 반환
         }
 
         private void Update()
@@ -79,7 +163,6 @@ namespace My.Scripts.Hardware
             // Z키: White
             if (Input.GetKeyDown(KeyCode.Z))
             {
-                // Config에 whiteColor가 정의되어 있으면 사용하고, 아니면 기본값 사용
                 RGBColor white = (Config != null && Config.whiteColor != null) 
                     ? Config.whiteColor 
                     : new RGBColor { r = 191, g = 239, b = 251 };
@@ -187,7 +270,11 @@ namespace My.Scripts.Hardware
         public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
-            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
+            
+            await EnsureLightIdsFetchedAsync(); // 물리 번호 확인 보장
+            int actualId = GetPhysicalLightId(lightId); // 1 -> 3 등으로 변환
+
+            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
             await SendPutRequestAsync(url, jsonBody, ct);
         }
@@ -207,10 +294,14 @@ namespace My.Scripts.Hardware
         public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
+            
+            await EnsureLightIdsFetchedAsync(); // 물리 번호 확인 보장
+            int actualId = GetPhysicalLightId(lightId); // 1 -> 3 등으로 변환
+
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
 
-            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
+            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
             await SendPutRequestAsync(url, jsonBody, ct);
         }
@@ -227,9 +318,8 @@ namespace My.Scripts.Hardware
 
                 try
                 {
-                    var op = request.SendWebRequest();
+                    UnityWebRequestAsyncOperation op = request.SendWebRequest();
                     
-                    // 토큰 취소 요청이 들어오면 즉시 통신을 강제 중단(Abort)합니다.
                     using (ct.Register(() => { if (!op.isDone) request.Abort(); }))
                     {
                         await op.ToUniTask();
@@ -242,7 +332,6 @@ namespace My.Scripts.Hardware
                 }
                 catch (OperationCanceledException)
                 {
-                    // 취소 요청 시 예외로 떨어지므로 로그를 남긴다.
                     Debug.Log($"[HueManager] 휴 통신 취소됨");
                 }
                 catch (Exception e)

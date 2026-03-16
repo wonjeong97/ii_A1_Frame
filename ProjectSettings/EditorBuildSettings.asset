@@ -5,76 +5,76 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/00_Title.unity
     guid: b9c0bde5b548c5e4988d28565dd20549
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/01_Tutorial.unity
     guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/02_Play_Tutorial.unity
     guid: db28499951879f0459cd0578d21dbe25
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/18_Ending.unity
     guid: 80570410a592a064eb3fd9609c155ee8
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q1_A.unity
     guid: c4c0b1ca078c241489e4a745e241aeac
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q2_A.unity
     guid: 65502d7e90cabf14bb6fb6d39744c63b
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q3_A.unity
     guid: a750e1302511a964490c50eef30abc33
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q4_A.unity
     guid: e262f39d264a4fa47bda9a8b76d045ec
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q5_A.unity
     guid: bed84fd3f8289d44aa221847ba2e4c0a
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q6_A.unity
     guid: 78f73497284f17848a5735500950e8ec
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q7_A.unity
     guid: 8f4c1907534d5a945b7c2176c58ad2c1
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q8_A.unity
     guid: ebb6bbfe84918b54e8b3b29f1f90e28c
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q9_A.unity
     guid: 6144257e94dc22442b858baa57a1cade
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q10_A.unity
     guid: d84c137fb6b6bce4894fcb3781bcfb22
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q11_A.unity
     guid: a213fe0ade490b648ba6e0efc2e56f83
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q12_A.unity
     guid: 2d8914a23f70c404cb3c0fe5b2e54e08
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q13_A.unity
     guid: 693dc56bac0a9d244b270fe1e5857297
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q14_A.unity
     guid: 4d6209bc5cdfac24886dcd2ba53710d0
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/A_Couple_Standard/Play_Q15_A.unity
     guid: 8b303e9e22b4f784a8c74a53e3de33d5
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/B_Friend/Play_Q4_B.unity
     guid: 5d3e13a3a6a6bc64b96b2cdf25374bdb
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/C_Colleague/Play_Q4_C.unity
     guid: 0bb5cd15e7892b9469fcbe766d168b3a
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/C_Colleague/Play_Q10_C.unity
     guid: bb32d401c9d903440ad7cdf3531a31c4
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/C_Colleague/Play_Q11_C.unity
     guid: 1b3ba9efcfb2684429fec5e9e41c6a9e
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/C_Colleague/Play_Q13_C.unity
     guid: c8323753e46891944ad91b531f1683c3
   - enabled: 1
