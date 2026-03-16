@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using System.Collections.Generic; 
 using System.Threading;
-using System.Text.RegularExpressions; // 정규식(Regex) 처리를 위해 추가
+using System.Text.RegularExpressions; 
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
@@ -46,7 +46,6 @@ namespace My.Scripts.Hardware
 
         private CancellationTokenSource _debugCts;
 
-        // ▼▼▼ 동적 ID 매핑용 변수 추가 ▼▼▼
         private List<int> _physicalLightIds = new List<int>();
         private bool _isFetchingLights = false;
         private bool _hasFetchedLights = false;
@@ -76,91 +75,130 @@ namespace My.Scripts.Hardware
             else
             {
                 Debug.Log($"[HueManager] 휴 설정 로드 완료 (IP: {Config.bridgeIp})");
-                // 설정 로드 후 즉시 비동기로 연결된 조명 번호들을 수집합니다.
                 EnsureLightIdsFetchedAsync().Forget();
             }
         }
 
-        // ▼▼▼ 휴 브릿지에 연결된 실제 조명 ID를 동적으로 수집하는 함수 ▼▼▼
-        private async UniTask EnsureLightIdsFetchedAsync()
+        private async UniTask EnsureLightIdsFetchedAsync(CancellationToken ct = default)
         {
-            if (_hasFetchedLights) return; // 이미 수집했다면 패스
+            if (_hasFetchedLights) return; 
             
-            // 다른 곳에서 이미 수집 중이라면 끝날 때까지 대기
             if (_isFetchingLights) 
             {
-                await UniTask.WaitUntil(() => !_isFetchingLights);
+                await UniTask.WaitUntil(() => !_isFetchingLights, cancellationToken: ct);
                 return;
             }
 
             _isFetchingLights = true;
 
-            if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey))
+            try
             {
-                _isFetchingLights = false;
-                return;
-            }
-
-            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights";
-
-            using (UnityWebRequest request = UnityWebRequest.Get(url))
-            {
-                request.timeout = 5;
-                try
+                if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey))
                 {
-                    await request.SendWebRequest().ToUniTask();
+                    return;
+                }
 
-                    if (request.result == UnityWebRequest.Result.Success)
+                string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights";
+                int maxRetries = 10;
+                float retryDelay = 1.0f;
+
+                for (int attempt = 0; attempt < maxRetries; attempt++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    using (UnityWebRequest request = UnityWebRequest.Get(url))
                     {
-                        string json = request.downloadHandler.text;
-                        _physicalLightIds.Clear();
-
-                        // 정규식을 이용해 JSON에서 "3": { ... }, "4": { ... } 형태의 최상위 숫자 ID를 추출합니다.
-                        MatchCollection matches = Regex.Matches(json, "\"(\\d+)\":\\s*\\{");
-                        foreach (Match match in matches)
+                        request.timeout = 10;
+                        
+                        try
                         {
-                            if (int.TryParse(match.Groups[1].Value, out int id))
+                            UnityWebRequestAsyncOperation op = request.SendWebRequest();
+                            
+                            using (ct.Register(() => { if (!op.isDone) request.Abort(); }))
                             {
-                                if (!_physicalLightIds.Contains(id)) _physicalLightIds.Add(id);
+                                await op.ToUniTask();
+                            }
+
+                            if (request.result == UnityWebRequest.Result.Success)
+                            {
+                                string json = request.downloadHandler.text;
+                                _physicalLightIds.Clear();
+
+                                MatchCollection matches = Regex.Matches(json, "\"(\\d+)\":\\s*\\{");
+                                foreach (Match match in matches)
+                                {
+                                    if (int.TryParse(match.Groups[1].Value, out int id))
+                                    {
+                                        if (!_physicalLightIds.Contains(id)) _physicalLightIds.Add(id);
+                                    }
+                                }
+                                
+                                _physicalLightIds.Sort(); 
+                                Debug.Log($"<color=cyan>[HueManager] 동적 조명 ID 자동 매핑 완료: {string.Join(", ", _physicalLightIds)}</color>");
+                                
+                                _hasFetchedLights = true;
+                                return; 
+                            }
+
+                            if (attempt < maxRetries - 1)
+                            {
+                                Debug.LogWarning($"[HueManager] 조명 목록 조회 실패 ({attempt + 1}/{maxRetries}): {request.error}. {retryDelay}초 후 재시도...");
+                                await UniTask.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken: ct);
+                            }
+                            else
+                            {
+                                Debug.LogError($"[HueManager] 조명 목록 조회 최종 실패: {request.error}");
                             }
                         }
-                        
-                        _physicalLightIds.Sort(); // 낮은 번호부터 정렬 (예: 3, 4)
-                        Debug.Log($"<color=cyan>[HueManager] 동적 조명 ID 자동 매핑 완료: {string.Join(", ", _physicalLightIds)}</color>");
-                        _hasFetchedLights = true;
+                        catch (OperationCanceledException)
+                        {
+                            Debug.Log("[HueManager] 조명 목록 조회 취소됨");
+                            throw; 
+                        }
+                        catch (Exception e)
+                        {
+                            if (attempt < maxRetries - 1)
+                            {
+                                Debug.LogWarning($"[HueManager] 조명 목록 조회 중 예외 ({attempt + 1}/{maxRetries}): {e.Message}. {retryDelay}초 후 재시도...");
+                                await UniTask.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken: ct);
+                            }
+                            else
+                            {
+                                Debug.LogError($"[HueManager] 조명 목록 조회 중 최종 예외 발생: {e.Message}");
+                                throw; 
+                            }
+                        }
                     }
-                    else
-                    {
-                        Debug.LogWarning($"[HueManager] 조명 목록 조회 실패: {request.error}");
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[HueManager] 조명 목록 조회 중 예외: {e.Message}");
                 }
             }
-
-            _isFetchingLights = false;
+            finally
+            {
+                _isFetchingLights = false;
+            }
         }
         
         private int GetPhysicalLightId(int logicalId)
         {
-            // 아직 연결된 조명이 확인되지 않았다면 기존 번호 그대로 반환 (안전장치)
-            if (_physicalLightIds == null || _physicalLightIds.Count == 0) return logicalId; 
+            // _physicalLightIds가 비어있는 경우 Fallback을 사용하지 않고 예외(-1)를 반환하도록 수정
+            if (_physicalLightIds == null || _physicalLightIds.Count == 0)
+            {
+                Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 물리 조명 정보가 비어 있습니다. (요청된 논리 ID: {logicalId})");
+                return -1;
+            }
             
-            // logicalId 1번은 리스트의 [0]번째, 2번은 [1]번째를 가져옴
             int index = logicalId - 1; 
             if (index >= 0 && index < _physicalLightIds.Count) 
             {
                 return _physicalLightIds[index];
             }
             
-            return logicalId; // 범위를 초과하면 그대로 반환
+            // 범위를 초과했을 경우에도 Fallback 대신 예외(-1) 반환
+            Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 논리 ID {logicalId}에 대응하는 물리 조명이 없습니다.");
+            return -1; 
         }
 
         private void Update()
         {
-            // Z키: White
             if (Input.GetKeyDown(KeyCode.Z))
             {
                 RGBColor white = (Config != null && Config.whiteColor != null) 
@@ -169,32 +207,26 @@ namespace My.Scripts.Hardware
                 
                 ApplyDebugColor(white, "White (Z)");
             }
-            // X키: Color 1
             else if (Input.GetKeyDown(KeyCode.X))
             {
                 if (Config != null) ApplyDebugColor(Config.color1, "Color 1 (X)");
             }
-            // C키: Color 2
             else if (Input.GetKeyDown(KeyCode.C))
             {
                 if (Config != null) ApplyDebugColor(Config.color2, "Color 2 (C)");
             }
-            // V키: Color 3
             else if (Input.GetKeyDown(KeyCode.V))
             {
                 if (Config != null) ApplyDebugColor(Config.color3, "Color 3 (V)");
             }
-            // B키: Color 4
             else if (Input.GetKeyDown(KeyCode.B))
             {
                 if (Config != null) ApplyDebugColor(Config.color4, "Color 4 (B)");
             }
-            // N키: Color 5
             else if (Input.GetKeyDown(KeyCode.N))
             {
                 if (Config != null) ApplyDebugColor(Config.color5, "Color 5 (N)");
             }
-            // M키: 조명 Off
             else if (Input.GetKeyDown(KeyCode.M))
             {
                 ApplyDebugState(false, "Off (M)");
@@ -271,8 +303,15 @@ namespace My.Scripts.Hardware
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
             
-            await EnsureLightIdsFetchedAsync(); // 물리 번호 확인 보장
-            int actualId = GetPhysicalLightId(lightId); // 1 -> 3 등으로 변환
+            await EnsureLightIdsFetchedAsync(ct); 
+            int actualId = GetPhysicalLightId(lightId); 
+
+            // 유효하지 않은 조명 ID일 경우 전송 생략 (안전장치)
+            if (actualId == -1)
+            {
+                Debug.LogWarning($"[HueManager] SetLightState 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
+                return;
+            }
 
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
@@ -295,8 +334,15 @@ namespace My.Scripts.Hardware
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
             
-            await EnsureLightIdsFetchedAsync(); // 물리 번호 확인 보장
-            int actualId = GetPhysicalLightId(lightId); // 1 -> 3 등으로 변환
+            await EnsureLightIdsFetchedAsync(ct); 
+            int actualId = GetPhysicalLightId(lightId); 
+
+            // 유효하지 않은 조명 ID일 경우 전송 생략 (안전장치)
+            if (actualId == -1)
+            {
+                Debug.LogWarning($"[HueManager] SetLightColor 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
+                return;
+            }
 
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;

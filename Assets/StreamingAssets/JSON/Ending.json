@@ -46,7 +46,7 @@
       "name": "Text_Piece",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "'우리'는 마음조각\n<b><size=65>5개</size></b>를 받았습니다.",
+      "text": "‘우리’는 마음조각\n<b><size=65>5개</size></b>를 받았습니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.196, "g": 0.196, "b": 0.196, "a": 1}
@@ -55,7 +55,7 @@
       "name": "Text_Count",
       "position": {"x": 960, "y": -807},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "'우리'의 마음 조각 {0}/20",
+      "text": "‘우리’의 마음 조각 {0}/20",
       "fontName": "font4",
       "fontSize": 40,
       "fontColor": {"r": 0.196, "g": 0.196, "b": 0.196, "a": 1}
