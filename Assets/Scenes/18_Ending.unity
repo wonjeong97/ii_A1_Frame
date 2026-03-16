@@ -659,6 +659,8 @@ MonoBehaviour:
   saveFolderName: Pictures
   outputFileName: Composite_3
   uploadCount: 3
+  maxRetries: 10
+  retryDelay: 1
   slots:
   - fileSuffix: _Q11
     position: {x: -10, y: 23}
@@ -918,6 +920,8 @@ MonoBehaviour:
   saveFolderName: Pictures
   outputFileName: Composite_2
   uploadCount: 2
+  maxRetries: 10
+  retryDelay: 1
   slots:
   - fileSuffix: _Q6
     position: {x: -245, y: -205}
@@ -2072,6 +2076,8 @@ MonoBehaviour:
   saveFolderName: Pictures
   outputFileName: Composite_1
   uploadCount: 1
+  maxRetries: 10
+  retryDelay: 1
   slots:
   - fileSuffix: _Q1
     position: {x: -630, y: 300}

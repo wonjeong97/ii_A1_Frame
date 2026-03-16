@@ -20,10 +20,8 @@ namespace My.Scripts._00_Title
     public class TitleManager : MonoBehaviour
     {
         [Header("Polling Settings")]
-        [SerializeField] private float basePollInterval = 1.0f; // 기본 API 폴링 간격
-        [SerializeField] private float maxPollInterval = 10.0f; // 통신 실패 시 지수 백오프 최대 한도
+        [SerializeField] private float pollInterval = 3.0f; // 고정 API 폴링 간격 (3초)
 
-        private float _currentPollInterval;
         private bool _isTransitioning; // 중복 씬 로드 방지 가드 플래그
 
         private Coroutine _soundCoroutine;
@@ -145,18 +143,15 @@ namespace My.Scripts._00_Title
         }
 
         /// <summary> 
-        /// 방 상태를 지속적으로 조회하여 새 유저의 진입 여부를 감지합니다.
+        /// 방 상태를 3초마다 지속적으로 조회하여 새 유저의 진입(USING) 여부를 감지합니다.
         /// </summary>
         private IEnumerator PollRoomStateRoutine()
         {
-            _currentPollInterval = basePollInterval;
-
             while (!_isTransitioning)
             {
                 if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
                 {
-                    yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
-
+                    yield return CoroutineData.GetWaitForSeconds(pollInterval);
                     continue;
                 }
 
@@ -169,19 +164,13 @@ namespace My.Scripts._00_Title
 
                     yield return webRequest.SendWebRequest();
 
-                    // 네트워크 오류 시 즉각적인 재시도로 인한 과부하를 막기 위해 지수 백오프(Exponential Backoff) 적용
                     if (webRequest.result == UnityWebRequest.Result.ConnectionError ||
                         webRequest.result == UnityWebRequest.Result.ProtocolError)
                     {
-                        _currentPollInterval = Mathf.Min(_currentPollInterval * 2f, maxPollInterval);
-                        Debug.LogWarning(
-                            $"[TitleManager] 상태 체크 통신 실패: {webRequest.error}. 백오프 적용: {_currentPollInterval}초 후 재시도");
+                        Debug.LogWarning($"[TitleManager] 상태 체크 통신 실패: {webRequest.error}. {pollInterval}초 후 재시도");
                     }
                     else
                     {
-                        // 통신 성공 시 폴링 주기를 기본값으로 즉시 복구
-                        _currentPollInterval = basePollInterval;
-
                         string responseText = webRequest.downloadHandler.text;
 
                         // 서버에서 'USING' 응답 반환 시 유저 입장으로 간주하고 자동 진행
@@ -195,7 +184,8 @@ namespace My.Scripts._00_Title
                     }
                 }
 
-                yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
+                // 항상 3초 대기
+                yield return CoroutineData.GetWaitForSeconds(pollInterval);
             }
         }
 
