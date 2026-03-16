@@ -6,7 +6,6 @@ using My.Scripts.Core.Pages;
 using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
@@ -30,10 +29,8 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("API Manager")]
         [SerializeField] private APIManager apiManager;
         [Header("Polling Settings")]
-        [SerializeField] private float basePollInterval = 1.0f; 
-        [SerializeField] private float maxPollInterval = 10.0f; 
+        [SerializeField] private float pollInterval = 3.0f; // 고정 3초 간격 폴링
 
-        private float _currentPollInterval; 
         private readonly float fadeTime = 1f;
         private Coroutine _pollCoroutine; 
 
@@ -85,14 +82,13 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator PollRoomStateRoutine()
         {
-            float emptyUserStartTime = -1f; 
-            _currentPollInterval = basePollInterval;
+            float emptyUserStartTime = -1f; // 유저 정보 EMPTY 타이머
 
             while (true)
             {
                 if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
                 {
-                    yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
+                    yield return CoroutineData.GetWaitForSeconds(pollInterval);
                     continue;
                 }
 
@@ -102,6 +98,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 bool isRoomEmpty = false;
                 bool isNetworkError = false;
 
+                // 1. 방 상태 확인
                 using (UnityWebRequest stateReq = UnityWebRequest.Get(checkUrl))
                 {
                     stateReq.timeout = 10; 
@@ -109,16 +106,30 @@ namespace My.Scripts._01_Tutorial.Pages
 
                     if (stateReq.result == UnityWebRequest.Result.Success)
                     {
-                        // # FIX: 여기서 즉시 리셋하지 않고 전체 사이클 성공 시 리셋하도록 변경
                         if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
                             isRoomEmpty = true;
+                        }
                     }
-                    else isNetworkError = true;
+                    else
+                    {
+                        isNetworkError = true;
+                    }
+                }
+                
+                if (isRoomEmpty)
+                {
+                    Debug.Log("[TutorialPage1] 방 상태가 EMPTY입니다. 타이틀로 복귀합니다.");
+                    yield return CoroutineData.GetWaitForSeconds(1.0f);
+                    if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                    yield break;
                 }
 
-                if (!isNetworkError && !isRoomEmpty)
+                // 2. 방이 USING(비어있지 않음)일 때 유저 상태 확인
+                if (!isNetworkError)
                 {
                     bool isUserEmpty = false;
+
                     using (UnityWebRequest userReq = UnityWebRequest.Get(userUrl))
                     {
                         userReq.timeout = 10; 
@@ -127,11 +138,13 @@ namespace My.Scripts._01_Tutorial.Pages
                         if (userReq.result == UnityWebRequest.Result.Success)
                         {
                             string rawText = userReq.downloadHandler.text;
-                            if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0) isUserEmpty = true;
+                            if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                isUserEmpty = true;
+                            }
                             else if (rawText.Contains(","))
                             {
-                                // 전체 요청 성공 시에만 폴링 주기 복구
-                                _currentPollInterval = basePollInterval;
+                                // 유저 데이터가 정상적으로 있으면 EMPTY 타이머 초기화
                                 emptyUserStartTime = -1f;
 
                                 string[] parts = rawText.Split(new[] { '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -149,7 +162,6 @@ namespace My.Scripts._01_Tutorial.Pages
                                         bool fetchSuccess = false;
                                         bool fetchFaulted = false;
 
-                                        // # FIX: 타임아웃을 25초로 확장
                                         yield return apiManager.FetchDataAsync(uidLeft)
                                                                .Timeout(TimeSpan.FromSeconds(25))
                                                                .ToCoroutine(
@@ -159,7 +171,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
                                         if (fetchFaulted || !fetchSuccess || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0)
                                         {
-                                            yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
+                                            yield return CoroutineData.GetWaitForSeconds(pollInterval);
                                             continue;
                                         }
                                     }
@@ -168,28 +180,36 @@ namespace My.Scripts._01_Tutorial.Pages
                                 }
                             }
                         }
-                        else isNetworkError = true;
+                        else
+                        {
+                            isNetworkError = true;
+                        }
                     }
 
+                    // 유저 상태가 EMPTY인 경우에만 15초 타이머 체크
                     if (isUserEmpty)
                     {
-                        if (emptyUserStartTime < 0f) emptyUserStartTime = Time.time;
-                        if (Time.time - emptyUserStartTime >= 15f) isRoomEmpty = true;
+                        if (emptyUserStartTime < 0f)
+                        {
+                            emptyUserStartTime = Time.time;
+                        }
+
+                        if (Time.time - emptyUserStartTime >= 15f)
+                        {
+                            Debug.Log("[TutorialPage1] 15초 이상 유저 정보가 EMPTY 상태이므로 타이틀로 복귀합니다.");
+                            if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                            yield break;
+                        }
                     }
                 }
 
                 if (isNetworkError)
                 {
-                    _currentPollInterval = Mathf.Min(_currentPollInterval * 2f, maxPollInterval);
+                    Debug.LogWarning($"[TutorialPage1] 네트워크 오류 발생. {pollInterval}초 후 재시도.");
                 }
 
-                if (isRoomEmpty)
-                {
-                    if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
-                    yield break;
-                }
-
-                yield return CoroutineData.GetWaitForSeconds(_currentPollInterval);
+                // 항상 설정된 간격(3초) 대기
+                yield return CoroutineData.GetWaitForSeconds(pollInterval);
             }
         }
 
