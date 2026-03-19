@@ -193,7 +193,7 @@ namespace My.Scripts.Utils
             int idxUser = 0;
             string uid = "";
             string baseUrl = "";
-            string moduleCode = "a1"; 
+            string moduleCode = "A1"; 
 
             if (SessionManager.Instance)
             {
@@ -202,7 +202,7 @@ namespace My.Scripts.Utils
                 if (GameManager.Instance && GameManager.Instance.ApiConfig != null)
                     baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
                 if (!string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode))
-                    moduleCode = SessionManager.Instance.CurrentModuleCode.ToLower();
+                    moduleCode = SessionManager.Instance.CurrentModuleCode.ToUpper();
             }
 
             if (string.IsNullOrEmpty(baseUrl) || idxUser <= 0 || string.IsNullOrWhiteSpace(uid)) return;

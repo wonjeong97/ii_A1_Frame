@@ -179,7 +179,6 @@ namespace My.Scripts.Hardware
         
         private int GetPhysicalLightId(int logicalId)
         {
-            // _physicalLightIds가 비어있는 경우 Fallback을 사용하지 않고 예외(-1)를 반환하도록 수정
             if (_physicalLightIds == null || _physicalLightIds.Count == 0)
             {
                 Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 물리 조명 정보가 비어 있습니다. (요청된 논리 ID: {logicalId})");
@@ -192,7 +191,6 @@ namespace My.Scripts.Hardware
                 return _physicalLightIds[index];
             }
             
-            // 범위를 초과했을 경우에도 Fallback 대신 예외(-1) 반환
             Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 논리 ID {logicalId}에 대응하는 물리 조명이 없습니다.");
             return -1; 
         }
@@ -306,7 +304,6 @@ namespace My.Scripts.Hardware
             await EnsureLightIdsFetchedAsync(ct); 
             int actualId = GetPhysicalLightId(lightId); 
 
-            // 유효하지 않은 조명 ID일 경우 전송 생략 (안전장치)
             if (actualId == -1)
             {
                 Debug.LogWarning($"[HueManager] SetLightState 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
@@ -315,6 +312,9 @@ namespace My.Scripts.Hardware
 
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
+            
+            if (ArduinoManager.Instance) ArduinoManager.Instance.SendCommandToLight(isOn ? "On" : "Off");
+
             await SendPutRequestAsync(url, jsonBody, ct);
         }
         
@@ -337,7 +337,6 @@ namespace My.Scripts.Hardware
             await EnsureLightIdsFetchedAsync(ct); 
             int actualId = GetPhysicalLightId(lightId); 
 
-            // 유효하지 않은 조명 ID일 경우 전송 생략 (안전장치)
             if (actualId == -1)
             {
                 Debug.LogWarning($"[HueManager] SetLightColor 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
@@ -349,6 +348,9 @@ namespace My.Scripts.Hardware
 
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
+            
+            if (ArduinoManager.Instance) ArduinoManager.Instance.SendCommandToLight("On");
+
             await SendPutRequestAsync(url, jsonBody, ct);
         }
         

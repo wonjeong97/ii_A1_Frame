@@ -146,6 +146,8 @@ namespace My.Scripts.Core.Pages
         private void ProcessManualNext()
         {
             if (_isCompleted) return;
+            
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_22");
             ResetIdleState(false);
             _isCompleted = true;
 

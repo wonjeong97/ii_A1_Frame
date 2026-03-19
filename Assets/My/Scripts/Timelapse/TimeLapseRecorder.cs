@@ -225,7 +225,7 @@ namespace My.Scripts.Timelapse
             }
         }
 
-        // [수정] GPU 에러 발생 시 즉시 폴백(Fallback) 안전모드로 진입하도록 개선된 캡처 루프
+        // GPU 에러 발생 시 즉시 폴백(Fallback) 안전모드로 진입하도록 개선된 캡처 루프
         private async UniTaskVoid CaptureLoopRoutine()
         {
             RenderTexture captureRT = _captureRT;
@@ -552,7 +552,7 @@ namespace My.Scripts.Timelapse
 
             if (string.IsNullOrEmpty(baseUrl)) yield break;
 
-            string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=a1&type=mp4";
+            string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=A1&type=mp4";
 
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
