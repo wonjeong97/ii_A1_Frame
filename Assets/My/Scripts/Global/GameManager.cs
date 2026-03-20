@@ -21,6 +21,8 @@ namespace My.Scripts.Global
 
         [SerializeField] private Reporter reporter;
 
+        public bool isDebugMode = false;
+
         private float _currentInactivityTimer;
         private bool _isTransitioning;
         private float _inactivityLimit = 60f;
@@ -113,9 +115,57 @@ namespace My.Scripts.Global
             }
             else if (Input.GetKeyDown(KeyCode.M)) Cursor.visible = !Cursor.visible;
 
+            // =========================================================================
+            if (Input.GetKeyDown(KeyCode.F))
+            {
+                isDebugMode = !isDebugMode;
+                Debug.Log($"<color=yellow>[GameManager] 디버그 모드 {(isDebugMode ? "활성화" : "비활성화")} 됨</color>");
+            }
+
+            if (isDebugMode && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
+            {
+                SkipToNextSceneDebug();
+            }
+            // =========================================================================
+
             if (_isTransitioning) return;
 
             HandleInactivity();
+        }
+
+        public void SkipToNextSceneDebug()
+        {
+            if (_isTransitioning) return;
+
+            string currentScene = SceneManager.GetActiveScene().name;
+            string nextScene = "";
+
+            if (currentScene == GameConstants.Scene.Title) nextScene = GameConstants.Scene.Tutorial;
+            else if (currentScene == GameConstants.Scene.Tutorial) nextScene = GameConstants.Scene.PlayTutorial;
+            else if (currentScene == GameConstants.Scene.PlayTutorial) nextScene = $"Play_Q1{GetLevelSuffix(1)}";
+            else if (currentScene.StartsWith("Play_Q"))
+            {
+                int qIdx = currentScene.IndexOf('Q') + 1;
+                int underIdx = currentScene.IndexOf('_', qIdx);
+                if (underIdx == -1) underIdx = currentScene.Length;
+                
+                if (int.TryParse(currentScene.Substring(qIdx, underIdx - qIdx), out int currentQ))
+                {
+                    if (currentQ >= 15) nextScene = GameConstants.Scene.Ending;
+                    else nextScene = $"Play_Q{currentQ + 1}{GetLevelSuffix(currentQ + 1)}";
+                }
+            }
+            else if (currentScene == GameConstants.Scene.Ending)
+            {
+                ReturnToTitle(); 
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(nextScene))
+            {
+                Debug.Log($"<color=yellow>[GameManager] 디버그 스킵: {currentScene} -> {nextScene}</color>");
+                ChangeScene(nextScene);
+            }
         }
 
         private void HandleInactivity()
