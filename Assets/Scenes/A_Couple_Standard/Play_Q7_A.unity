@@ -130,6 +130,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 243606469860385081, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 245271838769976808, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
@@ -140,6 +145,21 @@ PrefabInstance:
       propertyPath: defaultMaskingMaterial
       value: 
       objectReference: {fileID: 2100000, guid: ec66d4690644b6d44b6b3ae37e475a68, type: 2}
+    - target: {fileID: 1144196219362896077, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1144196219362896077, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1144196219362896077, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1144196219362896077, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Material
