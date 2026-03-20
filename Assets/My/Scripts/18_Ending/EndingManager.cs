@@ -23,7 +23,7 @@ namespace My.Scripts._18_Ending
 
     /// <summary> 
     /// 엔딩 씬의 전체 페이지 흐름을 제어하고, 
-    /// 화면 밖에서 진행되는 무거운 리소스 처리(사진 합성, 영상 인코딩)의 동기화를 책임지는 매니저입니다.
+    /// 화면 밖에서 진행되는 무거운 리소스 처리(사진 합성, 영상 인코딩 및 업로드)의 동기화를 책임지는 매니저입니다.
     /// </summary>
     public class EndingManager : BaseFlowManager
     {   
@@ -74,17 +74,18 @@ namespace My.Scripts._18_Ending
         /// </summary>
         protected override void OnAllFinished()
         {
-            Debug.Log("[EndingManager] 모든 연출 종료. 백그라운드 리소스 정리 대기 시작...");
+            Debug.Log("[EndingManager] 모든 연출 종료. 백그라운드 리소스 정리 및 업로드 대기 시작...");
             StartCoroutine(WaitAndReturnToTitleRoutine());
         }
 
         /// <summary> 
-        /// 사진 합성, 업로드, 영상 인코딩이 모두 끝날 때까지 대기한 후 타이틀 씬으로 돌아갑니다.
-        /// 무한 대기(프리징)를 방지하기 위해 최대 10초의 하드 타임아웃을 적용합니다.
+        /// 사진 합성, 영상 인코딩, 영상 서버 업로드가 모두 끝날 때까지 대기한 후 타이틀 씬으로 돌아갑니다.
+        /// 무한 대기(프리징)를 방지하기 위해 최대 300초(5분)의 넉넉한 하드 타임아웃을 적용합니다.
         /// </summary>
         private IEnumerator WaitAndReturnToTitleRoutine()
         {
-            float timeout = 10.0f; 
+            // 영상 업로드는 수십 초 이상 걸릴 수 있으므로 타임아웃을 10초에서 300초로 증가
+            float timeout = 300.0f; 
             float startWaitTime = Time.time;
 
             while (Time.time - startWaitTime < timeout)
@@ -104,22 +105,21 @@ namespace My.Scripts._18_Ending
                     }
                 }
 
-                // 2. 비디오 인코딩 모듈 작업 상태 체크
+                // 2. 비디오 인코딩 및 서버 업로드 작업 상태 체크 (IsUploading 포함됨)
                 if (!isAnyBusy && TimeLapseRecorder.Instance && TimeLapseRecorder.Instance.IsProcessing)
                 {
                     isAnyBusy = true;
                 }
 
-                // 모든 작업이 끝났다면 즉시 루프 탈출
+                // 모든 작업(인코딩, 합성, 서버 업로드)이 끝났다면 즉시 루프 탈출
                 if (!isAnyBusy) break;
 
                 yield return null; 
             }
 
             if (Time.time - startWaitTime >= timeout)
-                Debug.LogWarning("[EndingManager] 작업 대기 타임아웃 발생. 데이터 유실 가능성이 있으나 강제 종료합니다.");
-
-            // 이전 유저의 데이터가 다음 플레이어에게 노출되거나 API가 잘못 전송되는 것을 막기 위해 세션 완전 삭제 보장
+                Debug.LogWarning("[EndingManager] 작업 대기 타임아웃(300초) 발생. 강제로 타이틀로 복귀합니다.");
+            
             if (SessionManager.Instance) 
             {
                 SessionManager.Instance.ClearSession();

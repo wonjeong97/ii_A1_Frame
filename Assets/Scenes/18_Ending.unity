@@ -139,7 +139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &168734647
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1916,7 +1916,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1431759887
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3027,7 +3027,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC6B0\uB9AC\uC758 \uB531\uC9C0\n5\uAC1C"
+  m_Text: "\u2018\uC6B0\uB9AC\u2019\uB294 \uB9C8\uC74C\uC870\uAC01\r\n<b><size=65>5\uAC1C</size></b>\uB97C
+    \uBC1B\uC558\uC2B5\uB2C8\uB2E4."
 --- !u!222 &2096670007
 CanvasRenderer:
   m_ObjectHideFlags: 0

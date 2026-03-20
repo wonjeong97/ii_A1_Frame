@@ -34,6 +34,7 @@ namespace My.Scripts._01_Tutorial.Pages
     {
         [Header("Page 6 UI")]
         [SerializeField] private Text descriptionText;
+        [SerializeField] private Text infoText; // 새로 추가된 안내 텍스트
         [SerializeField] private Image imageFocus;
 
         [Header("Settings")]
@@ -81,6 +82,8 @@ namespace My.Scripts._01_Tutorial.Pages
                 return;
             }
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, _data.txtA_Start);
+            if (infoText) UIManager.Instance.SetText(infoText.gameObject, _data.txtA_Info);
+            
             SetupPopupMessage(_data.warningMessage, _data.resetMessage);
         }
 
@@ -89,10 +92,18 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             base.OnEnter();
 
-            if (_data != null && descriptionText)
+            if (_data != null)
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, _data.txtA_Start);
-                ApplyDynamicNames(descriptionText);
+                if (descriptionText)
+                {
+                    UIManager.Instance.SetText(descriptionText.gameObject, _data.txtA_Start);
+                    ApplyDynamicNames(descriptionText);
+                }
+                if (infoText)
+                {
+                    UIManager.Instance.SetText(infoText.gameObject, _data.txtA_Info);
+                    ApplyDynamicNames(infoText);
+                }
             }
             
             // 첫 진입 시에만 초점 이미지의 기준 좌표를 기록하여 복귀 시 활용
@@ -118,6 +129,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 _targetPos = _initialPos; 
                 _currentVelocity = Vector2.zero;
             }
+            
             SetAlpha(1f);
             SetTextAlpha(1f);
         }
@@ -274,7 +286,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (!_hasStarted)
                 {
                     _hasStarted = true;
-                    // 조작이 감지되면 일정 시간 후 다음 단계로 넘어가도록 코루틴 시작
+                    // 조작이 감지되면 5초간 대기하는 시퀀스 시작
                     _stageSequenceRoutine = StartCoroutine(ProcessStageSequence());
                 }
 
@@ -308,8 +320,8 @@ namespace My.Scripts._01_Tutorial.Pages
         }
 
         /// <summary> 
-        /// 조작 감지 후 일정 시간 대기, 초점 이미지 중앙 복귀, 안내 텍스트 교체(P1 -> P2 -> 완료) 등 
-        /// 각 플레이어의 턴을 제어하는 단계별 연출 시퀀스입니다.
+        /// 조작 감지 후 5초 대기, 초점 이미지 중앙 복귀, 안내 텍스트 동시 교체(P1 -> P2) 등 
+        /// 변경된 기획에 맞춘 시퀀스를 처리합니다.
         /// </summary>
         private IEnumerator ProcessStageSequence()
         {
@@ -328,13 +340,11 @@ namespace My.Scripts._01_Tutorial.Pages
 
             if (_currentStage == 0)
             {
-                // P1 종료 문구 연출 및 P2 시작 준비
-                yield return StartCoroutine(TextChangeSequence(_data.txtA_Info));
-                yield return CoroutineData.GetWaitForSeconds(3.0f);
-                yield return StartCoroutine(TextChangeSequence(_data.txtB_Start));
+                // P1 종료. 중앙으로 이동하며 텍스트를 P2(txtB_Start, txtB_Info)로 동시 페이드 전환
+                yield return StartCoroutine(TextChangeSequence(_data.txtB_Start, _data.txtB_Info));
 
                 _currentStage = 1;
-                _hasStarted = false;
+                _hasStarted = false; // B가 조작을 시작하면 다시 5초 타이머 시작
                 _isInputBlocked = false;
                 _stageSequenceRoutine = null;
                 
@@ -345,37 +355,43 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             else
             {
-                // P2 종료 문구 연출 후 페이지 완료 처리
-                yield return StartCoroutine(TextChangeSequence(_data.txtB_Info));
-                yield return CoroutineData.GetWaitForSeconds(3.0f);
+                // P2 조작 5초 대기 종료 -> 중앙으로 복귀하는 모습을 1초간 보여준 후 완료
+                yield return CoroutineData.GetWaitForSeconds(1.0f);
                 CompleteStep(); 
                 _stageSequenceRoutine = null;
             }
         }
 
-        /// <summary> 스테이지 전환 시 초점 이미지를 자연스럽게 초기 위치로 돌려보내기 위해 목표 좌표를 재설정합니다. </summary>
+        /// <summary> 스테이지 전환 시 초점 이미지를 초기 위치로 돌려보내기 위해 목표 좌표를 재설정합니다. </summary>
         private void MoveFocusToCenter()
         {
             if (!imageFocus) return;
             _targetPos = _initialPos; 
         }
         
-        /// <summary> 페이드아웃 -> 텍스트 교체 및 이름 갱신 -> 페이드인 순서로 텍스트를 부드럽게 변경합니다. </summary>
-        private IEnumerator TextChangeSequence(TextSetting newTextData)
+        /// <summary> 페이드아웃 -> 메인 및 추가 텍스트 교체 -> 페이드인 순서로 텍스트를 부드럽게 동시 변경합니다. </summary>
+        private IEnumerator TextChangeSequence(TextSetting newMainText, TextSetting newInfoText)
         {
             yield return StartCoroutine(FadeTextRoutine(1f, 0f));
-            if (newTextData != null && descriptionText)
+            
+            if (newMainText != null && descriptionText)
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, newTextData);
+                UIManager.Instance.SetText(descriptionText.gameObject, newMainText);
                 ApplyDynamicNames(descriptionText);
             }
+            
+            if (newInfoText != null && infoText)
+            {
+                UIManager.Instance.SetText(infoText.gameObject, newInfoText);
+                ApplyDynamicNames(infoText);
+            }
+            
             yield return StartCoroutine(FadeTextRoutine(0f, 1f));
         }
 
         /// <summary> 텍스트의 투명도(Alpha)를 지정된 시간 동안 부드럽게 변경합니다. </summary>
         private IEnumerator FadeTextRoutine(float startAlpha, float endAlpha)
         {
-            if (!descriptionText) yield break;
             float timer = 0f;
             SetTextAlpha(startAlpha);
             while (timer < fadeDuration)
@@ -388,13 +404,22 @@ namespace My.Scripts._01_Tutorial.Pages
             SetTextAlpha(endAlpha);
         }
 
-        /// <summary> 텍스트 알파값 즉시 갱신 </summary>
+        /// <summary> 모든 텍스트의 알파값을 즉시 갱신합니다. </summary>
         private void SetTextAlpha(float alpha)
         {
-            if (!descriptionText) return;
-            Color c = descriptionText.color;
-            c.a = alpha;
-            descriptionText.color = c;
+            if (descriptionText)
+            {
+                Color c = descriptionText.color;
+                c.a = alpha;
+                descriptionText.color = c;
+            }
+            
+            if (infoText)
+            {
+                Color c = infoText.color;
+                c.a = alpha;
+                infoText.color = c;
+            }
         }
     }
 }

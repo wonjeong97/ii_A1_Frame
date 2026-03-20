@@ -218,6 +218,7 @@ namespace My.Scripts.Global
             {
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+                ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
             }
 
             if (HueManager.Instance)

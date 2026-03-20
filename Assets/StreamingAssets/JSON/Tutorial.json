@@ -90,7 +90,7 @@
   },
   "page6": {
     "txtA_Start": {
-      "name": "Text_\"oo님, 휠을 돌려주세요.\"",
+      "name": "Text_description1",
       "position": {"x": 960.9, "y": -266.08},
       "text": "{nameA}님, 휠을 돌려주세요.",
       "fontName": "font4",
@@ -98,15 +98,15 @@
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     },
     "txtA_Info": {
-      "name": "Text_\"oo님은 상하로만 움직일 수 있습니다.\"",
-      "position": {"x": 960.9, "y": -266.08},
+      "name": "Text_description2",
+      "position": {"x": 960.9, "y": -948.08},
       "text": "{nameA}님은 상하로만 움직일 수 있습니다.",
       "fontName": "font4",
-      "fontSize": 55,
-      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+      "fontSize": 38,
+      "fontColor": {"r": 0.5686275, "g": 0.5176471, "b": 0.4823529, "a": 1}
     },
     "txtB_Start": {
-      "name": "Text_\"ㅁㅁ님, 휠을 돌려주세요.\"",
+      "name": "Text_description1",
       "position": {"x": 960.9, "y": -266.08},
       "text": "{nameB}님, 휠을 돌려주세요.",
       "fontName": "font4",
@@ -114,12 +114,12 @@
       "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
     },
     "txtB_Info": {
-      "name": "Text_\"ㅁㅁ님은 좌우로만 움직일 수 있습니다.\"",
-      "position": {"x": 960.9, "y": -266.08},
+      "name": "Text_description2",
+      "position": {"x": 960.9, "y": -948.08},
       "text": "{nameB}님은 좌우로만 움직일 수 있습니다.",
       "fontName": "font4",
-      "fontSize": 55,
-      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+      "fontSize": 39,
+      "fontColor": {"r": 0.5686275, "g": 0.5176471, "b": 0.4823529, "a": 1}
     }
   },
   "page7": {

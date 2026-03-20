@@ -38,7 +38,7 @@
       "name": "Text_Description",
       "position": { "x": 960, "y": -300 },
       "scale": { "x": 1, "y": 1, "z": 1 },
-      "text": "바닥 화살표를 따라 각자 이동해\n버튼을 눌러 답변해 주세요.",
+      "text": "뒤를 돌아 각자 버튼을 눌러 답변해 주세요.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}

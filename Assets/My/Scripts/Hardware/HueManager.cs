@@ -2,9 +2,11 @@ using System;
 using System.Text;
 using System.Collections.Generic; 
 using System.Threading;
+using System.Text.RegularExpressions; 
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
+using My.Scripts.Global;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Hardware
@@ -26,7 +28,7 @@ namespace My.Scripts.Hardware
         public int defaultBrightness;
         public int defaultSaturation;
         
-        public RGBColor whiteColor; // JSON에서 백색 조명 설정값 관리
+        public RGBColor whiteColor;
         public RGBColor color1;
         public RGBColor color2;
         public RGBColor color3;
@@ -43,8 +45,11 @@ namespace My.Scripts.Hardware
         private List<RGBColor> _shuffledColors;
         private int _colorIndex = 0;
 
-        // 디버그 키 연타 시 이전 통신을 취소하기 위한 토큰
         private CancellationTokenSource _debugCts;
+
+        private List<int> _physicalLightIds = new List<int>();
+        private bool _isFetchingLights = false;
+        private bool _hasFetchedLights = false;
 
         private void Awake()
         {
@@ -71,47 +76,156 @@ namespace My.Scripts.Hardware
             else
             {
                 Debug.Log($"[HueManager] 휴 설정 로드 완료 (IP: {Config.bridgeIp})");
+                EnsureLightIdsFetchedAsync().Forget();
             }
+        }
+
+        private async UniTask EnsureLightIdsFetchedAsync(CancellationToken ct = default)
+        {
+            if (_hasFetchedLights) return; 
+            
+            if (_isFetchingLights) 
+            {
+                await UniTask.WaitUntil(() => !_isFetchingLights, cancellationToken: ct);
+                return;
+            }
+
+            _isFetchingLights = true;
+
+            try
+            {
+                if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey))
+                {
+                    return;
+                }
+
+                string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights";
+                int maxRetries = 10;
+                float retryDelay = 1.0f;
+
+                for (int attempt = 0; attempt < maxRetries; attempt++)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    using (UnityWebRequest request = UnityWebRequest.Get(url))
+                    {
+                        request.timeout = 10;
+                        
+                        try
+                        {
+                            UnityWebRequestAsyncOperation op = request.SendWebRequest();
+                            
+                            using (ct.Register(() => { if (!op.isDone) request.Abort(); }))
+                            {
+                                await op.ToUniTask();
+                            }
+
+                            if (request.result == UnityWebRequest.Result.Success)
+                            {
+                                string json = request.downloadHandler.text;
+                                _physicalLightIds.Clear();
+
+                                MatchCollection matches = Regex.Matches(json, "\"(\\d+)\":\\s*\\{");
+                                foreach (Match match in matches)
+                                {
+                                    if (int.TryParse(match.Groups[1].Value, out int id))
+                                    {
+                                        if (!_physicalLightIds.Contains(id)) _physicalLightIds.Add(id);
+                                    }
+                                }
+                                
+                                _physicalLightIds.Sort(); 
+                                Debug.Log($"<color=cyan>[HueManager] 동적 조명 ID 자동 매핑 완료: {string.Join(", ", _physicalLightIds)}</color>");
+                                
+                                _hasFetchedLights = true;
+                                return; 
+                            }
+
+                            if (attempt < maxRetries - 1)
+                            {
+                                Debug.LogWarning($"[HueManager] 조명 목록 조회 실패 ({attempt + 1}/{maxRetries}): {request.error}. {retryDelay}초 후 재시도...");
+                                await UniTask.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken: ct);
+                            }
+                            else
+                            {
+                                Debug.LogError($"[HueManager] 조명 목록 조회 최종 실패: {request.error}");
+                            }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Debug.Log("[HueManager] 조명 목록 조회 취소됨");
+                            throw; 
+                        }
+                        catch (Exception e)
+                        {
+                            if (attempt < maxRetries - 1)
+                            {
+                                Debug.LogWarning($"[HueManager] 조명 목록 조회 중 예외 ({attempt + 1}/{maxRetries}): {e.Message}. {retryDelay}초 후 재시도...");
+                                await UniTask.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken: ct);
+                            }
+                            else
+                            {
+                                Debug.LogError($"[HueManager] 조명 목록 조회 중 최종 예외 발생: {e.Message}");
+                                throw; 
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _isFetchingLights = false;
+            }
+        }
+        
+        private int GetPhysicalLightId(int logicalId)
+        {
+            if (_physicalLightIds == null || _physicalLightIds.Count == 0)
+            {
+                Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 물리 조명 정보가 비어 있습니다. (요청된 논리 ID: {logicalId})");
+                return -1;
+            }
+            
+            int index = logicalId - 1; 
+            if (index >= 0 && index < _physicalLightIds.Count) 
+            {
+                return _physicalLightIds[index];
+            }
+            
+            Debug.LogWarning($"[HueManager] 조명 ID 매핑 실패: 논리 ID {logicalId}에 대응하는 물리 조명이 없습니다.");
+            return -1; 
         }
 
         private void Update()
         {
-            // Z키: White
             if (Input.GetKeyDown(KeyCode.Z))
             {
-                // Config에 whiteColor가 정의되어 있으면 사용하고, 아니면 기본값 사용
                 RGBColor white = (Config != null && Config.whiteColor != null) 
                     ? Config.whiteColor 
                     : new RGBColor { r = 191, g = 239, b = 251 };
                 
                 ApplyDebugColor(white, "White (Z)");
             }
-            // X키: Color 1
             else if (Input.GetKeyDown(KeyCode.X))
             {
                 if (Config != null) ApplyDebugColor(Config.color1, "Color 1 (X)");
             }
-            // C키: Color 2
             else if (Input.GetKeyDown(KeyCode.C))
             {
                 if (Config != null) ApplyDebugColor(Config.color2, "Color 2 (C)");
             }
-            // V키: Color 3
             else if (Input.GetKeyDown(KeyCode.V))
             {
                 if (Config != null) ApplyDebugColor(Config.color3, "Color 3 (V)");
             }
-            // B키: Color 4
             else if (Input.GetKeyDown(KeyCode.B))
             {
                 if (Config != null) ApplyDebugColor(Config.color4, "Color 4 (B)");
             }
-            // N키: Color 5
             else if (Input.GetKeyDown(KeyCode.N))
             {
                 if (Config != null) ApplyDebugColor(Config.color5, "Color 5 (N)");
             }
-            // M키: 조명 Off
             else if (Input.GetKeyDown(KeyCode.M))
             {
                 ApplyDebugState(false, "Off (M)");
@@ -187,8 +301,25 @@ namespace My.Scripts.Hardware
         public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
-            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
+            
+            await EnsureLightIdsFetchedAsync(ct); 
+            int actualId = GetPhysicalLightId(lightId); 
+
+            if (actualId == -1)
+            {
+                Debug.LogWarning($"[HueManager] SetLightState 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
+                return;
+            }
+
+            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
+            
+            if (ArduinoManager.Instance) 
+            {
+                string command = isOn ? GameConstants.Hardware.CmdLightOn : GameConstants.Hardware.CmdLightOff;
+                ArduinoManager.Instance.SendCommandToLight(command);
+            }
+
             await SendPutRequestAsync(url, jsonBody, ct);
         }
         
@@ -207,11 +338,27 @@ namespace My.Scripts.Hardware
         public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1, int transitionTime = 4, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(Config.bridgeIp) || string.IsNullOrEmpty(Config.apiKey)) return;
+            
+            await EnsureLightIdsFetchedAsync(ct); 
+            int actualId = GetPhysicalLightId(lightId); 
+
+            if (actualId == -1)
+            {
+                Debug.LogWarning($"[HueManager] SetLightColor 취소됨: 논리 조명 {lightId}번에 해당하는 물리 조명을 찾을 수 없습니다.");
+                return;
+            }
+
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
 
-            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{lightId}/state";
+            string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
+            
+            if (ArduinoManager.Instance) 
+            {
+                ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOn);
+            }
+
             await SendPutRequestAsync(url, jsonBody, ct);
         }
         
@@ -227,9 +374,8 @@ namespace My.Scripts.Hardware
 
                 try
                 {
-                    var op = request.SendWebRequest();
+                    UnityWebRequestAsyncOperation op = request.SendWebRequest();
                     
-                    // 토큰 취소 요청이 들어오면 즉시 통신을 강제 중단(Abort)합니다.
                     using (ct.Register(() => { if (!op.isDone) request.Abort(); }))
                     {
                         await op.ToUniTask();
@@ -242,7 +388,6 @@ namespace My.Scripts.Hardware
                 }
                 catch (OperationCanceledException)
                 {
-                    // 취소 요청 시 예외로 떨어지므로 로그를 남긴다.
                     Debug.Log($"[HueManager] 휴 통신 취소됨");
                 }
                 catch (Exception e)

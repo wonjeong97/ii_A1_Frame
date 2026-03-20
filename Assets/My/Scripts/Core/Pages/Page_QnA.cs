@@ -193,6 +193,7 @@ namespace My.Scripts.Core.Pages
             if (ArduinoManager.Instance)
             {
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdSoundOn);
+                yield return CoroutineData.GetWaitForSeconds(0.1f);
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOn);
             }
             
