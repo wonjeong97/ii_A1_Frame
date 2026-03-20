@@ -82,6 +82,15 @@ namespace My.Scripts.Hardware
 
         private async UniTask EnsureLightIdsFetchedAsync(CancellationToken ct = default)
         {
+#if UNITY_EDITOR
+            if (!_hasFetchedLights)
+            {
+                _physicalLightIds = new List<int> { 1, 2, 3, 4, 5 };
+                _hasFetchedLights = true;
+            }
+            return;
+#endif
+
             if (_hasFetchedLights) return; 
             
             if (_isFetchingLights) 
@@ -364,6 +373,10 @@ namespace My.Scripts.Hardware
         
         private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken ct = default)
         {
+#if UNITY_EDITOR
+            return;
+#endif
+
             using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
             {
                 byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
