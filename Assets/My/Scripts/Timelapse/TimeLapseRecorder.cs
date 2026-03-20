@@ -81,7 +81,13 @@ namespace My.Scripts.Timelapse
         
         public bool IsTimelapseProcessing { get; private set; }
         public bool IsRealtimeProcessing { get; private set; }
-        public bool IsProcessing => IsTimelapseProcessing || IsRealtimeProcessing;
+        
+        // 영상 업로드 상태를 독립적으로 추적하는 플래그
+        public bool IsUploading { get; private set; } 
+        
+        // 인코딩뿐만 아니라 업로드 중일 때도 Processing 상태를 유지하도록 변경
+        public bool IsProcessing => IsTimelapseProcessing || IsRealtimeProcessing || IsUploading;
+        
         public bool IsConverting => IsProcessing;
 
         public float RealtimeProgress { get; private set; } 
@@ -174,6 +180,7 @@ namespace My.Scripts.Timelapse
 
             IsTimelapseProcessing = false;
             IsRealtimeProcessing = false;
+            IsUploading = false;
             IsConversionSuccessful = false;
             RealtimeProgress = 0f;
 
@@ -225,7 +232,6 @@ namespace My.Scripts.Timelapse
             }
         }
 
-        // GPU 에러 발생 시 즉시 폴백(Fallback) 안전모드로 진입하도록 개선된 캡처 루프
         private async UniTaskVoid CaptureLoopRoutine()
         {
             RenderTexture captureRT = _captureRT;
@@ -263,10 +269,8 @@ namespace My.Scripts.Timelapse
                         
                         byte[] bytes = null;
 
-                        // 1차 시도: 성능을 위해 비동기 GPU Readback 호출
                         if (SystemInfo.supportsAsyncGPUReadback)
                         {
-                            // 포맷 충돌 방지를 위해 RGBA32로 강제 캐스팅
                             AsyncGPUReadbackRequest request = AsyncGPUReadback.Request(captureRT, 0, TextureFormat.RGBA32);
                             await request.ToUniTask();
 
@@ -291,7 +295,6 @@ namespace My.Scripts.Timelapse
                             }
                         }
 
-                        // 2차 시도 (안전망): GPU Readback이 실패했거나 지원하지 않는 경우, 메인스레드에서 강제 캡처
                         if (bytes == null)
                         {
                             if (!_encodeTexture) break;
@@ -349,7 +352,6 @@ namespace My.Scripts.Timelapse
                         Interlocked.Increment(ref _activeDiskWrites);
                         try 
                         { 
-                            // 큐에서 꺼냈을 때 폴더가 청소된 상태라면 자동 복구(재생성)
                             string dir = Path.GetDirectoryName(task.path);
                             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
@@ -534,7 +536,14 @@ namespace My.Scripts.Timelapse
 
         private IEnumerator UploadVideoRoutine(string filePath)
         {
-            if (!File.Exists(filePath)) yield break;
+            // 업로드 플래그 활성화로 외부에서 처리 여부를 확인할 수 있도록 함
+            IsUploading = true;
+
+            if (!File.Exists(filePath)) 
+            {
+                IsUploading = false;
+                yield break;
+            }
 
             int idxUser = 0;
             string uid = "";
@@ -550,7 +559,11 @@ namespace My.Scripts.Timelapse
                 if (GameManager.Instance.ApiConfig != null) baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
             }
 
-            if (string.IsNullOrEmpty(baseUrl)) yield break;
+            if (string.IsNullOrEmpty(baseUrl)) 
+            {
+                IsUploading = false;
+                yield break;
+            }
 
             string url = $"{baseUrl}?idx_user={idxUser}&uid={uid}&code=A1&type=mp4";
 
@@ -568,6 +581,7 @@ namespace My.Scripts.Timelapse
                     if (webRequest.result == UnityWebRequest.Result.Success)
                     {
                         Debug.Log($"[TimeLapseRecorder] 영상 업로드 성공! (응답 코드: {webRequest.responseCode})");
+                        IsUploading = false; // 완료 시 플래그 해제
                         yield break;
                     }
 
@@ -582,6 +596,9 @@ namespace My.Scripts.Timelapse
                     }
                 }
             }
+
+            // 모든 재시도 실패 시에도 플래그 정상 해제
+            IsUploading = false;
         }
 
         private string GetUserIdString()

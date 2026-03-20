@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
+using My.Scripts.Global;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Hardware
@@ -313,7 +314,11 @@ namespace My.Scripts.Hardware
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
             
-            if (ArduinoManager.Instance) ArduinoManager.Instance.SendCommandToLight(isOn ? "On" : "Off");
+            if (ArduinoManager.Instance) 
+            {
+                string command = isOn ? GameConstants.Hardware.CmdLightOn : GameConstants.Hardware.CmdLightOff;
+                ArduinoManager.Instance.SendCommandToLight(command);
+            }
 
             await SendPutRequestAsync(url, jsonBody, ct);
         }
@@ -349,7 +354,10 @@ namespace My.Scripts.Hardware
             string url = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights/{actualId}/state";
             string jsonBody = $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
             
-            if (ArduinoManager.Instance) ArduinoManager.Instance.SendCommandToLight("On");
+            if (ArduinoManager.Instance) 
+            {
+                ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOn);
+            }
 
             await SendPutRequestAsync(url, jsonBody, ct);
         }

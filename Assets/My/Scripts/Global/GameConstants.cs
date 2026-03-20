@@ -41,7 +41,7 @@ namespace My.Scripts.Global
         {
             public const string LeftArduino = "Left_Arduino";
             public const string RightArduino = "Right_Arduino";
-            public const string LightArduino = "Light";
+            public const string LightArduino = "Arduino_Light";
 
             // 송신 커맨드 (PC -> 아두이노)
             public const string CmdLedAllOff = "LEDAllOff";
@@ -49,6 +49,8 @@ namespace My.Scripts.Global
             public const string CmdSoundOn = "SoundOn";
             public const string CmdLedShotOn = "LEDShotOn";
             public const string CmdLedShotOff = "LEDShotOff";
+            public const string CmdLightOn = "Light_On";
+            public const string CmdLightOff = "Light_Off";
 
             // 수신 커맨드 (아두이노 -> PC)
             public const string InputShotOn = "ShotOn";

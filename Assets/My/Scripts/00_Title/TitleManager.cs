@@ -115,10 +115,11 @@ namespace My.Scripts._00_Title
 
             bool allOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
             bool shotOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            bool lightOff = ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
 
-            if (!allOff || !shotOff)
+            if (!allOff || !shotOff || !lightOff)
             {
-                Debug.LogWarning("[TitleManager] 아두이노 LED 초기화 명령 전송 실패.");
+                Debug.LogWarning("[TitleManager] 아두이노 초기화 명령 전송 실패.");
             }
             Debug.Log("[TitleManager] 아두이노 하드웨어 초기화(리셋) 및 상태 동기화 완료.");
             yield break;
