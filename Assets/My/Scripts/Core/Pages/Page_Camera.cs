@@ -16,22 +16,18 @@ namespace My.Scripts.Core.Pages
     {
         [Header("UI References")]
         [SerializeField] private RawImage cameraDisplay;
-
         [SerializeField] private Text countdownText;
 
         [Header("Effects")]
         [SerializeField] private Image flashImage;
-
         [SerializeField] private CanvasGroup contentCanvasGroup;
 
         [Header("Default Settings")]
         [SerializeField] private Material defaultMaskingMaterial;
-
         [SerializeField] private bool defaultSavePhoto = true;
 
         [Header("Transition")]
         [SerializeField] private float cameraFadeDelay = 0.5f;
-
         [SerializeField] private float cameraFadeDuration = 0.5f;
 
         private Material _currentMaskingMaterial;
@@ -49,6 +45,9 @@ namespace My.Scripts.Core.Pages
 
         private const int PhotoWidth = 1920;
         private const int PhotoHeight = 1080;
+
+        private bool _isQ6To10;
+        private Color _currentTintColor = Color.white;
 
         protected override void Awake()
         {
@@ -72,9 +71,7 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        public override void SetupData(object data)
-        {
-        }
+        public override void SetupData(object data) { }
 
         public void SetPhotoFilename(string fileName)
         {
@@ -121,7 +118,7 @@ namespace My.Scripts.Core.Pages
             if (contentCanvasGroup) contentCanvasGroup.alpha = 1f;
 
             CleanupPhotoUI();
-            StartWebCam(); // 카메라 가동
+            StartWebCam(); 
 
             _hueCts?.Cancel();
             _hueCts?.Dispose();
@@ -137,15 +134,29 @@ namespace My.Scripts.Core.Pages
 
                 if (qNum >= 6 && qNum <= 10)
                 {
+                    _isQ6To10 = true;
                     RGBColor randomColor = HueManager.Instance.PopRandomColor() ?? fallbackWhite;
+                    
+                    _currentTintColor = new Color(randomColor.r / 255f, randomColor.g / 255f, randomColor.b / 255f);
+
                     HueManager.Instance.SetLightColorRGBAsync(1, randomColor, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, randomColor, -1, 4, _hueCts.Token).Forget();
                 }
                 else
                 {
+                    _isQ6To10 = false;
+                    _currentTintColor = Color.white;
+
                     HueManager.Instance.SetLightColorRGBAsync(1, fallbackWhite, -1, 4, _hueCts.Token).Forget();
                     HueManager.Instance.SetLightColorRGBAsync(2, fallbackWhite, -1, 4, _hueCts.Token).Forget();
                 }
+            }
+            
+            if (cameraDisplay)
+            {
+                Color initColor = _currentTintColor;
+                initColor.a = 0f; 
+                cameraDisplay.color = initColor;
             }
 
             StartCoroutine(FadeInCameraRoutine());
@@ -216,10 +227,9 @@ namespace My.Scripts.Core.Pages
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
 
-            // 카메라가 켜져 있을 때만 타임랩스 녹화 명령 하달
             if (_shouldSavePhoto && TimeLapseRecorder.Instance)
             {
-                if (_webCamTexture != null && _webCamTexture.isPlaying)
+                if (_webCamTexture && _webCamTexture.isPlaying)
                 {
                     TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
                     TimeLapseRecorder.Instance.EnableTimelapseCapture = true;
@@ -290,10 +300,10 @@ namespace My.Scripts.Core.Pages
 
         private void CapturePhoto()
         {
-            if (_webCamTexture == null || !_webCamTexture.isPlaying)
+            if (!_webCamTexture || !_webCamTexture.isPlaying)
             {
                 Debug.LogError("<color=red>[Page_Camera] 웹캠이 정상 작동 중이 아니어서 사진을 캡처할 수 없습니다!</color>");
-                return; // 에러 방지를 위해 조용히 빠져나가지만 위 로그가 남음
+                return;
             }
 
             RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
@@ -310,12 +320,39 @@ namespace My.Scripts.Core.Pages
             RenderTexture prev = RenderTexture.active;
             RenderTexture.active = rt;
             _capturedPhoto.ReadPixels(new Rect(0, 0, PhotoWidth, PhotoHeight), 0, 0);
+            
+            if (_isQ6To10 && _currentTintColor != Color.white)
+            {
+                Color32[] pixels = _capturedPhoto.GetPixels32();
+                
+                float tr = _currentTintColor.r;
+                float tg = _currentTintColor.g;
+                float tb = _currentTintColor.b;
+
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    Color32 p = pixels[i];
+                    pixels[i] = new Color32(
+                        (byte)(p.r * tr),
+                        (byte)(p.g * tg),
+                        (byte)(p.b * tb),
+                        p.a
+                    );
+                }
+                _capturedPhoto.SetPixels32(pixels);
+            }
+            
             _capturedPhoto.Apply();
 
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(rt);
 
-            if (cameraDisplay) cameraDisplay.texture = _capturedPhoto;
+            if (cameraDisplay) 
+            {
+                cameraDisplay.texture = _capturedPhoto;
+                // 사진 자체에 색을 씌웠으므로 UI 이미지 틴트는 하얀색으로 원상복구시켜 줍니다.
+                cameraDisplay.color = Color.white; 
+            }
 
             if (_shouldSavePhoto)
             {
@@ -410,6 +447,7 @@ namespace My.Scripts.Core.Pages
         {
             if (ri)
             {
+                // RGB(색상)은 건드리지 않고 a(투명도)만 변경하도록 하여 틴트 색상이 유지되게 함
                 Color c = ri.color;
                 c.a = a;
                 ri.color = c;
@@ -434,7 +472,6 @@ namespace My.Scripts.Core.Pages
                 string selectedDeviceName = "";
                 for (int i = 0; i < devices.Length; i++)
                 {
-                    // USB Video, Webcam, Camera 이름 우선 매핑
                     if (devices[i].name.IndexOf("USB Video", StringComparison.OrdinalIgnoreCase) >= 0 ||
                         devices[i].name.IndexOf("Webcam", StringComparison.OrdinalIgnoreCase) >= 0 ||
                         devices[i].name.IndexOf("Camera", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -456,25 +493,11 @@ namespace My.Scripts.Core.Pages
                     _webCamTexture = new WebCamTexture(selectedDeviceName, PhotoWidth, PhotoHeight);
                     cameraDisplay.texture = _webCamTexture;
                     _webCamTexture.Play();
-
-                    if (_webCamTexture.isPlaying)
-                    {
-                        Debug.Log($"<color=green>[Page_Camera] 카메라 작동 성공 ({selectedDeviceName})</color>");
-                    }
-                    else
-                    {
-                        Debug.LogError(
-                            "<color=red>[Page_Camera] 카메라 Play() 호출이 무시되었습니다. 권한 문제이거나 다른 앱이 사용 중입니다.</color>");
-                    }
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"<color=red>[Page_Camera] 카메라 연결 중 예외 발생: {e.Message}</color>");
                 }
-            }
-            else
-            {
-                Debug.LogError("<color=red>[Page_Camera] 카메라를 비출 RawImage가 연결되지 않았습니다!</color>");
             }
         }
 
