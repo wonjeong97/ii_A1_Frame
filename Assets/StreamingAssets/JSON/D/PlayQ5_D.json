@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 200, "y":0},
+        "position": {"x": 200, "y": 0},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대방이 직접 언급하지 않는\n미묘한 분위기 변화를 잘 알아차리는 편이다.",
         "fontName": "font7",
