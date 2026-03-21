@@ -52,7 +52,14 @@ namespace My.Scripts.Core.Data
         public static StandardLevelSetting LoadStandardLevel(string levelID, UserType levelType)
         {
             StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
-            string path = $"JSON/{levelType}/Play{levelID}_{levelType}";
+            
+            // UserType(예: A1, C3)에서 카트리지 문자와 관계 숫자를 분리하여 새로운 폴더 경로를 생성합니다.
+            string typeStr = levelType.ToString();
+            string cartridge = typeStr.Substring(0, 1); 
+            string relation = typeStr.Substring(1);     
+            
+            string path = $"JSON/Cartridge_{cartridge}/{relation}/Play{levelID}_{levelType}";
+            
             StandardLevelSetting specificData = JsonLoader.Load<StandardLevelSetting>(path);
 
             if (specificData == null)

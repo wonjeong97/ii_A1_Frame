@@ -3,15 +3,15 @@ using UnityEngine;
 
 namespace My.Scripts.Global
 {
+    // 카트리지(A~D)와 관계(1~6)의 조합으로 24가지 경우의 수 생성
     public enum UserType
     {
-        A, B, C, D, E, F
+        A1, A2, A3, A4, A5, A6,
+        B1, B2, B3, B4, B5, B6,
+        C1, C2, C3, C4, C5, C6,
+        D1, D2, D3, D4, D5, D6
     }
 
-    /// <summary>
-    /// 현재 플레이 중인 사용자의 세션 데이터(이름, UID, 점수 등)를 전담하여 보관하는 매니저입니다.
-    /// GameManager에서 분리되어 단일 책임 원칙(SRP)을 준수합니다.
-    /// </summary>
     public class SessionManager : MonoBehaviour
     {
         public static SessionManager Instance { get; private set; }
@@ -26,12 +26,13 @@ namespace My.Scripts.Global
         
         public ColorData PlayerAColor { get; set; } = ColorData.NotSet;
         public ColorData PlayerBColor { get; set; } = ColorData.NotSet;
-
-        public UserType CurrentUserType { get; set; } = UserType.A;
+        
+        public UserType CurrentUserType { get; set; } = UserType.A1;
         public string CurrentModuleCode { get; set; } = GameConstants.Module.Code;
         public string Cartridge { get; set; } = string.Empty;
         
         public bool IsOtherCartridgeContentsCleared { get; set; } = false;
+        public int ClearedEndCount { get; set; } = 0; 
 
         public int PieceA1 { get; set; }
         public int PieceA2 { get; set; }
@@ -49,7 +50,7 @@ namespace My.Scripts.Global
         public int TotalPieces => PieceA2 + PieceA3 + 
                                   PieceB1 + PieceB2 + PieceB3 + 
                                   PieceC1 + PieceC2 + PieceC3 + 
-                                  PieceD1 + PieceD2 + PieceD3; // 해당 컨텐츠는 A1이라 마음조각 중복 방지를 위해 제외함.
+                                  PieceD1 + PieceD2 + PieceD3;
 
         private void Awake()
         {
@@ -77,11 +78,12 @@ namespace My.Scripts.Global
             PlayerAColor = ColorData.NotSet;
             PlayerBColor = ColorData.NotSet;
 
-            CurrentUserType = UserType.A;
+            CurrentUserType = UserType.A1;
             CurrentModuleCode = GameConstants.Module.Code;
             Cartridge = string.Empty;
             
             IsOtherCartridgeContentsCleared = false;
+            ClearedEndCount = 0; 
 
             PieceA1 = 0; PieceA2 = 0; PieceA3 = 0;
             PieceB1 = 0; PieceB2 = 0; PieceB3 = 0;

@@ -19,7 +19,7 @@ namespace My.Scripts.Core
         public static LevelManager Instance { get; private set; }
         
         [Header("Level Settings")]
-        [SerializeField] private UserType levelType = UserType.A;
+        [SerializeField] private UserType levelType = UserType.A1; // 기본값 A1
         [SerializeField] private string levelID = GameConstants.Level.Q1; 
         [SerializeField] private bool useFadeTransition = true; 
 
@@ -83,14 +83,12 @@ namespace My.Scripts.Core
             {
                 UserType uType = HasActiveSession ? SessionManager.Instance.CurrentUserType : levelType;
                 
-                // # FIX: GameManager의 씬 분기 규칙(GetLevelSuffix)을 확인하여, 
-                // 실제로 로드된 씬(A)에 맞는 JSON 데이터(PlayQ1_A.json)를 불러오도록 동기화합니다.
                 if (HasActiveSession && GameManager.Instance)
                 {
                     string suffix = GameManager.Instance.GetLevelSuffix(_currentQuestionNumber);
                     if (!string.IsNullOrEmpty(suffix))
                     {
-                        // "_A" -> "A" 형태로 변환하여 UserType 매핑
+                        // "_A1" -> "A1" 형태로 변환하여 UserType 매핑
                         string typeStr = suffix.Replace("_", "");
                         if (Enum.TryParse(typeStr, out UserType mappedType))
                         {
