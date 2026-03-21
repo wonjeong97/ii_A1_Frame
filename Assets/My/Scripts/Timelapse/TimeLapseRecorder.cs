@@ -81,13 +81,9 @@ namespace My.Scripts.Timelapse
         
         public bool IsTimelapseProcessing { get; private set; }
         public bool IsRealtimeProcessing { get; private set; }
-        
-        // 영상 업로드 상태를 독립적으로 추적하는 플래그
         public bool IsUploading { get; private set; } 
         
-        // 인코딩뿐만 아니라 업로드 중일 때도 Processing 상태를 유지하도록 변경
         public bool IsProcessing => IsTimelapseProcessing || IsRealtimeProcessing || IsUploading;
-        
         public bool IsConverting => IsProcessing;
 
         public float RealtimeProgress { get; private set; } 
@@ -97,6 +93,10 @@ namespace My.Scripts.Timelapse
 
         public string LastVideoPath { get; private set; }
         public string LastRealtimeVideoPath { get; private set; }
+
+        // 영상 소스 이미지에 씌울 컬러 필터
+        public Color CurrentTint { get; set; } = Color.white;
+        private Material _tintMaterial;
 
         private void Awake()
         {
@@ -156,7 +156,7 @@ namespace My.Scripts.Timelapse
         private void CreateDirectorySafe(string path)
         {
             try { if (!Directory.Exists(path)) Directory.CreateDirectory(path); }
-            catch (Exception e) { Debug.LogError($"[TimeLapse] 폴더 생성 실패 ({path}): {e.Message}"); }
+            catch (Exception e) { Debug.LogError($"[TimeLapse] 폴더 생성 실패: {e.Message}"); }
         }
 
         private void ClearFolder(string path)
@@ -164,7 +164,7 @@ namespace My.Scripts.Timelapse
             if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
             {
                 try { foreach (string file in Directory.GetFiles(path)) File.Delete(file); }
-                catch (Exception e) { Debug.LogWarning($"[TimeLapse] 폴더 정리 중 오류 ({path}): {e.Message}"); }
+                catch (Exception e) { Debug.LogWarning($"[TimeLapse] 폴더 정리 중 오류: {e.Message}"); }
             }
         }
 
@@ -188,6 +188,8 @@ namespace My.Scripts.Timelapse
             LastRealtimeVideoPath = string.Empty;
             _realtimeTotalDuration = 0f;
             _isRealtimeRecordingActive = false;
+            
+            CurrentTint = Color.white;
 
             while (_saveQueue.TryDequeue(out _)) { }
 
@@ -265,7 +267,19 @@ namespace My.Scripts.Timelapse
 
                         if (_captureRT != captureRT || !_webCam || !_webCam.isPlaying) break;
 
-                        Graphics.Blit(_webCam, captureRT);
+                        if (CurrentTint == Color.white)
+                        {
+                            Graphics.Blit(_webCam, captureRT);
+                        }
+                        else
+                        {
+                            if (!_tintMaterial)
+                            {
+                                _tintMaterial = new Material(Shader.Find("Sprites/Default"));
+                            }
+                            _tintMaterial.color = CurrentTint;
+                            Graphics.Blit(_webCam, captureRT, _tintMaterial);
+                        }
                         
                         byte[] bytes = null;
 
@@ -290,7 +304,7 @@ namespace My.Scripts.Timelapse
                                 }
                                 catch (Exception ex)
                                 {
-                                    Debug.LogWarning($"[TimeLapseRecorder] 스레드 인코딩 실패, 안전 모드 진입: {ex.Message}");
+                                    Debug.LogWarning($"[TimeLapseRecorder] 스레드 인코딩 실패 안전 모드 진입: {ex.Message}");
                                 }
                             }
                         }
@@ -305,7 +319,7 @@ namespace My.Scripts.Timelapse
                             _encodeTexture.Apply();
                             RenderTexture.active = prev;
 
-                            bytes = ImageConversion.EncodeToJPG(_encodeTexture, 70);
+                            bytes = ImageConversion.EncodeToJPG(_encodeTexture, 80);
                         }
 
                         if (bytes == null || bytes.Length == 0) continue;
@@ -395,7 +409,7 @@ namespace My.Scripts.Timelapse
             }
 
             string fileName = $"{GetUserIdString()}_Timelapse";
-            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표 (FPS: {fps:F2})");
+            Debug.Log($"[Timelapse] 변환 시작: {_globalFrameIndex}장 / {timelapseDuration}초 목표");
 
             ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, fileName, fps, false).Forget();
         }
@@ -407,7 +421,7 @@ namespace My.Scripts.Timelapse
             if (_realtimeFrameIndex <= 0)
             {
                 if (!IsRealtimeTargetLevel(_currentLevelID)) return;
-                Debug.LogWarning($"[Realtime] 데이터 부족으로 변환 취소.");
+                Debug.LogWarning("[Realtime] 데이터 부족으로 변환 취소.");
                 return;
             }
 
@@ -536,7 +550,6 @@ namespace My.Scripts.Timelapse
 
         private IEnumerator UploadVideoRoutine(string filePath)
         {
-            // 업로드 플래그 활성화로 외부에서 처리 여부를 확인할 수 있도록 함
             IsUploading = true;
 
             if (!File.Exists(filePath)) 
@@ -580,14 +593,14 @@ namespace My.Scripts.Timelapse
 
                     if (webRequest.result == UnityWebRequest.Result.Success)
                     {
-                        Debug.Log($"[TimeLapseRecorder] 영상 업로드 성공! (응답 코드: {webRequest.responseCode})");
-                        IsUploading = false; // 완료 시 플래그 해제
+                        Debug.Log($"[TimeLapseRecorder] 영상 업로드 성공 (응답 코드: {webRequest.responseCode})");
+                        IsUploading = false;
                         yield break;
                     }
 
                     if (attempt < maxRetries - 1)
                     {
-                        Debug.LogWarning($"[TimeLapseRecorder] 영상 업로드 실패 ({attempt + 1}/{maxRetries}): {webRequest.error}. {retryDelay}초 후 재시도...");
+                        Debug.LogWarning($"[TimeLapseRecorder] 영상 업로드 실패 ({attempt + 1}/{maxRetries}): {webRequest.error}. {retryDelay}초 후 재시도");
                         yield return CoroutineData.GetWaitForSeconds(retryDelay);
                     }
                     else
@@ -597,7 +610,6 @@ namespace My.Scripts.Timelapse
                 }
             }
 
-            // 모든 재시도 실패 시에도 플래그 정상 해제
             IsUploading = false;
         }
 
@@ -625,6 +637,7 @@ namespace My.Scripts.Timelapse
 
             if (_captureRT) _captureRT.Release();
             if (_encodeTexture) Destroy(_encodeTexture);
+            if (_tintMaterial) Destroy(_tintMaterial);
         }
     }
 }

@@ -443,6 +443,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_Text
+      value: "\uB098\uB294 \uB300\uD654\uAC00 \uB05D\uB09C \uB4A4, \u2018\uADF8\uB54C
+        \uC65C \uADF8\uB7F0\r\n\uB290\uB08C\uC774 \uB4E4\uC5C8\uC744\uAE4C\u2019\uB97C
+        \uC0DD\uAC01\uD574 \uBCFC \uB54C\uAC00 \uC788\uB2E4."
+      objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.size
@@ -487,6 +494,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: GameCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 200
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

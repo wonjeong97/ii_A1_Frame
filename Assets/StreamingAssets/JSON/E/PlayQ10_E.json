@@ -3,17 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 1280, "y": -540},
+        "position": {"x": 560, "y": 140},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 서로의 마음을 이미 안다고 느껴,\n감정 표현이 줄어들 때가 있다.",
         "fontName": "font7",
-        "fontSize": 35,
+        "fontSize": 45,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 2 },
-      { "x": 4, "y": 2 }
+      { "x": 3, "y": 1 }, { "x": 4, "y": 1 }
     ]
   },
   "page2": {

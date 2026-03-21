@@ -3,16 +3,17 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 160, "y": -540},
+        "position": {"x": -770, "y": -275},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 함께 있을 때\n자연스럽게 감정과\n생각을 주고 받는다.",
         "fontName": "font7",
-        "fontSize": 35,
+        "fontSize": 45,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 0, "y": 2 }
+      { "x": 0, "y": 2 },
+      { "x": 0, "y": 3 }
     ]
   },
   "page2": {

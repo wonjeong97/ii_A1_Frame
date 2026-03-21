@@ -97,7 +97,6 @@ namespace My.Scripts._00_Title
 
             ArduinoManager.Instance.ReconnectAllAsync().Forget();
 
-            // [수정됨] 3개의 아두이노가 모두 연결될 때까지 대기
             timer = 0f;
             while (!ArduinoManager.Instance.AreAllConnected && timer < timeout)
             {
@@ -127,6 +126,12 @@ namespace My.Scripts._00_Title
 
         private IEnumerator PollRoomStateRoutine()
         {
+// 에디터에서는 서버에 계속 핑을 날려 유저를 가로채지 않습니다.
+#if UNITY_EDITOR
+            Debug.Log("<color=orange>[TitleManager] 에디터 모드 방지: 실제 전시관 유저 가로채기(Room 폴링)를 차단했습니다. Enter 키를 눌러 수동으로 게임에 진입하세요.</color>");
+            yield break;
+#endif
+
             while (!_isTransitioning)
             {
                 if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
@@ -171,6 +176,7 @@ namespace My.Scripts._00_Title
         {
             if (_isTransitioning) return;
 
+            // 디버그 용으로 Enter 키를 누르면 바로 튜토리얼로 들어갑니다.
             if (Input.GetKeyDown(KeyCode.Return))
             {
                 GoToTutorial();
