@@ -29,6 +29,8 @@ namespace My.Scripts.Global
         private float _fadeTime = 0.5f;
         private bool _isQuitting;
         private bool _isQuitSafe;
+        
+        private Coroutine _transitionRoutine;
 
         public int firstTaggedPlayer = 0;
         public ApiSettings ApiConfig { get; set; }
@@ -68,7 +70,6 @@ namespace My.Scripts.Global
         {
             Cursor.visible = false;
             Application.runInBackground = true;
-            
             LoadSettings();
             if (reporter && reporter.show) reporter.show = false;
         }
@@ -133,10 +134,11 @@ namespace My.Scripts.Global
             HandleInactivity();
         }
 
+        // =========================================================================================
+        // 디버그 스킵 시, 기존의 모든 연출을 파괴하고 0초만에 강제로 씬을 로드합니다.
+        // =========================================================================================
         public void SkipToNextSceneDebug()
         {
-            if (_isTransitioning) return;
-
             string currentScene = SceneManager.GetActiveScene().name;
             string nextScene = "";
 
@@ -157,16 +159,33 @@ namespace My.Scripts.Global
             }
             else if (currentScene == GameConstants.Scene.Ending)
             {
+                if (_transitionRoutine != null) StopCoroutine(_transitionRoutine);
+                _isTransitioning = false;
                 ReturnToTitle(); 
                 return;
             }
 
             if (!string.IsNullOrEmpty(nextScene))
             {
-                Debug.Log($"<color=yellow>[GameManager] 디버그 스킵: {currentScene} -> {nextScene}</color>");
-                ChangeScene(nextScene);
+                Debug.Log($"<color=yellow>[GameManager] 디버그 즉시 스킵: {currentScene} -> {nextScene}</color>");
+                
+                // 기존에 넘어가고 있던 씬 로드 코루틴이 있다면 멱살잡고 강제 중단
+                if (_transitionRoutine != null)
+                {
+                    StopCoroutine(_transitionRoutine);
+                    _transitionRoutine = null;
+                }
+                
+                _isTransitioning = false; // 락(Lock) 강제 해제
+
+                // 연타하다가 화면이 까맣게(FadeOut) 굳어버리는 것을 막기 위해 밝기 100% 강제 고정
+                if (FadeManager.Instance) FadeManager.Instance.FadeIn(0f);
+                
+                // 페이드 연출이고 뭐고 기다리지 않고 즉각적으로 씬 이동
+                SceneManager.LoadScene(nextScene);
             }
         }
+        // =========================================================================================
 
         private void HandleInactivity()
         {
@@ -191,7 +210,8 @@ namespace My.Scripts.Global
 
             _isTransitioning = true;
             Debug.Log($"[GameManager] Scene Transition Requested: {sceneName}");
-            StartCoroutine(ChangeSceneRoutine(sceneName));
+            // 수정됨: 코루틴 변수에 담아서 언제든 스킵으로 중단할 수 있게 조치
+            _transitionRoutine = StartCoroutine(ChangeSceneRoutine(sceneName));
         }
 
         private IEnumerator ChangeSceneRoutine(string sceneName)
@@ -244,19 +264,19 @@ namespace My.Scripts.Global
         {
             if (questionNumber <= 0 || !SessionManager.Instance) return "";
 
-            switch (SessionManager.Instance.CurrentUserType)
-            {
-                case UserType.A: return "_A";
-                case UserType.B: return (questionNumber == 4) ? "_B" : "_A";
-                case UserType.C:
-                    if (questionNumber == 4 || questionNumber == 10 || questionNumber == 11 ||
-                        questionNumber == 13 || questionNumber == 14 || questionNumber == 15) return "_C";
+            string currentType = SessionManager.Instance.CurrentUserType.ToString(); // 예: "A3"
+            string targetScene = $"Play_Q{questionNumber}_{currentType}";          // 예: "Play_Q4_A3"
 
-                    return "_A";
-                case UserType.D: return "_D";
-                case UserType.E: return "_E";
-                case UserType.F: return "_F";
-                default: return "_A";
+            if (Application.CanStreamedLevelBeLoaded(targetScene))
+            {
+                return $"_{currentType}"; 
+            }
+            else
+            {
+                string fallbackType = currentType.Substring(0, 1) + "1"; 
+                Debug.Log($"[GameManager] {targetScene} 씬이 없어 기본값(Play_Q{questionNumber}_{fallbackType})으로 우회(Fallback)합니다.");
+                
+                return $"_{fallbackType}"; 
             }
         }
 
@@ -297,9 +317,8 @@ namespace My.Scripts.Global
 
         private IEnumerator SendGetRequestRoutine(string url)
         {
-// 에디터에서 플레이 중일 때 점수, 진행상황 등의 API를 실서버로 쏘지 않도록 방어합니다.
 #if UNITY_EDITOR
-            Debug.Log($"<color=orange>[GameManager] 에디터 모드 방지: 라이브 서버 API 갱신을 생략.</color>");
+            Debug.Log($"<color=orange>[GameManager] 에디터 모드 방지: 라이브 서버 API 갱신을 생략합니다. ({url})</color>");
             yield break;
 #endif
 
@@ -384,7 +403,6 @@ namespace My.Scripts.Global
         {
             yield return TurnOffAllHardwareOutputsAsync().ToCoroutine();
 
-// 에디터에서 플레이 모드를 강제 종료할 때 실제 유저의 게임을 폭파시키지 않도록 방어.
 #if !UNITY_EDITOR
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
             {
@@ -426,7 +444,6 @@ namespace My.Scripts.Global
 
             TurnOffAllHardwareOutputsAsync().Forget();
             
-            // 에디터의 Stop 버튼을 눌렀을 때 동기화 통신(Reset, Exit) 차단
             Debug.Log("<color=orange>[GameManager] 에디터 모드 방지: 에디터 강제 종료 시 실제 유저 세션 보호됨</color>");
 
             ClearSourceFoldersAsync().Forget();
