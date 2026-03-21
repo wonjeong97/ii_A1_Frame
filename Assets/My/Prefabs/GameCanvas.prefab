@@ -1583,8 +1583,8 @@ MonoBehaviour:
   textCanvasGroups:
   - {fileID: 7362866407137774990}
   questionSpots: []
-  gridSizeX: 6
-  gridSizeY: 5
+  gridSizeX: 5
+  gridSizeY: 4
   breathAlphaMin: 0.1
   breathAlphaMax: 0.5
   breathSpeed: 2
@@ -3142,7 +3142,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 2100000, guid: 376e7a6cdb6721f4385c89495bc75b0e, type: 2}
+  m_Material: {fileID: 2100000, guid: e77ca5ec0c91e1944bedea321e370074, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -3502,11 +3502,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3098474930955532944}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 960, y: -540}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1272903180531684952
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3537,7 +3537,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: c864d8fa6f6cc9a4c9aa25c3853742b1, type: 3}
-    m_FontSize: 35
+    m_FontSize: 45
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 3

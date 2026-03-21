@@ -67,8 +67,10 @@ namespace My.Scripts.Global
         private void Start()
         {
             Cursor.visible = false;
+            Application.runInBackground = true;
             LoadSettings();
             if (reporter && reporter.show) reporter.show = false;
+            
         }
 
         private void OnDestroy()

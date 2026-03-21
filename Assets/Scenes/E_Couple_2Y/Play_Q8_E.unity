@@ -259,7 +259,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Text
       value: "\uAC08\uB4F1\uC774 \uB05D\uB0AC\uB2E4\uACE0 \uC0DD\uAC01\uD574\uB3C4,
-        \uBE44\uC2B7\uD55C \uC0C1\uD669\uC774 \uB418\uBA74\n\uB2E4\uC2DC \uAC10\uC815\uC774
+        \uBE44\uC2B7\uD55C \uC0C1\uD669\uC774 \uB418\uBA74\r\n\uB2E4\uC2DC \uAC10\uC815\uC774
         \uB5A0\uC624\uB974\uACE4 \uD55C\uB2E4."
       objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
@@ -315,12 +315,12 @@ PrefabInstance:
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1600
+      value: 575
       objectReference: {fileID: 0}
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -320
+      value: -270
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
