@@ -3,17 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 320, "y": -970},
+        "position": {"x": 200, "y": 400},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "말로 다 설명하지 않아도\n통하는 순간들이 있다는 점이 좋다.",
         "fontName": "font7",
-        "fontSize": 35,
+        "fontSize": 45,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 1, "y": 4},
-      {"x": 0, "y": 4}
+      {"x": 2, "y": 0}, {"x": 3, "y": 0}
     ]
   },
   "page2": {

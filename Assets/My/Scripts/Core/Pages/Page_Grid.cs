@@ -89,7 +89,7 @@ namespace My.Scripts.Core.Pages
         private const float BounceThreshold = 0.05f;    
 
         private int GetGridCenterX() => Mathf.Max(0, (gridSizeX - 1) / 2);
-        private int GetGridCenterY() => Mathf.Max(0, (gridSizeY - 1) / 2);
+        private int GetGridCenterY() => Mathf.Max(0, (gridSizeY) / 2);
 
         private class CellFadeInfo
         {

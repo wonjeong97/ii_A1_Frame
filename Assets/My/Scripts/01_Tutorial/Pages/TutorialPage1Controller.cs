@@ -13,7 +13,6 @@ using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {   
-    /// <summary> 튜토리얼 1페이지용 데이터 구조체 </summary>
     [Serializable]
     public class TutorialPage1Data
     {
@@ -29,7 +28,7 @@ namespace My.Scripts._01_Tutorial.Pages
         [Header("API Manager")]
         [SerializeField] private APIManager apiManager;
         [Header("Polling Settings")]
-        [SerializeField] private float pollInterval = 3.0f; // 고정 3초 간격 폴링
+        [SerializeField] private float pollInterval = 3.0f;
 
         private readonly float fadeTime = 1f;
         private Coroutine _pollCoroutine; 
@@ -72,6 +71,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private void Update()
         {
+            // Enter 키를 누르면 다음으로 넘어갈 수 있습니다.
             if (Input.anyKey || Input.touchCount > 0)
             {
                 ResetIdleState(false); 
@@ -82,7 +82,13 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private IEnumerator PollRoomStateRoutine()
         {
-            float emptyUserStartTime = -1f; // 유저 정보 EMPTY 타이머
+// 에디터에서 실행 중일 때는 실제 유저 데이터를 긁어와서 방해하지 않도록 차단합니다.
+#if UNITY_EDITOR
+            Debug.Log("<color=orange>[TutorialPage1] 에디터 모드 방지: 실제 유저 데이터 추적을 차단했습니다. 더미 데이터로 진행되며, Enter 키를 누르면 다음으로 넘어갑니다.</color>");
+            yield break;
+#endif
+
+            float emptyUserStartTime = -1f;
 
             while (true)
             {
@@ -98,7 +104,6 @@ namespace My.Scripts._01_Tutorial.Pages
                 bool isRoomEmpty = false;
                 bool isNetworkError = false;
 
-                // 1. 방 상태 확인
                 using (UnityWebRequest stateReq = UnityWebRequest.Get(checkUrl))
                 {
                     stateReq.timeout = 10; 
@@ -125,7 +130,6 @@ namespace My.Scripts._01_Tutorial.Pages
                     yield break;
                 }
 
-                // 2. 방이 USING(비어있지 않음)일 때 유저 상태 확인
                 if (!isNetworkError)
                 {
                     bool isUserEmpty = false;
@@ -144,7 +148,6 @@ namespace My.Scripts._01_Tutorial.Pages
                             }
                             else if (rawText.Contains(","))
                             {
-                                // 유저 데이터가 정상적으로 있으면 EMPTY 타이머 초기화
                                 emptyUserStartTime = -1f;
 
                                 string[] parts = rawText.Split(new[] { '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -186,7 +189,6 @@ namespace My.Scripts._01_Tutorial.Pages
                         }
                     }
 
-                    // 유저 상태가 EMPTY인 경우에만 15초 타이머 체크
                     if (isUserEmpty)
                     {
                         if (emptyUserStartTime < 0f)
@@ -208,7 +210,6 @@ namespace My.Scripts._01_Tutorial.Pages
                     Debug.LogWarning($"[TutorialPage1] 네트워크 오류 발생. {pollInterval}초 후 재시도.");
                 }
 
-                // 항상 설정된 간격(3초) 대기
                 yield return CoroutineData.GetWaitForSeconds(pollInterval);
             }
         }

@@ -7,8 +7,8 @@ Shader "UI/GridLine"
         _LineColor ("Line Color", Color) = (0.627, 0.612, 0.584, 1) // #A09C95
         
         // Grid Size를 X(가로)와 Y(세로)로 분리
-        _GridSizeX ("Grid Size X", Float) = 6
-        _GridSizeY ("Grid Size Y", Float) = 5
+        _GridSizeX ("Grid Size X", Float) = 5
+        _GridSizeY ("Grid Size Y", Float) = 4
         
         _Thickness ("Line Thickness", Range(0, 0.5)) = 0.02
         
