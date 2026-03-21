@@ -73,7 +73,6 @@ namespace My.Scripts.Core.Pages
 
         public override void SetupData(object data)
         {
-            // Page_Camera는 SetupPageData를 통해 호출되지 않으므로 구현 불필요
         }
 
         public void SetPhotoFilename(string fileName)
@@ -162,6 +161,11 @@ namespace My.Scripts.Core.Pages
                 cameraDisplay.color = initColor;
             }
 
+            if (TimeLapseRecorder.Instance)
+            {
+                TimeLapseRecorder.Instance.CurrentTint = _currentTintColor;
+            }
+
             StartCoroutine(FadeInCameraRoutine());
             StartCoroutine(CountdownRoutine());
         }
@@ -186,6 +190,11 @@ namespace My.Scripts.Core.Pages
             StopWebCam();
             CleanupPhotoUI();
             TurnOffHueLights();
+
+            if (TimeLapseRecorder.Instance)
+            {
+                TimeLapseRecorder.Instance.CurrentTint = Color.white;
+            }
         }
 
         private void OnDestroy()
@@ -241,7 +250,7 @@ namespace My.Scripts.Core.Pages
                 }
                 else
                 {
-                    Debug.LogError("<color=red>[Page_Camera] 웹캠이 꺼져있어 타임랩스 녹화를 시작할 수 없습니다!</color>");
+                    Debug.LogError("[Page_Camera] 웹캠 오류로 타임랩스를 녹화할 수 없습니다.");
                 }
             }
 
@@ -305,7 +314,7 @@ namespace My.Scripts.Core.Pages
         {
             if (!_webCamTexture || !_webCamTexture.isPlaying)
             {
-                Debug.LogError("<color=red>[Page_Camera] 웹캠이 정상 작동 중이 아니어서 사진을 캡처할 수 없습니다!</color>");
+                Debug.LogError("[Page_Camera] 웹캠이 중지되어 캡처할 수 없습니다.");
                 return;
             }
 
@@ -353,7 +362,6 @@ namespace My.Scripts.Core.Pages
             if (cameraDisplay) 
             {
                 cameraDisplay.texture = _capturedPhoto;
-                // 사진 자체에 색을 씌웠으므로 UI 이미지 틴트는 하얀색으로 원상복구시켜 줍니다.
                 cameraDisplay.color = Color.white; 
             }
 
@@ -395,12 +403,12 @@ namespace My.Scripts.Core.Pages
                     string path = Path.Combine(folder, $"{photoName}.png");
                     File.WriteAllBytes(path, bytes);
 
-                    Debug.Log($"<color=green>[Page_Camera] 비동기 원본 사진 저장 완료: {path}</color>");
+                    Debug.Log($"[Page_Camera] 원본 사진 저장 완료: {path}");
                 });
             }
             catch (Exception e)
             {
-                Debug.LogError($"<color=red>[Page_Camera] 비동기 사진 저장 실패: {e.Message}</color>");
+                Debug.LogError($"[Page_Camera] 사진 저장 실패: {e.Message}");
             }
         }
 
@@ -450,7 +458,6 @@ namespace My.Scripts.Core.Pages
         {
             if (ri)
             {
-                // RGB(색상)은 건드리지 않고 a(투명도)만 변경하도록 하여 틴트 색상이 유지되게 함
                 Color c = ri.color;
                 c.a = a;
                 ri.color = c;
@@ -468,7 +475,7 @@ namespace My.Scripts.Core.Pages
                 WebCamDevice[] devices = WebCamTexture.devices;
                 if (devices.Length == 0)
                 {
-                    Debug.LogError("<color=red>[Page_Camera] PC에 인식된 카메라 장비가 하나도 없습니다!</color>");
+                    Debug.LogError("[Page_Camera] 웹캠 장치가 없습니다.");
                     return;
                 }
 
@@ -499,7 +506,7 @@ namespace My.Scripts.Core.Pages
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"<color=red>[Page_Camera] 카메라 연결 중 예외 발생: {e.Message}</color>");
+                    Debug.LogError($"[Page_Camera] 웹캠 예외 발생: {e.Message}");
                 }
             }
         }

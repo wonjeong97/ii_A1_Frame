@@ -67,10 +67,8 @@ namespace My.Scripts.Global
         private void Start()
         {
             Cursor.visible = false;
-            Application.runInBackground = true;
             LoadSettings();
             if (reporter && reporter.show) reporter.show = false;
-            
         }
 
         private void OnDestroy()
@@ -117,7 +115,6 @@ namespace My.Scripts.Global
             }
             else if (Input.GetKeyDown(KeyCode.M)) Cursor.visible = !Cursor.visible;
 
-            // =========================================================================
             if (Input.GetKeyDown(KeyCode.F))
             {
                 isDebugMode = !isDebugMode;
@@ -128,7 +125,6 @@ namespace My.Scripts.Global
             {
                 SkipToNextSceneDebug();
             }
-            // =========================================================================
 
             if (_isTransitioning) return;
 
@@ -299,6 +295,12 @@ namespace My.Scripts.Global
 
         private IEnumerator SendGetRequestRoutine(string url)
         {
+// 에디터에서 플레이 중일 때 점수, 진행상황 등의 API를 실서버로 쏘지 않도록 방어합니다.
+#if UNITY_EDITOR
+            Debug.Log($"<color=orange>[GameManager] 에디터 모드 방지: 라이브 서버 API 갱신을 생략.</color>");
+            yield break;
+#endif
+
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 using (UnityWebRequest req = UnityWebRequest.Get(url))
@@ -380,6 +382,8 @@ namespace My.Scripts.Global
         {
             yield return TurnOffAllHardwareOutputsAsync().ToCoroutine();
 
+// 에디터에서 플레이 모드를 강제 종료할 때 실제 유저의 게임을 폭파시키지 않도록 방어.
+#if !UNITY_EDITOR
             if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
             {
                 int uid = SessionManager.Instance.CurrentUserId;
@@ -398,6 +402,9 @@ namespace My.Scripts.Global
                     yield return req.SendWebRequest();
                 }
             }
+#else
+            Debug.Log("<color=orange>[GameManager] 에디터 모드 방지: 강제 종료 시 실제 유저의 세션(Reset, Exit) 폭파 방지됨</color>");
+#endif
 
             yield return ClearSourceFoldersAsync().ToCoroutine();
 
@@ -416,36 +423,9 @@ namespace My.Scripts.Global
             if (_isQuitSafe) return; 
 
             TurnOffAllHardwareOutputsAsync().Forget();
-
-            if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
-            {
-                int uid = SessionManager.Instance.CurrentUserId;
-
-                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
-                using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
-                {
-                    req.timeout = 2;
-                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
-                    float deadline = Time.realtimeSinceStartup + 2.0f;
-
-                    while (!op.isDone && Time.realtimeSinceStartup < deadline)
-                    {
-                        System.Threading.Thread.Sleep(10);
-                    }
-                }
-
-                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
-                using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
-                {
-                    req.timeout = 2;
-                    UnityWebRequestAsyncOperation op = req.SendWebRequest();
-                    float deadline = Time.realtimeSinceStartup + 2.0f;
-                    while (!op.isDone && Time.realtimeSinceStartup < deadline)
-                    {
-                        System.Threading.Thread.Sleep(10);
-                    }
-                }
-            }
+            
+            // 에디터의 Stop 버튼을 눌렀을 때 동기화 통신(Reset, Exit) 차단
+            Debug.Log("<color=orange>[GameManager] 에디터 모드 방지: 에디터 강제 종료 시 실제 유저 세션 보호됨</color>");
 
             ClearSourceFoldersAsync().Forget();
         }
