@@ -40,7 +40,9 @@ namespace My.Scripts.Global
         [SerializeField] private float retryDelay = 1.0f;
 
         private void Awake()
-        {
+        {   
+            Debug.unityLogger.logHandler = new TimestampLogHandler(Debug.unityLogger.logHandler);
+            
             if (!Instance)
             {
                 Instance = this;
