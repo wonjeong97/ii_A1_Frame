@@ -89,11 +89,15 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 외부 입력 발생 시 무응답 타이머를 즉시 초기화하여 리셋을 방지하고, 유효한 입력을 자식 클래스로 전달합니다. </summary>
+       /// <summary> 외부 입력 발생 시 무응답 타이머를 즉시 초기화하여 리셋을 방지하고, 유효한 입력을 자식 클래스로 전달합니다. </summary>
         private void ProcessHardwareInput(string input, bool isLeft)
         {
-            if (!gameObject.activeInHierarchy || isResetSequenceActive) return;
+            if (!gameObject.activeInHierarchy) return;
+
+            // 팝업이 떠있든 아니든 무조건 타이머를 0으로 만들고 팝업을 치웁니다.
             ResetIdleState(false);
+            
+            // 그리고 곧바로 자식 클래스(Page_QnA 등)로 입력을 넘겨 정답 처리까지 논스톱으로 실행합니다.
             OnHardwareInput(input, isLeft);
         }
 
