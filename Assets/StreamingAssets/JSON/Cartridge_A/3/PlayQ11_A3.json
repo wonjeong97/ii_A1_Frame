@@ -3,16 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 200, "y": 400},
+        "position": {"x": 770, "y": 405},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "서로의 감정을 존중하려고 하고\n있다는 느낌이 들 때가 많다.",
+        "text": "서로의 감정을\n존중하려고 하고 있다는\n느낌이 들 때가 많다.",
         "fontName": "font7",
-        "fontSize": 45,
+        "fontSize": 40,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 2, "y": 0}, {"x": 3, "y": 0}
+      {"x": 4, "y": 0}
     ]
   },
   "page2": {

@@ -273,8 +273,13 @@ PrefabInstance:
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
-      value: "\uB098\uB294 \uC0C1\uB300\uAC00 \uC870\uC6A9\uD588\uB358 \uC21C\uAC04\uC5D0\r\n\uB300\uD574
-        \uC885\uC885 \uC0DD\uAC01\uD574 \uBCF4\uACE4 \uD55C\uB2E4."
+      value: "\uB098\uB294 \uC0C1\uB300\uAC00 \uC870\uC6A9\uD588\uB358\n\uC21C\uAC04\uC5D0\r
+        \uB300\uD574\n\uC885\uC885 \uC0DD\uAC01\uD574 \uBCF4\uACE4 \uD55C\uB2E4."
+      objectReference: {fileID: 0}
+    - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_FontData.m_FontSize
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -324,12 +329,12 @@ PrefabInstance:
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -600
+      value: -760
       objectReference: {fileID: 0}
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 400
+      value: 410
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

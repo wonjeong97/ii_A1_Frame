@@ -268,8 +268,13 @@ PrefabInstance:
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
-      value: "\uC6B0\uB9AC\uB294 \uD568\uAED8 \uC788\uC744 \uB54C\uC758 \uAC10\uC815\uC774\r\n\uC790\uC5F0\uC2A4\uB7FD\uAC8C
-        \uC624\uAC00\uACE0 \uC788\uB2E4\uACE0 \uB290\uB080\uB2E4."
+      value: "\uC6B0\uB9AC\uB294 \uD568\uAED8 \uC788\uC744 \uB54C\uC758\n\uAC10\uC815\uC774\r
+        \uC790\uC5F0\uC2A4\uB7FD\uAC8C\n\uC624\uAC00\uACE0 \uC788\uB2E4\uACE0 \uB290\uB080\uB2E4."
+      objectReference: {fileID: 0}
+    - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_FontData.m_FontSize
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -324,12 +329,12 @@ PrefabInstance:
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 560
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 140
+      value: 135
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

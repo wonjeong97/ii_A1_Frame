@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 0, "y": 0},
+        "position": {"x": 0, "y": 140},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대와 함께 일하는\n상황을 비교적\n편안하게 느끼는 편이다.",
         "fontName": "font7",
@@ -12,8 +12,7 @@
       }
     ],
     "questionSpots": [
-      {"x": 2, "y": 1},
-      {"x": 2, "y": 2}
+      {"x": 2, "y": 1}
     ]
   },
   "page2": {

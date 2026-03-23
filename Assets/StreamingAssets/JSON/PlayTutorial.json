@@ -3,19 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 560, "y": 0},
+        "position": {"x": 390, "y": 135},
         "scale": {"x": 1, "y": 1, "z": 1},
-        "text": "나는 상대방의 기분을 헤아리기 위해\n많은 에너지를 쏟는다.",
+        "text": "나는 상대방의 기분을\n헤아리기 위해\n많은 에너지를 쏟는다.",
         "fontName": "font7",
-        "fontSize": 45,
+        "fontSize": 40,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      { "x": 3, "y": 1 },
-      { "x": 4, "y": 1 },
-      { "x": 3, "y": 2 },
-      { "x": 4, "y": 2 }
+      { "x": 3, "y": 1 }
     ]
   },
   "page2": {
@@ -34,7 +31,7 @@
       "name": "Text_Camera_Guide_Tutorial",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "두 분 모두 답변을 완료할 때마다 사진 한 장을 찍습니다.\n뒤에 있는 촬영 버튼을 눌러주세요",
+      "text": "두 분 모두 답변을 완료할 때마다\n촬영 버튼이 활성화 됩니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.976, "g": 0.952, "b": 0.909, "a": 1}      

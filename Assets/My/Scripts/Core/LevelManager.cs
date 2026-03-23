@@ -58,25 +58,21 @@ namespace My.Scripts.Core
                     string nameA = GetPlayerNameOrDefault(true);
                     string nameB = GetPlayerNameOrDefault(false);
 
-                    if (tSetting.Page7 != null)
-                    {
-                        if (tSetting.Page7.playerAName != null && !string.IsNullOrEmpty(tSetting.Page7.playerAName.text))
-                            tSetting.Page7.playerAName.text = tSetting.Page7.playerAName.text.Replace("{nameA}", nameA);
-                            
-                        if (tSetting.Page7.playerBName != null && !string.IsNullOrEmpty(tSetting.Page7.playerBName.text))
-                            tSetting.Page7.playerBName.text = tSetting.Page7.playerBName.text.Replace("{nameB}", nameB);
-                    }
-
+                    // 각 페이지 데이터의 이름 치환 로직 일괄 적용
                     ReplaceNamesInQnAPage(tSetting.Page2, nameA, nameB);
+                    ReplaceNamesInTransitionPage(tSetting.Page4, nameA, nameB);
+                    ReplaceNamesInTransitionPage(tSetting.Page5, nameA, nameB);
+                    ReplaceNamesInTransitionPage(tSetting.Page7, nameA, nameB);
+                    ReplaceNamesInTutorialPage8(tSetting.Page8, nameA, nameB);
+
                     SetCameraFileName();
                     ConfigureCameraPage(false);
 
                     SetupPageData(0, tSetting.Page1);
                     SetupPageData(1, tSetting.Page2);
-                    SetupPageData(2, tSetting.Page3); 
-                    SetupPageData(4, tSetting.Page5); 
-                    SetupPageData(5, tSetting.Page7); 
-                    SetupPageData(6, tSetting.Page8); 
+                    SetupPageData(2, tSetting.Page4);
+                    SetupPageData(3, tSetting.Page7); 
+                    SetupPageData(4, tSetting.Page8); 
                 }
             }
             else
@@ -88,7 +84,6 @@ namespace My.Scripts.Core
                     string suffix = GameManager.Instance.GetLevelSuffix(_currentQuestionNumber);
                     if (!string.IsNullOrEmpty(suffix))
                     {
-                        // "_A1" -> "A1" 형태로 변환하여 UserType 매핑
                         string typeStr = suffix.Replace("_", "");
                         if (Enum.TryParse(typeStr, out UserType mappedType))
                         {
@@ -102,14 +97,18 @@ namespace My.Scripts.Core
                 {
                     string nameA = GetPlayerNameOrDefault(true);
                     string nameB = GetPlayerNameOrDefault(false);
+                    
+                    // 본 게임에서도 필요한 부분 이름 치환 적용
                     ReplaceNamesInQnAPage(sSetting.Page2, nameA, nameB);
+                    ReplaceNamesInTransitionPage(sSetting.Page4, nameA, nameB);
+                    ReplaceNamesInTransitionPage(sSetting.Page5, nameA, nameB);
 
                     SetCameraFileName();
                     ConfigureCameraPage(true);
 
                     SetupPageData(0, sSetting.Page1);
                     SetupPageData(1, sSetting.Page2);
-                    SetupPageData(2, sSetting.Page3); 
+                    SetupPageData(2, sSetting.Page4); 
                     SetupPageData(4, sSetting.Page5); 
                 }
 
@@ -118,6 +117,36 @@ namespace My.Scripts.Core
                     HueManager.Instance.InitRandomColors();
                 }
             }
+        }
+       
+        // TransitionPageData (Page 4, 5, 7) 에 대한 텍스트 치환
+        private void ReplaceNamesInTransitionPage(TransitionPageData pageData, string nameA, string nameB)
+        {
+            if (pageData == null) return;
+
+            if (pageData.descriptionText != null && !string.IsNullOrEmpty(pageData.descriptionText.text))
+                pageData.descriptionText.text = pageData.descriptionText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
+
+            if (pageData.playerAName != null && !string.IsNullOrEmpty(pageData.playerAName.text))
+                pageData.playerAName.text = pageData.playerAName.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
+
+            if (pageData.playerBName != null && !string.IsNullOrEmpty(pageData.playerBName.text))
+                pageData.playerBName.text = pageData.playerBName.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
+        }
+
+        // TutorialPage8Data (Page 8) 에 대한 텍스트 치환
+        private void ReplaceNamesInTutorialPage8(TutorialPage8Data pageData, string nameA, string nameB)
+        {
+            if (pageData == null) return;
+
+            if (pageData.introText != null && !string.IsNullOrEmpty(pageData.introText.text))
+                pageData.introText.text = pageData.introText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
+
+            if (pageData.countdownText != null && !string.IsNullOrEmpty(pageData.countdownText.text))
+                pageData.countdownText.text = pageData.countdownText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
+
+            if (pageData.startText != null && !string.IsNullOrEmpty(pageData.startText.text))
+                pageData.startText.text = pageData.startText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
         }
         
         private string GetPlayerNameOrDefault(bool isPlayerA)
@@ -209,11 +238,10 @@ namespace My.Scripts.Core
 
             if (_isTutorialMode)
             {
-                if (currentPageIndex == 0 && targetIndex == 1) { yield return StartCoroutine(CoverTransition(current, next, info)); handled = true; } 
-                else if (currentPageIndex == 1 && targetIndex == 2) { yield return StartCoroutine(RevealTransition(current, next, info)); handled = true; } 
-                else if (currentPageIndex == 2 && targetIndex == 3) { yield return StartCoroutine(AmjeonTransition(current, next, info)); handled = true; } 
-                else if (currentPageIndex == 3 && targetIndex == 4) { yield return StartCoroutine(AmjeonTransition(current, next, info, true)); handled = true; } 
-                else if (currentPageIndex == 4 && targetIndex == 5) { yield return StartCoroutine(SequenceTransition(current, next, globalWhiteBackground, info, 0.5f)); handled = true; } 
+                if (currentPageIndex == 0 && targetIndex == 1) { yield return StartCoroutine(CoverTransition(current, next, info)); handled = true; } // Grid -> QnA
+                else if (currentPageIndex == 1 && targetIndex == 2) { yield return StartCoroutine(RevealTransition(current, next, info)); handled = true; } // QnA -> Page4
+                else if (currentPageIndex == 2 && targetIndex == 3) { yield return StartCoroutine(AmjeonTransition(current, next, info, true)); handled = true; } // Page4 -> Page7
+                else if (currentPageIndex == 3 && targetIndex == 4) { yield return StartCoroutine(SequenceTransition(current, next, globalWhiteBackground, info, 0.5f)); handled = true; } // Page7 -> Page8
             }
             else
             {

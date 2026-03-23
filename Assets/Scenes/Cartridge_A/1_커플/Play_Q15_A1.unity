@@ -517,6 +517,11 @@ PrefabInstance:
       value: "\uC6B0\uB9AC\uB294 \uD568\uAED8 \uC788\uC5B4\uB3C4\n\uAC10\uC815\uC801\uC73C\uB85C
         \uD06C\uAC8C\n\uC9C0\uCE58\uC9C0 \uC54A\uB294 \uD3B8\uC774\uB2E4."
       objectReference: {fileID: 0}
+    - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_FontData.m_FontSize
+      value: 40
+      objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: questionTexts.Array.size
@@ -571,6 +576,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 770
+      objectReference: {fileID: 0}
+    - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 405
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

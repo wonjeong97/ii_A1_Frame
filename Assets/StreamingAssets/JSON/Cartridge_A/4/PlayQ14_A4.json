@@ -3,17 +3,16 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 0, "y": 0},
+        "position": {"x": 0, "y": 140},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 함께한\n뒤에 더 마음이\n편안해지는 편이다.",
         "fontName": "font7",
-        "fontSize": 45,
+        "fontSize": 40,
         "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
       }
     ],
     "questionSpots": [
-      {"x": 2, "y": 1},
-      {"x": 2, "y": 2}
+      {"x": 2, "y": 1}
     ]
   },
   "page2": {
