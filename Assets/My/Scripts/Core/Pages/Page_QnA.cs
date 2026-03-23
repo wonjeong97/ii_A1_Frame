@@ -40,16 +40,6 @@ namespace My.Scripts.Core.Pages
             if (descriptionText) 
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-                
-                // =========================================================================================
-                // 튜토리얼 모드(02_Play_Tutorial)일 때만 descriptionText를 다르게 강제 고정
-                // =========================================================================================
-                bool isTutorial = LevelManager.Instance != null && LevelManager.Instance.CurrentQuestionNumber == 0;
-                if (isTutorial)
-                {
-                    descriptionText.text = "질문을 찾으면 뒤를 돌아\n각자 버튼을 눌러 답변해 주시면 됩니다."; 
-                }
-                // =========================================================================================
             }
 
             if (questionText) UIManager.Instance.SetText(questionText.gameObject, data.questionText);

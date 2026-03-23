@@ -16,6 +16,15 @@
     ]
   },
   "page2": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "질문을 찾으면 뒤를 돌아\n각자 버튼을 눌러 답변해 주시면 됩니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
     "questionText": {
       "name": "Text_Question",
       "position": {"x": 0, "y": 0},
