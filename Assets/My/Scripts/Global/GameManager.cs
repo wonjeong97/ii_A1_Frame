@@ -27,6 +27,7 @@ namespace My.Scripts.Global
         private float _fadeTime = 0.5f;
         private bool _isQuitting;
         private bool _isQuitSafe;
+        private Coroutine _transitionRoutine;
 
         public int firstTaggedPlayer = 0;
         public ApiSettings ApiConfig { get; set; }
@@ -180,7 +181,7 @@ namespace My.Scripts.Global
 
             _isTransitioning = true;
             Debug.Log($"[GameManager] Scene Transition Requested: {sceneName}");
-            StartCoroutine(ChangeSceneRoutine(sceneName));
+            _transitionRoutine = StartCoroutine(ChangeSceneRoutine(sceneName));
         }
 
         private IEnumerator ChangeSceneRoutine(string sceneName)
