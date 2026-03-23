@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using My.Scripts.Core.Data;
 using My.Scripts.Global;
@@ -36,10 +37,23 @@ namespace My.Scripts.Core.Pages
 
         protected override void SetupData(QnAPageData data)
         {
-            if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+            if (descriptionText) 
+            {
+                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+                
+                // =========================================================================================
+                // 튜토리얼 모드(02_Play_Tutorial)일 때만 descriptionText를 다르게 강제 고정
+                // =========================================================================================
+                bool isTutorial = LevelManager.Instance != null && LevelManager.Instance.CurrentQuestionNumber == 0;
+                if (isTutorial)
+                {
+                    descriptionText.text = "질문을 찾으면 뒤를 돌아\n각자 버튼을 눌러 답변해 주시면 됩니다."; 
+                }
+                // =========================================================================================
+            }
+
             if (questionText) UIManager.Instance.SetText(questionText.gameObject, data.questionText);
             
-            // # FIX: 빈 데이터를 세팅하여 위치가 0,0으로 가는 현상을 막기 위해 유효성 검사 추가
             if (nicknameA && data.nicknamePlayerA != null && !string.IsNullOrEmpty(data.nicknamePlayerA.text)) 
                 UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             
@@ -197,7 +211,24 @@ namespace My.Scripts.Core.Pages
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOn);
             }
             
-            _isInputEnabled = true;
+            bool isTutorial = LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 0;
+            
+            if (isTutorial)
+            {
+                _isInputEnabled = false; // 튜토리얼 모드: 버튼 입력 차단
+                yield return CoroutineData.GetWaitForSeconds(3.5f);
+                
+                if (ArduinoManager.Instance)
+                {
+                    ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                }
+                
+                CompleteStep(); // 입력 여부와 관계없이 자동 진행
+            }
+            else
+            {
+                _isInputEnabled = true; // 본 게임: 정상적으로 입력 대기
+            }
         }
 
         private IEnumerator FadeContent(CanvasGroup cg, float start, float end, float duration)

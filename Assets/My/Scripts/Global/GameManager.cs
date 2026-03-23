@@ -27,8 +27,6 @@ namespace My.Scripts.Global
         private float _fadeTime = 0.5f;
         private bool _isQuitting;
         private bool _isQuitSafe;
-        
-        private Coroutine _transitionRoutine;
 
         public int firstTaggedPlayer = 0;
         public ApiSettings ApiConfig { get; set; }
@@ -67,7 +65,6 @@ namespace My.Scripts.Global
         private void Start()
         {
             Cursor.visible = false;
-            Application.runInBackground = true;
             LoadSettings();
             if (reporter && reporter.show) reporter.show = false;
         }
@@ -127,11 +124,10 @@ namespace My.Scripts.Global
             }
         }
 
-        // =========================================================================================
-        // 디버그 스킵 시, 기존의 모든 연출을 파괴하고 0초만에 강제로 씬을 로드합니다.
-        // =========================================================================================
         public void SkipToNextSceneDebug()
         {
+            if (_isTransitioning) return;
+
             string currentScene = SceneManager.GetActiveScene().name;
             string nextScene = "";
 
@@ -152,8 +148,6 @@ namespace My.Scripts.Global
             }
             else if (currentScene == GameConstants.Scene.Ending)
             {
-                if (_transitionRoutine != null) StopCoroutine(_transitionRoutine);
-                _isTransitioning = false;
                 ReturnToTitle(); 
                 return;
             }
@@ -186,8 +180,7 @@ namespace My.Scripts.Global
 
             _isTransitioning = true;
             Debug.Log($"[GameManager] Scene Transition Requested: {sceneName}");
-            // 수정됨: 코루틴 변수에 담아서 언제든 스킵으로 중단할 수 있게 조치
-            _transitionRoutine = StartCoroutine(ChangeSceneRoutine(sceneName));
+            StartCoroutine(ChangeSceneRoutine(sceneName));
         }
 
         private IEnumerator ChangeSceneRoutine(string sceneName)
@@ -235,6 +228,9 @@ namespace My.Scripts.Global
             ChangeScene(GameConstants.Scene.Title);
         }
 
+        // =========================================================================================
+        // 핵심 변경: 씬이 존재하는지 검사하여 없으면 1번 관계(기본값)로 폴백(Fallback)합니다.
+        // =========================================================================================
         public string GetLevelSuffix(int questionNumber)
         {
             if (questionNumber <= 0 || !SessionManager.Instance) return "";
@@ -242,18 +238,19 @@ namespace My.Scripts.Global
             string currentType = SessionManager.Instance.CurrentUserType.ToString(); // 예: "A3"
             string targetScene = $"Play_Q{questionNumber}_{currentType}";          // 예: "Play_Q4_A3"
 
+            // Unity의 Build Settings에 해당 씬이 존재하는지 동적으로 검사합니다.
             if (Application.CanStreamedLevelBeLoaded(targetScene))
             {
-                return $"_{currentType}"; 
+                return $"_{currentType}"; // 씬이 존재하면 원래대로 반환 (예: _A3)
             }
             else
             {
-                string fallbackType = currentType.Substring(0, 1) + "1"; 
-                Debug.Log($"[GameManager] {targetScene} 씬이 없어 기본값(Play_Q{questionNumber}_{fallbackType})으로 우회(Fallback)합니다.");
-                
-                return $"_{fallbackType}"; 
+                // 씬이 없다면 카트리지 문자(A) + 숫자 1을 결합하여 폴백 처리합니다.
+                string fallbackType = currentType.Substring(0, 1) + "1"; // "A1"
+                return $"_{fallbackType}"; // 예: _A1
             }
         }
+        // =========================================================================================
 
         #region Hardware Control Helper
 

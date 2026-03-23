@@ -20,7 +20,6 @@ namespace My.Scripts.Core.Data
         public string uploadFile;
         public string exitRoom;
         public string resetStart;
-        public string getCartridgeContent;
 
         /// <summary> 
         /// 슬래시 중복이나 누락을 방지하며 완전한 URL을 구성합니다.
@@ -66,8 +65,5 @@ namespace My.Scripts.Core.Data
         
         /// <summary> 룸 상태 초기화용 URL </summary>
         public string ResetStartUrl => BuildUrl(baseUrl, resetStart, "/resetStart.cfm");
-        
-        /// <summary> 카트리지별 콘텐츠 클리어 상태 조회용 URL </summary>
-        public string GetCartridgeContentUrl => BuildUrl(baseUrl, getCartridgeContent, "/getCartridgeContent.cfm");
     }
 }

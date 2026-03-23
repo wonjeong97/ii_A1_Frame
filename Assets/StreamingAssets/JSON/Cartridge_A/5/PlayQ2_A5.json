@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -380, "y": 140},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대방이 “괜찮아”라고\n말해도, 그렇지 않다는\n느낌을 받을 때가 있다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 1, "y": 1 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.상대방이 “괜찮아”라고 말해도, 그렇지 않다는 느낌을 받을 때가 있다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

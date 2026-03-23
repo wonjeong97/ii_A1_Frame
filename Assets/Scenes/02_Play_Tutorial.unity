@@ -223,7 +223,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "STEP.1\n\uC228\uC740 \uC9C8\uBB38 \uCC3E\uAE30"
+  m_Text: text
 --- !u!222 &226673025
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -431,7 +431,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "{nameA}\uB2D8"
+  m_Text: text
 --- !u!222 &628790488
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -457,7 +457,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &674271472
 RectTransform:
   m_ObjectHideFlags: 0
@@ -656,18 +656,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &757814055 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 295733415591076430, guid: 213377b1783306047a683581e1952b67,
-    type: 3}
-  m_PrefabInstance: {fileID: 7677740879409132878}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7124fb67e09cfff4f9c067dcf5b932a1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1047012172
 GameObject:
   m_ObjectHideFlags: 0
@@ -738,7 +726,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "{nameB}\uB2D8"
+  m_Text: text
 --- !u!222 &1047012175
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -795,8 +783,6 @@ MonoBehaviour:
   - {fileID: 1698115504}
   - {fileID: 1699288954}
   - {fileID: 312034109}
-  - {fileID: 757814055}
-  - {fileID: 1116324737}
   - {fileID: 674271473}
   - {fileID: 1198602004}
   levelType: 0
@@ -805,18 +791,6 @@ MonoBehaviour:
   globalBlackCanvasGroup: {fileID: 7677740879409132880}
   globalWhiteBackground: {fileID: 7677740879409132879}
   cameraMaskMaterial: {fileID: 0}
---- !u!114 &1116324737 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3286861349939892778, guid: 213377b1783306047a683581e1952b67,
-    type: 3}
-  m_PrefabInstance: {fileID: 7677740879409132878}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae02f5aa3783a2648add041449238877, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1198602002
 GameObject:
   m_ObjectHideFlags: 0
@@ -1251,8 +1225,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "\uC790, \uC774\uC81C \uCCAB \uBC88\uC9F8 \uC9C8\uBB38\uC744 \uC2DC\uC791\uD558\uACA0\uC2B5\uB2C8\uB2E4.\n\uAC01\uC790
-    \uC790\uC2E0\uC758 \uC790\uB9AC\uC5D0 \uC11C \uC8FC\uC138\uC694."
+  m_Text: text
 --- !u!222 &1571437578
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1387,9 +1360,29 @@ PrefabInstance:
     - target: {fileID: 536427332076840668, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 559176601818319452, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875626063642868522, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1464063246710112866, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1614109132217393695, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2084353070206322139, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -1403,6 +1396,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3120080553622693115, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3286861349939892778, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -1423,6 +1421,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4806305509325775222, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_Text
+      value: text
       objectReference: {fileID: 0}
     - target: {fileID: 4943455746939876439, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -1527,8 +1530,7 @@ PrefabInstance:
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
-      value: "\uB098\uB294 \uC0C1\uB300\uBC29\uC758 \uAE30\uBD84\uC744 \uD5E4\uC544\uB9AC\uAE30
-        \uC704\uD574\n\uB9CE\uC740 \uC5D0\uB108\uC9C0\uB97C \uC3DF\uB294\uB2E4."
+      value: text
       objectReference: {fileID: 0}
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -1543,7 +1545,12 @@ PrefabInstance:
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_FontData.m_FontSize
-      value: 45
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 5110738582734973955, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5313019734793949787, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -1660,10 +1667,25 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 8484433504961774759, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8569865610708128845, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: warningDuration
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 560
+      value: 390
+      objectReference: {fileID: 0}
+    - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 135
       objectReference: {fileID: 0}
     - target: {fileID: 9004093856361958551, guid: 213377b1783306047a683581e1952b67,
         type: 3}

@@ -9,7 +9,7 @@ namespace My.Scripts.Core.Data
     {
         GridPageData Page1 { get; set; }
         QnAPageData Page2 { get; set; }
-        TransitionPageData Page3 { get; set; } 
+        TransitionPageData Page4 { get; set; } 
         TransitionPageData Page5 { get; set; } 
     }
 
@@ -24,7 +24,7 @@ namespace My.Scripts.Core.Data
         public GridPageData Page1 { get => page1; set => page1 = value; }
         public QnAPageData Page2 { get => page2; set => page2 = value; }
         
-        public TransitionPageData Page3 { get => page4; set => page4 = value; }
+        public TransitionPageData Page4 { get => page4; set => page4 = value; }
         public TransitionPageData Page5 { get => page6; set => page6 = value; }
     }
 
@@ -40,7 +40,7 @@ namespace My.Scripts.Core.Data
 
         public GridPageData Page1 { get => page1; set => page1 = value; }
         public QnAPageData Page2 { get => page2; set => page2 = value; }
-        public TransitionPageData Page3 { get => page4; set => page4 = value; }
+        public TransitionPageData Page4 { get => page4; set => page4 = value; }
         public TransitionPageData Page5 { get => page6; set => page6 = value; }
         
         public TransitionPageData Page7 { get => page7; set => page7 = value; }
@@ -52,7 +52,14 @@ namespace My.Scripts.Core.Data
         public static StandardLevelSetting LoadStandardLevel(string levelID, UserType levelType)
         {
             StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
-            string path = $"JSON/{levelType}/Play{levelID}_{levelType}";
+            
+            // UserType(예: A1, C3)에서 카트리지 문자와 관계 숫자를 분리하여 새로운 폴더 경로를 생성합니다.
+            string typeStr = levelType.ToString();
+            string cartridge = typeStr.Substring(0, 1); 
+            string relation = typeStr.Substring(1);     
+            
+            string path = $"JSON/Cartridge_{cartridge}/{relation}/Play{levelID}_{levelType}";
+            
             StandardLevelSetting specificData = JsonLoader.Load<StandardLevelSetting>(path);
 
             if (specificData == null)
@@ -109,13 +116,13 @@ namespace My.Scripts.Core.Data
                     specific.Page2.nicknamePlayerB = common.Page2.nicknamePlayerB;
             }
 
-            if (specific.Page3 == null) specific.Page3 = new TransitionPageData();
-            if (common.Page3 != null)
+            if (specific.Page4 == null) specific.Page4 = new TransitionPageData();
+            if (common.Page4 != null)
             {
-                if (specific.Page3.descriptionText == null || string.IsNullOrEmpty(specific.Page3.descriptionText.text))
-                    specific.Page3.descriptionText = common.Page3.descriptionText;
-                if (string.IsNullOrEmpty(specific.Page3.warningMessage)) specific.Page3.warningMessage = common.Page3.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page3.resetMessage)) specific.Page3.resetMessage = common.Page3.resetMessage;
+                if (specific.Page4.descriptionText == null || string.IsNullOrEmpty(specific.Page4.descriptionText.text))
+                    specific.Page4.descriptionText = common.Page4.descriptionText;
+                if (string.IsNullOrEmpty(specific.Page4.warningMessage)) specific.Page4.warningMessage = common.Page4.warningMessage;
+                if (string.IsNullOrEmpty(specific.Page4.resetMessage)) specific.Page4.resetMessage = common.Page4.resetMessage;
             }
 
 

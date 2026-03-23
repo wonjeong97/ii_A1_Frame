@@ -8,6 +8,5 @@
   "getCurrentRoomUser": "/getCurrentRoomUser.cfm",
   "uploadFile": "/uploadFile.cfm",
   "exitRoom": "/exitRoom.cfm",
-  "resetStart": "/resetStart.cfm",
-  "getCartridgeContent": "/getCartridgeContent.cfm"
+  "resetStart": "/resetStart.cfm"  
 }
