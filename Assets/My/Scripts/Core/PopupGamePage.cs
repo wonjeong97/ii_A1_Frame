@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
@@ -88,18 +89,19 @@ namespace My.Scripts.Core.Pages
                 ArduinoManager.Instance.OnHardwareInput -= ProcessHardwareInput;
             }
         }
-
-       /// <summary> 외부 입력 발생 시 무응답 타이머를 즉시 초기화하여 리셋을 방지하고, 유효한 입력을 자식 클래스로 전달합니다. </summary>
+        
+        /// <summary> 외부 입력 발생 시 무응답 타이머를 즉시 초기화하여 리셋을 방지하고, 유효한 입력을 자식 클래스로 전달합니다. </summary>
         private void ProcessHardwareInput(string input, bool isLeft)
         {
             if (!gameObject.activeInHierarchy) return;
-
-            // 팝업이 떠있든 아니든 무조건 타이머를 0으로 만들고 팝업을 치웁니다.
+            
+            // 유효한 하드웨어 입력이 들어왔으므로 무응답 상태(및 리셋 팝업)를 해제합니다.
             ResetIdleState(false);
             
-            // 그리고 곧바로 자식 클래스(Page_QnA 등)로 입력을 넘겨 정답 처리까지 논스톱으로 실행합니다.
+            // 실제 자식 페이지(Page_QnA 등)로 입력을 전달하여 정답 처리를 수행합니다.
             OnHardwareInput(input, isLeft);
         }
+        // =========================================================================================
 
         /// <summary> 필터링이 완료된 실제 하드웨어 입력 처리부입니다. 상속받은 개별 페이지에서 오버라이드하여 구현합니다. </summary>
         protected virtual void OnHardwareInput(string input, bool isLeft) { }

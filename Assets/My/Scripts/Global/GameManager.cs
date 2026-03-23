@@ -154,10 +154,25 @@ namespace My.Scripts.Global
 
             if (!string.IsNullOrEmpty(nextScene))
             {
-                Debug.Log($"<color=yellow>[GameManager] 디버그 스킵: {currentScene} -> {nextScene}</color>");
-                ChangeScene(nextScene);
+                Debug.Log($"<color=yellow>[GameManager] 디버그 즉시 스킵: {currentScene} -> {nextScene}</color>");
+                
+                // 기존에 넘어가고 있던 씬 로드 코루틴이 있다면 멱살잡고 강제 중단
+                if (_transitionRoutine != null)
+                {
+                    StopCoroutine(_transitionRoutine);
+                    _transitionRoutine = null;
+                }
+                
+                _isTransitioning = false; // 락(Lock) 강제 해제
+
+                // 연타하다가 화면이 까맣게(FadeOut) 굳어버리는 것을 막기 위해 밝기 100% 강제 고정
+                if (FadeManager.Instance) FadeManager.Instance.FadeIn(0f);
+                
+                // 페이드 연출이고 뭐고 기다리지 않고 즉각적으로 씬 이동
+                SceneManager.LoadScene(nextScene);
             }
         }
+        // =========================================================================================
 
         public void ChangeScene(string sceneName)
         {
