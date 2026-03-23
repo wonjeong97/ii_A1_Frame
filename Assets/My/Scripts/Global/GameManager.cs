@@ -22,10 +22,8 @@ namespace My.Scripts.Global
         [SerializeField] private Reporter reporter;
 
         public bool isDebugMode = false;
-
-        private float _currentInactivityTimer;
+        
         private bool _isTransitioning;
-        private float _inactivityLimit = 60f;
         private float _fadeTime = 0.5f;
         private bool _isQuitting;
         private bool _isQuitSafe;
@@ -98,7 +96,6 @@ namespace My.Scripts.Global
             }
             else
             {
-                _inactivityLimit = 60f;
                 _fadeTime = 1.0f;
             }
 
@@ -125,10 +122,6 @@ namespace My.Scripts.Global
             {
                 SkipToNextSceneDebug();
             }
-
-            if (_isTransitioning) return;
-
-            HandleInactivity();
         }
 
         public void SkipToNextSceneDebug()
@@ -163,23 +156,6 @@ namespace My.Scripts.Global
             {
                 Debug.Log($"<color=yellow>[GameManager] 디버그 스킵: {currentScene} -> {nextScene}</color>");
                 ChangeScene(nextScene);
-            }
-        }
-
-        private void HandleInactivity()
-        {
-            if (SceneManager.GetActiveScene().name == GameConstants.Scene.Title ||
-                SceneManager.GetActiveScene().name == GameConstants.Scene.Ending)
-            {
-                _currentInactivityTimer = 0f;
-                return;
-            }
-
-            if (Input.anyKey || Input.touchCount > 0) _currentInactivityTimer = 0f;
-            else
-            {
-                _currentInactivityTimer += Time.deltaTime;
-                if (_currentInactivityTimer >= _inactivityLimit) ReturnToTitle();
             }
         }
 
@@ -230,7 +206,6 @@ namespace My.Scripts.Global
             await TurnOffAllHardwareOutputsAsync();
 
             firstTaggedPlayer = 0;
-            _currentInactivityTimer = 0f;
 
             if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
