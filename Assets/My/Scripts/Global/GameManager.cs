@@ -22,8 +22,7 @@ namespace My.Scripts.Global
         [SerializeField] private Reporter reporter;
 
         public bool isDebugMode = false;
-
-        private float _currentInactivityTimer;
+        
         private bool _isTransitioning;
         private float _fadeTime = 0.5f;
         private bool _isQuitting;
@@ -229,7 +228,6 @@ namespace My.Scripts.Global
             await TurnOffAllHardwareOutputsAsync();
 
             firstTaggedPlayer = 0;
-            _currentInactivityTimer = 0f;
 
             if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
