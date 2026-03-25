@@ -971,7 +971,7 @@ namespace My.Scripts.Core.Pages
                         lastDisplayTime = displayTime;
                         
                         // 2. 10초가 남았을 때 한 번만 정답 칸 힌트 연출 시작
-                        if (displayTime == 10 && !hasHinted)
+                        if (displayTime == 5 && !hasHinted)
                         {
                             hasHinted = true;
                             StartCoroutine(HintAnswerRoutine());
@@ -1054,7 +1054,7 @@ namespace My.Scripts.Core.Pages
             if (unfoundSpots.Count == 0) yield break;
 
             float t = 0f;
-            float duration = 0.4f;
+            float duration = 0.1f;
 
             // 1. 마스크 값 0.0(완전 까만색) -> 0.3(알파 0.7 느낌의 반투명)으로 페이드
             while (t < duration)
