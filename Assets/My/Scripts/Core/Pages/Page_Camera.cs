@@ -244,8 +244,15 @@ namespace My.Scripts.Core.Pages
                 if (_webCamTexture && _webCamTexture.isPlaying)
                 {
                     TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
+                    
+                    // 현재 문항 번호를 가져옴
+                    int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
+                    
+                    // 타임랩스는 사진 저장이 켜진 모든 문항(Q1~Q15)에서 활성화
                     TimeLapseRecorder.Instance.EnableTimelapseCapture = true;
-                    TimeLapseRecorder.Instance.EnableRealtimeCapture = true;
+                    
+                    // 리얼타임은 11번 문항부터 15번 문항까지만 활성화
+                    TimeLapseRecorder.Instance.EnableRealtimeCapture = (qNum >= 11 && qNum <= 15);
                     TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
                 }
                 else
@@ -254,20 +261,16 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_5초");
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_3초");
 
-            yield return StartCoroutine(ShowAndFadeNumber("5"));
-            yield return StartCoroutine(ShowAndFadeNumber("4"));
             yield return StartCoroutine(ShowAndFadeNumber("3"));
-
-            if (_shouldSavePhoto && TimeLapseRecorder.Instance)
-                TimeLapseRecorder.Instance.EnableRealtimeCapture = false;
-
             yield return StartCoroutine(ShowAndFadeNumber("2"));
             yield return StartCoroutine(ShowAndFadeNumber("1"));
 
             if (_shouldSavePhoto && TimeLapseRecorder.Instance)
             {
+                // 종료 시점에는 둘 다 비활성화 후 캡처 완전 종료
+                TimeLapseRecorder.Instance.EnableRealtimeCapture = false;
                 TimeLapseRecorder.Instance.EnableTimelapseCapture = false;
                 TimeLapseRecorder.Instance.StopCapture();
             }
