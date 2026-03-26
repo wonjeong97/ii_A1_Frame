@@ -28,7 +28,7 @@ namespace My.Scripts.Core.Pages
         protected string msgWarning;
         protected string msgReset;
         
-        protected float inactivityThreshold = 20f; 
+        protected float inactivityThreshold = 30f; 
         protected float countdownDuration = 10f;   
         
         protected float currentIdleTime = 0f;

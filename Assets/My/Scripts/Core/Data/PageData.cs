@@ -11,6 +11,7 @@ namespace My.Scripts.Core.Data
         public TextSetting descriptionText1; 
         public TextSetting descriptionText2; 
         public TextSetting descriptionText3; 
+        public TextSetting failText;
         public TextSetting[] questions; 
         public List<Vector2Int> questionSpots; 
         public string warningMessage;

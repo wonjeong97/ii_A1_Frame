@@ -97,6 +97,7 @@ namespace My.Scripts.Core.Data
                 if (specific.Page1.descriptionText1 == null || string.IsNullOrEmpty(specific.Page1.descriptionText1.text)) specific.Page1.descriptionText1 = common.Page1.descriptionText1;
                 if (specific.Page1.descriptionText2 == null || string.IsNullOrEmpty(specific.Page1.descriptionText2.text)) specific.Page1.descriptionText2 = common.Page1.descriptionText2;
                 if (specific.Page1.descriptionText3 == null || string.IsNullOrEmpty(specific.Page1.descriptionText3.text)) specific.Page1.descriptionText3 = common.Page1.descriptionText3;
+                if (specific.Page1.failText == null || string.IsNullOrEmpty(specific.Page1.failText.text)) specific.Page1.failText = common.Page1.failText;
                 if (string.IsNullOrEmpty(specific.Page1.warningMessage)) specific.Page1.warningMessage = common.Page1.warningMessage;
                 if (string.IsNullOrEmpty(specific.Page1.resetMessage)) specific.Page1.resetMessage = common.Page1.resetMessage;
             }

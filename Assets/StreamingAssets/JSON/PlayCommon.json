@@ -30,6 +30,13 @@
       "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
       "isBold": true
     },
+    "failText": {
+      "name": "Text_Fail",
+      "text": "포커스 조절 실패!",
+      "fontName": "font7",
+      "fontSize": 50,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
     "warningMessage": "숨은 문항을\n모두 찾아주세요!",
     "resetMessage": "동작이 인식되지 않아\n초기화합니다."
   },
