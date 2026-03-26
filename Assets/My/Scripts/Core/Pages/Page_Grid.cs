@@ -970,7 +970,7 @@ namespace My.Scripts.Core.Pages
                         if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_1초");
                         lastDisplayTime = displayTime;
                         
-                        // 2. 10초가 남았을 때 한 번만 정답 칸 힌트 연출 시작
+                        // 2. 5초가 남았을 때 한 번만 정답 칸 힌트 연출 시작
                         if (displayTime == 5 && !hasHinted)
                         {
                             hasHinted = true;
@@ -1020,7 +1020,7 @@ namespace My.Scripts.Core.Pages
             if (failPopupGroup)
             {
                 failPopupGroup.gameObject.SetActive(true);
-                SoundManager.Instance.PlaySFX("공통_7");
+                SoundManager.Instance?.PlaySFX("공통_7");
                 yield return StartCoroutine(FadeGroupTo(failPopupGroup, 1f, 0.3f));
             }
 
@@ -1044,14 +1044,17 @@ namespace My.Scripts.Core.Pages
         {
             if (questionSpots == null) yield break;
 
-            // 이미 찾은 정답 칸은 힌트 연출에서 제외합니다.
-            List<Vector2Int> unfoundSpots = new List<Vector2Int>();
+            // 시작 전 모든 정답을 다 찾았는지 먼저 검사합니다.
+            bool allFound = true;
             foreach (var spot in questionSpots)
             {
-                if (!_foundSpots.Contains(spot)) unfoundSpots.Add(spot);
+                if (!_foundSpots.Contains(spot))
+                {
+                    allFound = false;
+                    break;
+                }
             }
-
-            if (unfoundSpots.Count == 0) yield break;
+            if (allFound) yield break;
 
             float t = 0f;
             float duration = 0.1f;
@@ -1061,9 +1064,10 @@ namespace My.Scripts.Core.Pages
             {
                 t += Time.deltaTime;
                 float val = Mathf.Lerp(0.0f, 0.3f, t / duration);
-                foreach (var spot in unfoundSpots)
+                foreach (var spot in questionSpots)
                 {
-                    if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
+                    // 실시간으로 _foundSpots에 없는(아직 못 찾은) 칸만 업데이트합니다.
+                    if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
                         UpdateMaskPixelInstant(spot.x, spot.y, val, false);
                     }
@@ -1071,7 +1075,9 @@ namespace My.Scripts.Core.Pages
                 if (_maskTexture) _maskTexture.Apply();
                 yield return null;
             }
+            
             SoundManager.Instance?.PlaySFX("카메라_4");
+            
             // 반투명 상태를 잠시 유지
             yield return CoroutineData.GetWaitForSeconds(0.2f);
 
@@ -1081,9 +1087,10 @@ namespace My.Scripts.Core.Pages
             {
                 t += Time.deltaTime;
                 float val = Mathf.Lerp(0.3f, 0.0f, t / duration);
-                foreach (var spot in unfoundSpots)
+                foreach (var spot in questionSpots)
                 {
-                    if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
+                    // 대기하는 동안 찾은 칸이 있을 수 있으므로 다시 검사합니다.
+                    if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
                         UpdateMaskPixelInstant(spot.x, spot.y, val, false);
                     }
@@ -1093,9 +1100,10 @@ namespace My.Scripts.Core.Pages
             }
             
             // 확실하게 0.0(완전 숨김)으로 고정
-            foreach (var spot in unfoundSpots)
+            foreach (var spot in questionSpots)
             {
-                if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
+                // [수정됨] 마지막 순간까지 못 찾은 칸만 0.0f로 숨깁니다.
+                if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                 {
                     UpdateMaskPixelInstant(spot.x, spot.y, 0.0f, false);
                 }
