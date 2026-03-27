@@ -144,7 +144,7 @@ namespace My.Scripts.Core
                               $"- UID (L/R): {userData.UID_LEFT} / {userData.UID_RIGHT}\n" +
                               $"- 컬러 (L/R): {userData.COLOR_LEFT} / {userData.COLOR_RIGHT}\n" +
                               $"- 언어/관계: {userData.LANG} / {userData.RELATION}\n" +
-                              $"- 카트리지: {userData.CARTRIDGE}" +
+                              $"- 카트리지: {userData.CARTRIDGE}\n" +
                               $"- 블록 코드: {userData.BLOCK_CODE}");
 
                     if (SessionManager.Instance)

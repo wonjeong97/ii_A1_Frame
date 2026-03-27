@@ -60,13 +60,14 @@ namespace My.Scripts.Global
 
                 int sum = 0;
                 string[] blocks = BlockCode.Split(',');
+                string currentModule = CurrentModuleCode.ToUpper();
 
                 foreach (string b in blocks)
                 {
                     string block = b.Trim().ToUpper();
             
                     // 현재 진행 중인 모듈은 합산에서 제외 (엔딩에서 보상으로 따로 더해짐)
-                    if (block == CurrentModuleCode.ToUpper()) 
+                    if (block == currentModule) 
                     {
                         continue;
                     }
