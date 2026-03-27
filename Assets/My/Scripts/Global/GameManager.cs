@@ -41,12 +41,13 @@ namespace My.Scripts.Global
 
         private void Awake()
         {   
-            Debug.unityLogger.logHandler = new TimestampLogHandler(Debug.unityLogger.logHandler);
-            
             if (!Instance)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+
+                // 싱글톤이 최초 생성될 때 단 한 번만 안전하게 로그 핸들러를 등록합니다.
+                TimestampLogHandler.Attach();
 
                 if (!SessionManager.Instance)
                 {

@@ -20,7 +20,8 @@ namespace My.Scripts.Core
     public struct UserData
     {
         public string CARTRIDGE;
-        public int IDX_USER; 
+        public int IDX_USER;
+        public string BLOCK_CODE;
         public string UID_LEFT;
         public string UID_RIGHT;
         public string LANG;
@@ -135,6 +136,7 @@ namespace My.Scripts.Core
                     userData.RESERVATION_FIRST_NAME_RIGHT = ParseStringSafe(colMap, firstRow, "RESERVATION_FIRST_NAME_RIGHT");
                     userData.COLOR_LEFT = ParseColorSafe(colMap, firstRow, "COLOR_LEFT");
                     userData.COLOR_RIGHT = ParseColorSafe(colMap, firstRow, "COLOR_RIGHT");
+                    userData.BLOCK_CODE = ParseStringSafe(colMap, firstRow, "BLOCK_CODE");
 
                     Debug.Log($"[APIManager] 유저 데이터 로드 완료\n" +
                               $"- 유저 인덱스(IDX_USER): {userData.IDX_USER}\n" +
@@ -142,14 +144,29 @@ namespace My.Scripts.Core
                               $"- UID (L/R): {userData.UID_LEFT} / {userData.UID_RIGHT}\n" +
                               $"- 컬러 (L/R): {userData.COLOR_LEFT} / {userData.COLOR_RIGHT}\n" +
                               $"- 언어/관계: {userData.LANG} / {userData.RELATION}\n" +
-                              $"- 카트리지: {userData.CARTRIDGE}");
+                              $"- 카트리지: {userData.CARTRIDGE}" +
+                              $"- 블록 코드: {userData.BLOCK_CODE}");
 
                     if (SessionManager.Instance)
                     {   
                         SessionManager.Instance.CurrentUserId = userData.IDX_USER;
+                        SessionManager.Instance.BlockCode = userData.BLOCK_CODE;
                         SessionManager.Instance.Cartridge = userData.CARTRIDGE; 
                         SessionManager.Instance.PlayerAUid = userData.UID_LEFT;
                         SessionManager.Instance.PlayerBUid = userData.UID_RIGHT;
+                        
+                        SessionManager.Instance.PieceA1 = ParseIntSafe(colMap, firstRow, "PIECE_A1");
+                        SessionManager.Instance.PieceA2 = ParseIntSafe(colMap, firstRow, "PIECE_A2");
+                        SessionManager.Instance.PieceA3 = ParseIntSafe(colMap, firstRow, "PIECE_A3");
+                        SessionManager.Instance.PieceB1 = ParseIntSafe(colMap, firstRow, "PIECE_B1");
+                        SessionManager.Instance.PieceB2 = ParseIntSafe(colMap, firstRow, "PIECE_B2");
+                        SessionManager.Instance.PieceB3 = ParseIntSafe(colMap, firstRow, "PIECE_B3");
+                        SessionManager.Instance.PieceC1 = ParseIntSafe(colMap, firstRow, "PIECE_C1");
+                        SessionManager.Instance.PieceC2 = ParseIntSafe(colMap, firstRow, "PIECE_C2");
+                        SessionManager.Instance.PieceC3 = ParseIntSafe(colMap, firstRow, "PIECE_C3");
+                        SessionManager.Instance.PieceD1 = ParseIntSafe(colMap, firstRow, "PIECE_D1");
+                        SessionManager.Instance.PieceD2 = ParseIntSafe(colMap, firstRow, "PIECE_D2");
+                        SessionManager.Instance.PieceD3 = ParseIntSafe(colMap, firstRow, "PIECE_D3");
 
                         if (!string.IsNullOrWhiteSpace(userData.LANG)) 
                             SessionManager.Instance.CurrentLanguage = userData.LANG.Trim();
