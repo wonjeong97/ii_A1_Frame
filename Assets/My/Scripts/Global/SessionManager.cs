@@ -53,9 +53,13 @@ namespace My.Scripts.Global
         {
             get
             {
-                if (string.IsNullOrEmpty(BlockCode)) 
+                if (string.IsNullOrWhiteSpace(BlockCode)) 
                 {
-                    return 0;
+                    // A1은 현재 컨텐츠이므로 계산식서 제외함.
+                    return PieceA2 + PieceA3 +
+                           PieceB1 + PieceB2 + PieceB3 +
+                           PieceC1 + PieceC2 + PieceC3 +
+                           PieceD1 + PieceD2 + PieceD3;
                 }
 
                 int sum = 0;
