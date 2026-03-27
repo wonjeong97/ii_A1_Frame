@@ -20,6 +20,8 @@ namespace My.Scripts.Global
         public string PlayerAUid { get; set; } = string.Empty;
         public string PlayerBUid { get; set; } = string.Empty;
         public string CurrentLanguage { get; set; } = "ko";
+        public string BlockCode { get; set; } = string.Empty;
+        
         
         public string PlayerAFirstName { get; set; } = "NoNameA";
         public string PlayerBFirstName { get; set; } = "NoNameB";
@@ -47,10 +49,52 @@ namespace My.Scripts.Global
         public int PieceD2 { get; set; }
         public int PieceD3 { get; set; }
         
-        public int TotalPieces => PieceA2 + PieceA3 + 
-                                  PieceB1 + PieceB2 + PieceB3 + 
-                                  PieceC1 + PieceC2 + PieceC3 + 
-                                  PieceD1 + PieceD2 + PieceD3;
+        public int TotalPieces
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(BlockCode)) 
+                {
+                    // A1은 현재 컨텐츠이므로 계산식서 제외함.
+                    return PieceA2 + PieceA3 +
+                           PieceB1 + PieceB2 + PieceB3 +
+                           PieceC1 + PieceC2 + PieceC3 +
+                           PieceD1 + PieceD2 + PieceD3;
+                }
+
+                int sum = 0;
+                string[] blocks = BlockCode.Split(',');
+                string currentModule = CurrentModuleCode.ToUpper();
+
+                foreach (string b in blocks)
+                {
+                    string block = b.Trim().ToUpper();
+            
+                    // 현재 진행 중인 모듈은 합산에서 제외 (엔딩에서 보상으로 따로 더해짐)
+                    if (block == currentModule) 
+                    {
+                        continue;
+                    }
+
+                    switch (block)
+                    {
+                        case "A1": sum += PieceA1; break;
+                        case "A2": sum += PieceA2; break;
+                        case "A3": sum += PieceA3; break;
+                        case "B1": sum += PieceB1; break;
+                        case "B2": sum += PieceB2; break;
+                        case "B3": sum += PieceB3; break;
+                        case "C1": sum += PieceC1; break;
+                        case "C2": sum += PieceC2; break;
+                        case "C3": sum += PieceC3; break;
+                        case "D1": sum += PieceD1; break;
+                        case "D2": sum += PieceD2; break;
+                        case "D3": sum += PieceD3; break;
+                    }
+                }
+                return sum;
+            }
+        }
 
         private void Awake()
         {
@@ -70,6 +114,7 @@ namespace My.Scripts.Global
             CurrentUserId = 0;
             PlayerAUid = string.Empty;
             PlayerBUid = string.Empty;
+            BlockCode = string.Empty;
             CurrentLanguage = "ko";
             
             PlayerAFirstName = "NoNameA";
