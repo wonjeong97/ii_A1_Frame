@@ -198,25 +198,26 @@ namespace My.Scripts.Core
                         }
                         else
                         {
-                            Debug.LogWarning("LANG 데이터 누락됨.");
+                            Debug.LogWarning("LANG 데이터 누락됨. 기본값 'ko' 적용.");
+                            SessionManager.Instance.CurrentLanguage = "ko";
                         }
-
-                        if (!string.IsNullOrEmpty(userData.RESERVATION_FIRST_NAME_LEFT))
+                        if (!string.IsNullOrWhiteSpace(userData.RESERVATION_FIRST_NAME_LEFT))
                         {
-                            SessionManager.Instance.PlayerAFirstName = userData.RESERVATION_FIRST_NAME_LEFT;
-                        }
-                        else
-                        {
-                            Debug.LogWarning("RESERVATION_FIRST_NAME_LEFT 누락됨.");
-                        }
-
-                        if (!string.IsNullOrEmpty(userData.RESERVATION_FIRST_NAME_RIGHT))
-                        {
-                            SessionManager.Instance.PlayerBFirstName = userData.RESERVATION_FIRST_NAME_RIGHT;
+                            SessionManager.Instance.PlayerAFirstName = userData.RESERVATION_FIRST_NAME_LEFT.Trim();
                         }
                         else
                         {
-                            Debug.LogWarning("RESERVATION_FIRST_NAME_RIGHT 누락됨.");
+                            Debug.LogWarning("RESERVATION_FIRST_NAME_LEFT 누락됨. 기본값 'NoNameA' 적용.");
+                            SessionManager.Instance.PlayerAFirstName = "NoNameA";
+                        }
+                        if (!string.IsNullOrWhiteSpace(userData.RESERVATION_FIRST_NAME_RIGHT))
+                        {
+                            SessionManager.Instance.PlayerBFirstName = userData.RESERVATION_FIRST_NAME_RIGHT.Trim();
+                        }
+                        else
+                        {
+                            Debug.LogWarning("RESERVATION_FIRST_NAME_RIGHT 누락됨. 기본값 'NoNameB' 적용.");
+                            SessionManager.Instance.PlayerBFirstName = "NoNameB";
                         }
                         
                         SessionManager.Instance.PlayerAColor = userData.COLOR_LEFT;
