@@ -14,6 +14,7 @@ namespace My.Scripts.Core.Data
         QnAPageData Page2 { get; set; }
         TransitionPageData Page4 { get; set; }
         TransitionPageData Page5 { get; set; }
+        TransitionPageData Page6 { get; set; }
     }
 
     /// <summary>
@@ -25,13 +26,15 @@ namespace My.Scripts.Core.Data
         public GridPageData page1;
         public QnAPageData page2;
         public TransitionPageData page4;
+        public TransitionPageData page5;
         public TransitionPageData page6;
 
         public GridPageData Page1 { get => page1; set => page1 = value; }
         public QnAPageData Page2 { get => page2; set => page2 = value; }
 
         public TransitionPageData Page4 { get => page4; set => page4 = value; }
-        public TransitionPageData Page5 { get => page6; set => page6 = value; }
+        public TransitionPageData Page5 { get => page5; set => page5 = value; }
+        public TransitionPageData Page6 { get => page6; set => page6 = value; }
     }
 
     /// <summary>
@@ -43,6 +46,7 @@ namespace My.Scripts.Core.Data
         public GridPageData page1;
         public QnAPageData page2;
         public TransitionPageData page4;
+        public TransitionPageData page5;
         public TransitionPageData page6;
         public TransitionPageData page7;
         public TutorialPage8Data page8;
@@ -50,7 +54,8 @@ namespace My.Scripts.Core.Data
         public GridPageData Page1 { get => page1; set => page1 = value; }
         public QnAPageData Page2 { get => page2; set => page2 = value; }
         public TransitionPageData Page4 { get => page4; set => page4 = value; }
-        public TransitionPageData Page5 { get => page6; set => page6 = value; }
+        public TransitionPageData Page5 { get => page5; set => page5 = value; }
+        public TransitionPageData Page6 { get => page6; set => page6 = value; }
 
         public TransitionPageData Page7 { get => page7; set => page7 = value; }
         public TutorialPage8Data Page8 { get => page8; set => page8 = value; }
@@ -175,6 +180,18 @@ namespace My.Scripts.Core.Data
                     specific.Page5.descriptionText = common.Page5.descriptionText;
                 if (string.IsNullOrEmpty(specific.Page5.warningMessage)) specific.Page5.warningMessage = common.Page5.warningMessage;
                 if (string.IsNullOrEmpty(specific.Page5.resetMessage)) specific.Page5.resetMessage = common.Page5.resetMessage;
+            }
+
+            if (specific.Page6 == null)
+            {
+                Debug.LogWarning("Page6 데이터 누락됨.");
+            }
+            else if (common.Page6 != null)
+            {
+                if (specific.Page6.descriptionText == null || string.IsNullOrEmpty(specific.Page6.descriptionText.text))
+                    specific.Page6.descriptionText = common.Page6.descriptionText;
+                if (string.IsNullOrEmpty(specific.Page6.warningMessage)) specific.Page6.warningMessage = common.Page6.warningMessage;
+                if (string.IsNullOrEmpty(specific.Page6.resetMessage)) specific.Page6.resetMessage = common.Page6.resetMessage;
             }
         }
     }

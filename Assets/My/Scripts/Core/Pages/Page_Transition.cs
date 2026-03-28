@@ -84,12 +84,12 @@ namespace My.Scripts.Core.Pages
             if (string.IsNullOrWhiteSpace(nameA))
             {
                 Debug.LogWarning("PlayerAFirstName 값이 누락됨.");
-                nameA = ""; 
+                nameA = "PlayerA"; 
             }
             if (string.IsNullOrWhiteSpace(nameB))
             {
                 Debug.LogWarning("PlayerBFirstName 값이 누락됨.");
-                nameB = ""; 
+                nameB = "PlayerB"; 
             }
             
             // # TODO: Replace 호출은 매번 새로운 문자열을 생성하여 GC를 유발하므로, 성능이 중요한 경우 StringBuilder 포맷팅으로 개선 필요.

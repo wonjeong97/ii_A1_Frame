@@ -156,13 +156,13 @@ namespace My.Scripts.Core.Pages
             }
             else Debug.LogWarning("questionSpots 배열이 비어있음.");
 
-            if (questionTexts != null && data.questions != null)
+            if (questionTexts != null)
             {
                 for (int i = 0; i < questionTexts.Length; i++)
                 {
                     if (!questionTexts[i]) continue;
                     
-                    if (i < data.questions.Length && data.questions[i] != null)
+                    if (data.questions != null && i < data.questions.Length && data.questions[i] != null)
                     {
                         UIManager.Instance.SetText(questionTexts[i].gameObject, data.questions[i]);
                         questionTexts[i].gameObject.SetActive(true);

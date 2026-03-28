@@ -226,7 +226,8 @@ namespace My.Scripts.Core
                         string cartridgeStr = userData.CARTRIDGE;
                         if (string.IsNullOrWhiteSpace(cartridgeStr))
                         {
-                            Debug.LogWarning("CARTRIDGE 누락됨.");
+                            Debug.LogWarning("CARTRIDGE 누락됨. 기본값 'A' 사용.");
+                            cartridgeStr = "A";
                         }
                         else
                         {
@@ -236,7 +237,8 @@ namespace My.Scripts.Core
                         int relationNum = userData.RELATION;
                         if (relationNum < 1 || relationNum > 6)
                         {
-                            Debug.LogWarning("RELATION 값 범위를 벗어남.");
+                            Debug.LogWarning("RELATION 값 범위를 벗어남. 기본값 1 사용.");
+                            relationNum = 1;
                         }
 
                         // ex: cartridgeStr="C", relationNum=4 -> combinedTypeStr="C4"
@@ -248,7 +250,8 @@ namespace My.Scripts.Core
                         }
                         else
                         {
-                            Debug.LogWarning($"알 수 없는 타입 조합: {combinedTypeStr}");
+                            Debug.LogWarning($"알 수 없는 타입 조합: {combinedTypeStr}. 기본값 A1 적용.");
+                            SessionManager.Instance.CurrentUserType = UserType.A1;
                         }
 
                         int endCount = 0;

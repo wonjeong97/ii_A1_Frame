@@ -73,7 +73,7 @@ namespace My.Scripts.Core
 
                     ReplaceNamesInQnAPage(tSetting.Page2, nameA, nameB);
                     ReplaceNamesInTransitionPage(tSetting.Page4, nameA, nameB);
-                    ReplaceNamesInTransitionPage(tSetting.Page5, nameA, nameB);
+                    ReplaceNamesInTransitionPage(tSetting.Page6, nameA, nameB);
                     ReplaceNamesInTransitionPage(tSetting.Page7, nameA, nameB);
                     ReplaceNamesInTutorialPage8(tSetting.Page8, nameA, nameB);
 
@@ -116,7 +116,7 @@ namespace My.Scripts.Core
                     
                     ReplaceNamesInQnAPage(sSetting.Page2, nameA, nameB);
                     ReplaceNamesInTransitionPage(sSetting.Page4, nameA, nameB);
-                    ReplaceNamesInTransitionPage(sSetting.Page5, nameA, nameB);
+                    ReplaceNamesInTransitionPage(sSetting.Page6, nameA, nameB);
 
                     SetCameraFileName();
                     ConfigureCameraPage(true);
@@ -124,7 +124,7 @@ namespace My.Scripts.Core
                     SetupPageData(0, sSetting.Page1);
                     SetupPageData(1, sSetting.Page2);
                     SetupPageData(2, sSetting.Page4); 
-                    SetupPageData(4, sSetting.Page5); 
+                    SetupPageData(4, sSetting.Page6); 
                 }
                 else
                 {
@@ -221,10 +221,12 @@ namespace My.Scripts.Core
         private int ParseLevelNumber(string id)
         {
             if (string.IsNullOrEmpty(id)) return 0;
-            // ex: "Q15_B2" -> "152" -> int.TryParse("152") = 152 
-            // # TODO: "Q15_B2"에서 의도와 달리 '2'가 포함되어 152로 파싱되는 논리 오류 가능성 있음. 추출 로직 수정 검토 필요.
-            string numStr = Regex.Replace(id, "[^0-9]", "");
-            if (int.TryParse(numStr, out int num)) return num;
+            
+            Match match = Regex.Match(id, @"\d+");
+            if (match.Success && int.TryParse(match.Value, out int num)) 
+            {
+                return num;
+            }
             return 0;
         }
 

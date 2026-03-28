@@ -267,18 +267,17 @@ namespace My.Scripts.Global
         public string GetLevelSuffix(int questionNumber)
         {
             if (questionNumber <= 0 || !SessionManager.Instance) return "";
-
             string currentType = SessionManager.Instance.CurrentUserType.ToString(); 
             // ex: questionNumber=4, currentType="A3" -> targetScene="Play_Q4_A3"
             string targetScene = $"Play_Q{questionNumber}_{currentType}";
-
             if (Application.CanStreamedLevelBeLoaded(targetScene))
             {
                 return $"_{currentType}"; 
             }
             
             Debug.LogWarning($"씬 누락됨: {targetScene}");
-            return ""; 
+            // 씬이 없더라도 타입 정보를 유지하여 호출부에서 적절히 처리하도록 함
+            return $"_{currentType}";
         }
 
         #region Hardware Control Helper
