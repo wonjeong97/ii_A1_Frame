@@ -11,17 +11,16 @@ using Wonjeong.Utils;
 namespace My.Scripts.Core.Pages
 {
     /// <summary> 
-    /// 그리드 탐색 게임 페이지 컨트롤러.
-    /// 플레이어가 다이얼을 조작해 보이지 않는 격자판을 이동하며 숨겨진 질문(정답) 칸을 찾아내는 미니게임을 제어합니다.
+    /// 다이얼 입력을 받아 보이지 않는 격자판을 탐색하고 정답 위치를 찾아내는 미니게임을 제어함.
     /// </summary>
     public class Page_Grid : PopupGamePage<GridPageData>
     {
         [Header("UI References")] 
-        [SerializeField] private Text textMain; // 데이터 주입용 명시적 텍스트
-        [SerializeField] private CanvasGroup mainTextGroup; // 텍스트 묶음 동시 페이드아웃용 캔버스 그룹
+        [SerializeField] private Text textMain;
+        [SerializeField] private CanvasGroup mainTextGroup;
         [SerializeField] private Text textSub; 
         [SerializeField] private Text[] questionTexts; 
-        [SerializeField] private Text textCounting; // 문항 카운팅 텍스트 (1/15 등)
+        [SerializeField] private Text textCounting;
 
         [Header("Interaction")] 
         [SerializeField] private Image imageBlack; 
@@ -40,11 +39,11 @@ namespace My.Scripts.Core.Pages
         private readonly float cellFadeDuration = 0.05f; 
 
         [Header("Breathing Effect")]
-        [Tooltip("정답 칸에 있을 때 최소 투명도 (0: 완전 투명, 1: 까만 배경)")]
+        [Tooltip("정답 칸 최소 투명도")]
         [SerializeField, Range(0f, 1f)] private float breathAlphaMin = 0.1f;
-        [Tooltip("정답 칸에 있을 때 최대 투명도 (0: 완전 투명, 1: 까만 배경)")]
+        [Tooltip("정답 칸 최대 투명도")]
         [SerializeField, Range(0f, 1f)] private float breathAlphaMax = 0.3f;
-        [Tooltip("깜빡이는 속도 (높을수록 빠름)")]
+        [Tooltip("깜빡이는 속도")]
         [SerializeField] private float breathSpeed = 2.0f;
         
         [Header("Timer UI")]
@@ -64,7 +63,6 @@ namespace My.Scripts.Core.Pages
         private Coroutine _timerRoutine;
         private const float GridTimeLimit = 15f;
 
-        // --- 내부 로직 변수 ---
         private RectTransform _blackRect; 
         private Texture2D _maskTexture; 
         private Material _eraserMaterial, _gridMaterial; 
@@ -80,7 +78,6 @@ namespace My.Scripts.Core.Pages
         private int _totalQuestionCount; 
         private Coroutine _autoFadeRoutine;
 
-        // --- 텍스트 및 경고 관련 ---
         private TextSetting _defaultTextSub; 
         private TextSetting _warningText; 
         private Coroutine _textFadeRoutine; 
@@ -93,7 +90,6 @@ namespace My.Scripts.Core.Pages
         private float _p2InputTimer = 0f;
         private Coroutine _simultaneousWarningRoutine;
 
-        // --- 휠 입력 및 관성 보정 변수 ---
         private int _lastP1Key = -1;
         private int _lastP2Key = -1;
         
@@ -117,23 +113,34 @@ namespace My.Scripts.Core.Pages
 
         private readonly List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
 
-        /// <summary> JSON 데이터에서 텍스트와 정답 좌표를 가져와 초기화합니다. </summary>
+        /// <summary> 
+        /// 외부 JSON 데이터의 텍스트와 정답 좌표를 UI 컴포넌트에 바인딩함.
+        /// </summary>
         protected override void SetupData(GridPageData data)
         {
             if (data == null) return;
 
-            // 캔버스 그룹 내부 자동 검색을 제거하고 명시적으로 할당된 textMain에만 데이터를 덮어씌웁니다.
-            if (textMain) UIManager.Instance.SetText(textMain.gameObject, data.descriptionText1);
-            if (textSub) UIManager.Instance.SetText(textSub.gameObject, data.descriptionText2);
+            if (data.descriptionText1 != null)
+            {
+                if (textMain) UIManager.Instance.SetText(textMain.gameObject, data.descriptionText1);
+            }
+            else Debug.LogWarning("descriptionText1 데이터 누락됨.");
+
+            if (data.descriptionText2 != null)
+            {
+                if (textSub) UIManager.Instance.SetText(textSub.gameObject, data.descriptionText2);
+            }
+            else Debug.LogWarning("descriptionText2 데이터 누락됨.");
 
             _defaultTextSub = data.descriptionText2;
             _warningText = data.descriptionText3;
-            
             _failTextSetting = data.failText;
-            if (textFail && _failTextSetting != null)
+
+            if (_failTextSetting != null)
             {
-                UIManager.Instance.SetText(textFail.gameObject, _failTextSetting);
+                if (textFail) UIManager.Instance.SetText(textFail.gameObject, _failTextSetting);
             }
+            else Debug.LogWarning("failText 데이터 누락됨.");
 
             if (data.questionSpots != null && data.questionSpots.Count > 0)
             {
@@ -144,40 +151,44 @@ namespace My.Scripts.Core.Pages
                     {
                         filtered.Add(spot);
                     }
-                    questionSpots = new List<Vector2Int>(filtered);
                 }
+                questionSpots = new List<Vector2Int>(filtered);
             }
+            else Debug.LogWarning("questionSpots 배열이 비어있음.");
 
-            if (questionTexts != null)
+            if (questionTexts != null && data.questions != null)
             {
                 for (int i = 0; i < questionTexts.Length; i++)
                 {
                     if (!questionTexts[i]) continue;
-                    if (data.questions != null && i < data.questions.Length)
+                    
+                    if (i < data.questions.Length && data.questions[i] != null)
                     {
                         UIManager.Instance.SetText(questionTexts[i].gameObject, data.questions[i]);
                         questionTexts[i].gameObject.SetActive(true);
                     }
-                    else questionTexts[i].gameObject.SetActive(false);
+                    else
+                    {
+                        questionTexts[i].gameObject.SetActive(false);
+                    }
                 }
             }
-
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary> 페이지 진입 시 그리드를 초기화하고 플레이어의 시작 위치를 배정합니다. </summary>
+        /// <summary> 
+        /// 페이지 진입 시 그리드 상태를 초기화하고 플레이어 시작 지점을 계산하여 배치함. 
+        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
 
-            // 문항 카운팅 텍스트 초기화 (튜토리얼은 0번으로 취급되어 빈칸 처리됨)
             if (textCounting)
             {
                 int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
                 textCounting.text = qNum > 0 ? $"{qNum}/15" : "";
             }
 
-            // 페이지 재진입 시 텍스트 상태 초기화 보장
             if (mainTextGroup) 
             {
                 mainTextGroup.gameObject.SetActive(true);
@@ -199,10 +210,7 @@ namespace My.Scripts.Core.Pages
                 failPopupGroup.gameObject.SetActive(false);
             }
             
-            if (_autoFadeRoutine != null) 
-            {
-                StopCoroutine(_autoFadeRoutine);
-            }
+            if (_autoFadeRoutine != null) StopCoroutine(_autoFadeRoutine);
             _autoFadeRoutine = StartCoroutine(AutoFadeMainTextRoutine());
             
             if (_timerRoutine != null) StopCoroutine(_timerRoutine);
@@ -215,7 +223,11 @@ namespace My.Scripts.Core.Pages
 
             _p1InputTimer = 0f;
             _p2InputTimer = 0f;
-            if (_simultaneousWarningRoutine != null) { StopCoroutine(_simultaneousWarningRoutine); _simultaneousWarningRoutine = null; }
+            if (_simultaneousWarningRoutine != null) 
+            { 
+                StopCoroutine(_simultaneousWarningRoutine); 
+                _simultaneousWarningRoutine = null; 
+            }
 
             ResetIdleState(true); 
 
@@ -224,6 +236,7 @@ namespace My.Scripts.Core.Pages
             int startX = GetGridCenterX();
             int startY = GetGridCenterY();
 
+            // 시작 지점이 정답 칸과 겹칠 경우 오동작 방지를 위해 인접한 빈 칸으로 시작 위치를 이동함.
             if (_questionMap != null && _questionMap[startX, startY])
             {
                 bool foundSafeSpot = false;
@@ -255,7 +268,7 @@ namespace My.Scripts.Core.Pages
 
                 if (!foundSafeSpot)
                 {
-                    Debug.LogWarning("[Page_Grid] 시작점 주변에 안전한 오답 칸이 없습니다.");
+                    Debug.LogWarning("시작점 주변에 안전한 오답 칸이 없음.");
                 }
             }
 
@@ -275,19 +288,35 @@ namespace My.Scripts.Core.Pages
             _isStageCompleted = false;
 
             if (completionCanvasGroups != null)
+            {
                 foreach (CanvasGroup cg in completionCanvasGroups)
-                    if (cg) { cg.alpha = 0f; cg.gameObject.SetActive(true); }
+                {
+                    if (cg) 
+                    { 
+                        cg.alpha = 0f; 
+                        cg.gameObject.SetActive(true); 
+                    }
+                }
+            }
 
             if (textCanvasGroups != null)
+            {
                 foreach (CanvasGroup cg in textCanvasGroups)
+                {
                     if (cg) cg.alpha = 1f;
+                }
+            }
 
             _questionMap = new bool[gridSizeX, gridSizeY];
             if (questionSpots != null)
             {
                 foreach (Vector2Int s in questionSpots)
+                {
                     if (s.x >= 0 && s.x < gridSizeX && s.y >= 0 && s.y < gridSizeY)
+                    {
                         _questionMap[s.x, s.y] = true;
+                    }
+                }
                 _totalQuestionCount = questionSpots.Count;
             }
 
@@ -411,8 +440,16 @@ namespace My.Scripts.Core.Pages
 
         protected override void StartResetSequence()
         {
-            if (_textBlinkRoutine != null) { StopCoroutine(_textBlinkRoutine); _textBlinkRoutine = null; }
-            if (_simultaneousWarningRoutine != null) { StopCoroutine(_simultaneousWarningRoutine); _simultaneousWarningRoutine = null; }
+            if (_textBlinkRoutine != null) 
+            { 
+                StopCoroutine(_textBlinkRoutine); 
+                _textBlinkRoutine = null; 
+            }
+            if (_simultaneousWarningRoutine != null) 
+            { 
+                StopCoroutine(_simultaneousWarningRoutine); 
+                _simultaneousWarningRoutine = null; 
+            }
 
             if (textSub) textSub.gameObject.SetActive(false);
 
@@ -440,6 +477,9 @@ namespace My.Scripts.Core.Pages
             _textBlinkRoutine = null;
         }
 
+        /// <summary> 
+        /// 플레이어 입력 방향을 해석하여 그리드 이동을 처리하고 충돌(동시 입력)을 제어함. 
+        /// </summary>
         private void HandleMovement()
         {
             if (_isInputBlocked || _isStageCompleted) return;
@@ -497,6 +537,8 @@ namespace My.Scripts.Core.Pages
             {
                 if (_lastP1Key != -1)
                 {
+                    // 모듈러 연산으로 방향키 회전값 보정
+                    // ex: p1Key=1, lastP1Key=4 -> diff=(1-4+4)%4 = 1
                     int diff = (p1Key - _lastP1Key + 4) % 4;
                     int dir = 0; 
 
@@ -568,14 +610,12 @@ namespace My.Scripts.Core.Pages
                 {
                     _hasMoved = true;
                     
-                    // 플레이어 개입 시 자동 페이드아웃 타이머 정지
                     if (_autoFadeRoutine != null)
                     {
                         StopCoroutine(_autoFadeRoutine);
                         _autoFadeRoutine = null;
                     }
                     
-                    // 그룹이 등록되어 있다면 그룹 전체를 페이드아웃, 없다면 기존처럼 개별 텍스트(textMain) 페이드아웃 처리
                     if (mainTextGroup && mainTextGroup.gameObject.activeSelf)
                     {
                         StartCoroutine(FadeGroupTo(mainTextGroup, 0f, 0.3f, () => mainTextGroup.gameObject.SetActive(false)));
@@ -610,7 +650,6 @@ namespace My.Scripts.Core.Pages
         {
             yield return CoroutineData.GetWaitForSeconds(3.0f);
 
-            // 대기 시간 동안 플레이어가 이동하여 텍스트가 지워졌다면 로직 무시
             if (_hasMoved) yield break;
 
             _hasMoved = true;
@@ -731,6 +770,9 @@ namespace My.Scripts.Core.Pages
             onComplete?.Invoke();
         }
 
+        /// <summary> 
+        /// 그리드 좌표 이동에 따른 마스크 텍스처 갱신 및 정답 발견 여부를 확인함. 
+        /// </summary>
         private void SetFocusToGrid(int x, int y, bool isFirstInit = false)
         {
             if (!isFirstInit)
@@ -763,7 +805,7 @@ namespace My.Scripts.Core.Pages
                 if (!_foundSpots.Contains(p))
                 {
                     _foundSpots.Add(p);
-                    SoundManager.Instance?.PlaySFX("카메라_2");
+                    if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_2");
                     if (_foundSpots.Count >= _totalQuestionCount && !_isStageCompleted)
                     {
                         _isStageCompleted = true;
@@ -775,7 +817,7 @@ namespace My.Scripts.Core.Pages
 
         private IEnumerator ShowCompletionRoutine()
         {   
-            SoundManager.Instance?.PlaySFX("카메라_3");
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_3");
 
             UpdateMaskPixelInstant(_currentGridX, _currentGridY, 1.0f, true);
 
@@ -790,13 +832,17 @@ namespace My.Scripts.Core.Pages
                     float alpha = Mathf.Clamp01(t / duration);
                     
                     foreach (CanvasGroup cg in completionCanvasGroups)
+                    {
                         if (cg) cg.alpha = alpha;
+                    }
                     
                     yield return null;
                 }
 
                 foreach (CanvasGroup cg in completionCanvasGroups)
+                {
                     if (cg) cg.alpha = 1f;
+                }
             }
 
             yield return CoroutineData.GetWaitForSeconds(2.0f);
@@ -814,8 +860,12 @@ namespace My.Scripts.Core.Pages
                 }
 
                 if (textCanvasGroups != null)
+                {
                     foreach (CanvasGroup cg in textCanvasGroups)
+                    {
                         if (cg) cg.alpha = Mathf.Lerp(1f, 0f, p);
+                    }
+                }
                 yield return null;
             }
 
@@ -828,7 +878,13 @@ namespace My.Scripts.Core.Pages
             if (info == null)
             {
                 info = new CellFadeInfo
-                    { x = x, y = y, timer = 0f, startVal = GetMaskPixelValue(x, y), targetVal = targetVal };
+                { 
+                    x = x, 
+                    y = y, 
+                    timer = 0f, 
+                    startVal = GetMaskPixelValue(x, y), 
+                    targetVal = targetVal 
+                };
                 _activeFades.Add(info);
             }
             else
@@ -839,6 +895,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary> 
+        /// 활성화된 픽셀 페이딩 애니메이션을 갱신하고 정답 칸의 깜빡임(Breathing) 효과를 연산함. 
+        /// </summary>
         private void UpdateCellFades()
         {
             bool needsApply = false;
@@ -876,6 +935,7 @@ namespace My.Scripts.Core.Pages
 
                     if (!isFading)
                     {
+                        // ex: time=0.5, speed=2.0 -> pingpong(1.0, 1) = 0
                         float pingPong = Mathf.PingPong(Time.time * breathSpeed, 1f);
                         float currentAlpha = Mathf.Lerp(breathAlphaMin, breathAlphaMax, pingPong);
                         
@@ -886,7 +946,7 @@ namespace My.Scripts.Core.Pages
                     }
                 }
             }
-
+            
             if (needsApply && _maskTexture) 
             {
                 _maskTexture.Apply();
@@ -942,6 +1002,9 @@ namespace My.Scripts.Core.Pages
             if (_gridMaterial) Destroy(_gridMaterial);
         }
         
+        /// <summary> 
+        /// 제한 시간 카운트다운을 진행하며 시각 및 청각적 피드백을 발생시킴. 
+        /// </summary>
         private IEnumerator TimerRoutine()
         {
             if (textTimer) textTimer.text = "15";
@@ -957,20 +1020,16 @@ namespace My.Scripts.Core.Pages
             {
                 if (_isStageCompleted) yield break;
 
-                // 무응답 경고 및 시간 초과 실패 팝업 중에는 타이머 정지
                 if (!isResetSequenceActive && !_isFailPopupActive)
                 {
                     currentTime -= Time.deltaTime;
                     int displayTime = Mathf.CeilToInt(currentTime);
 
-                    // 숫자가 바뀔 때마다 진입
                     if (displayTime != lastDisplayTime && displayTime > 0)
                     {
-                        // 1. 매 초마다 사운드 재생
                         if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_1초");
                         lastDisplayTime = displayTime;
                         
-                        // 2. 5초가 남았을 때 한 번만 정답 칸 힌트 연출 시작
                         if (displayTime == 5 && !hasHinted)
                         {
                             hasHinted = true;
@@ -995,16 +1054,18 @@ namespace My.Scripts.Core.Pages
             }
         }
         
+        /// <summary> 
+        /// 시간 초과 시 실패 팝업을 연출하고 정답을 강제로 공개한 뒤 다음 단계로 이행함. 
+        /// </summary>
         private IEnumerator ShowFailPopupRoutine()
         {
             _isFailPopupActive = true;
             _isInputBlocked = true; 
-            _isStageCompleted = true; // 유저 개입이 더 이상 발생하지 않도록 차단
+            _isStageCompleted = true; 
 
-            // 1. 정답 칸의 마스크 값을 1.0(완전 투명/공개)으로 변경
             if (questionSpots != null)
             {
-                foreach (var spot in questionSpots)
+                foreach (Vector2Int spot in questionSpots)
                 {
                     if (spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
@@ -1013,21 +1074,17 @@ namespace My.Scripts.Core.Pages
                 }
             }
 
-            // 셀이 부드럽게 밝아질 시간 0.1초 대기
             yield return CoroutineData.GetWaitForSeconds(0.1f);
 
-            // 2. 실패 팝업 페이드 인
             if (failPopupGroup)
             {
                 failPopupGroup.gameObject.SetActive(true);
-                SoundManager.Instance?.PlaySFX("공통_7");
+                if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_7");
                 yield return StartCoroutine(FadeGroupTo(failPopupGroup, 1f, 0.3f));
             }
 
-            // 3. 1초 대기 (유저가 실패 문구를 인지할 시간)
             yield return CoroutineData.GetWaitForSeconds(1.5f);
 
-            // 화면을 전환하기 전에 팝업을 깔끔하게 페이드아웃
             if (failPopupGroup)
             {
                 yield return StartCoroutine(FadeGroupTo(failPopupGroup, 0f, 0.3f));
@@ -1035,18 +1092,18 @@ namespace My.Scripts.Core.Pages
             }
 
             _isFailPopupActive = false;
-            
-            // 4. 다음 페이지(Page_QnA)로 즉시 전환
             CompleteStep();
         }
         
+        /// <summary> 
+        /// 게임 종료가 임박했을 때 남은 정답 칸을 반투명하게 노출시켜 사용자에게 힌트를 제공함. 
+        /// </summary>
         private IEnumerator HintAnswerRoutine()
         {
             if (questionSpots == null) yield break;
 
-            // 시작 전 모든 정답을 다 찾았는지 먼저 검사합니다.
             bool allFound = true;
-            foreach (var spot in questionSpots)
+            foreach (Vector2Int spot in questionSpots)
             {
                 if (!_foundSpots.Contains(spot))
                 {
@@ -1059,14 +1116,12 @@ namespace My.Scripts.Core.Pages
             float t = 0f;
             float duration = 0.1f;
 
-            // 1. 마스크 값 0.0(완전 까만색) -> 0.3(알파 0.7 느낌의 반투명)으로 페이드
             while (t < duration)
             {
                 t += Time.deltaTime;
                 float val = Mathf.Lerp(0.0f, 0.3f, t / duration);
-                foreach (var spot in questionSpots)
+                foreach (Vector2Int spot in questionSpots)
                 {
-                    // 실시간으로 _foundSpots에 없는(아직 못 찾은) 칸만 업데이트합니다.
                     if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
                         UpdateMaskPixelInstant(spot.x, spot.y, val, false);
@@ -1076,20 +1131,17 @@ namespace My.Scripts.Core.Pages
                 yield return null;
             }
             
-            SoundManager.Instance?.PlaySFX("카메라_4");
+            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_4");
             
-            // 반투명 상태를 잠시 유지
             yield return CoroutineData.GetWaitForSeconds(0.2f);
 
-            // 2. 마스크 값 0.3 -> 0.0(다시 까맣게 숨김)으로 복구
             t = 0f;
             while (t < duration)
             {
                 t += Time.deltaTime;
                 float val = Mathf.Lerp(0.3f, 0.0f, t / duration);
-                foreach (var spot in questionSpots)
+                foreach (Vector2Int spot in questionSpots)
                 {
-                    // 대기하는 동안 찾은 칸이 있을 수 있으므로 다시 검사합니다.
                     if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                     {
                         UpdateMaskPixelInstant(spot.x, spot.y, val, false);
@@ -1099,10 +1151,8 @@ namespace My.Scripts.Core.Pages
                 yield return null;
             }
             
-            // 확실하게 0.0(완전 숨김)으로 고정
-            foreach (var spot in questionSpots)
+            foreach (Vector2Int spot in questionSpots)
             {
-                // [수정됨] 마지막 순간까지 못 찾은 칸만 0.0f로 숨깁니다.
                 if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
                 {
                     UpdateMaskPixelInstant(spot.x, spot.y, 0.0f, false);
@@ -1111,7 +1161,6 @@ namespace My.Scripts.Core.Pages
             if (_maskTexture) _maskTexture.Apply();
         }
 
-        // 이미지와 텍스트 색상을 동시에 바꿔주는 헬퍼 메서드
         private void SetTimerColor(Color color)
         {
             if (imageTimer) imageTimer.color = color;

@@ -12,6 +12,9 @@ using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
+    /// <summary>
+    /// 웹캠 제어, UI 연출 및 촬영된 사진의 로컬 저장을 담당하는 페이지.
+    /// </summary>
     public class Page_Camera : GamePage
     {
         [Header("UI References")]
@@ -49,6 +52,9 @@ namespace My.Scripts.Core.Pages
         private bool _isQ6To10;
         private Color _currentTintColor = Color.white;
 
+        /// <summary>
+        /// 컴포넌트 초기화 및 기본 마스킹 매터리얼을 설정함.
+        /// </summary>
         protected override void Awake()
         {
             base.Awake();
@@ -59,6 +65,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 기기별 웹캠 회전 및 반전 상태를 실시간으로 UI Transform에 동기화함.
+        /// </summary>
         private void Update()
         {
             if (_webCamTexture && _webCamTexture.isPlaying && cameraDisplay)
@@ -66,25 +75,46 @@ namespace My.Scripts.Core.Pages
                 float sy = _webCamTexture.videoVerticallyMirrored ? -1f : 1f;
                 float sx = (!string.IsNullOrEmpty(_selectedDevice.name) && _selectedDevice.isFrontFacing) ? -1f : 1f;
 
+                // ex: videoRotationAngle=90 -> localEulerAngles=(0, 0, -90)
                 cameraDisplay.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_webCamTexture.videoRotationAngle);
+                
+                // ex: sx=-1(전면 카메라), sy=1 -> localScale=(-1, 1, 1)
                 cameraDisplay.rectTransform.localScale = new Vector3(sx, sy, 1f);
             }
         }
 
+        /// <summary>
+        /// 전달받은 데이터를 페이지에 적용함.
+        /// </summary>
+        /// <param name="data">적용할 데이터 객체</param>
         public override void SetupData(object data)
         {
         }
 
+        /// <summary>
+        /// 캡처된 사진이 로컬에 저장될 파일명을 지정함.
+        /// </summary>
+        /// <param name="fileName">저장할 파일명</param>
         public void SetPhotoFilename(string fileName)
         {
             _photoFileName = fileName;
         }
 
+        /// <summary>
+        /// 현재 진행 중인 레벨의 ID를 설정함.
+        /// </summary>
+        /// <param name="id">레벨 ID</param>
         public void SetLevelID(string id)
         {
             _levelID = id;
         }
 
+        /// <summary>
+        /// 외부 설정값으로 카메라 동작 방식을 덮어씌움.
+        /// </summary>
+        /// <param name="shouldSave">저장 여부</param>
+        /// <param name="maskMat">적용할 마스킹 매터리얼</param>
+        /// <param name="triggerEncoding">캡처 후 인코딩 강제 여부</param>
         public void Configure(bool shouldSave, Material maskMat = null, bool triggerEncoding = false)
         {
             _shouldSavePhoto = shouldSave;
@@ -93,12 +123,18 @@ namespace My.Scripts.Core.Pages
             _isConfigured = true;
         }
 
+        /// <summary>
+        /// 씬 전환 전 웹캠 장치를 미리 로드하여 딜레이를 줄임.
+        /// </summary>
         public void PreloadCamera()
         {
             StartWebCam();
             SetRawImageAlpha(cameraDisplay, 0f);
         }
 
+        /// <summary>
+        /// 페이지 활성화 시 웹캠을 시작하고, 조명 색상을 동기화하며, UI를 초기화함.
+        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -129,10 +165,16 @@ namespace My.Scripts.Core.Pages
             if (LevelManager.Instance && HueManager.Instance)
             {
                 int qNum = LevelManager.Instance.CurrentQuestionNumber;
-                RGBColor fallbackWhite =
-                    (HueManager.Instance.Config != null && HueManager.Instance.Config.whiteColor != null)
-                        ? HueManager.Instance.Config.whiteColor
-                        : new RGBColor { r = 191, g = 239, b = 251 };
+                
+                RGBColor fallbackWhite = new RGBColor();
+                if (HueManager.Instance.Config == null || HueManager.Instance.Config.whiteColor == null)
+                {
+                    Debug.LogWarning("HueManager.Config 또는 whiteColor 설정값이 누락됨.");
+                }
+                else
+                {
+                    fallbackWhite = HueManager.Instance.Config.whiteColor;
+                }
 
                 if (qNum >= 6 && qNum <= 10)
                 {
@@ -170,6 +212,9 @@ namespace My.Scripts.Core.Pages
             StartCoroutine(CountdownRoutine());
         }
 
+        /// <summary>
+        /// 진행 중인 Hue 조명 명령을 취소하고 조명을 소등함.
+        /// </summary>
         private void TurnOffHueLights()
         {
             _hueCts?.Cancel();
@@ -183,6 +228,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 페이지 비활성화 시 사용 중인 리소스를 해제함.
+        /// </summary>
         public override void OnExit()
         {
             StopAllCoroutines();
@@ -197,6 +245,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 객체 파괴 시 메모리 누수를 방지하기 위해 텍스처를 할당 해제함.
+        /// </summary>
         private void OnDestroy()
         {
             StopAllCoroutines();
@@ -209,6 +260,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 웹캠 초기화 지연 시간을 고려하여 카메라 피드를 서서히 밝게 연출함.
+        /// </summary>
         private IEnumerator FadeInCameraRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(cameraFadeDelay);
@@ -228,6 +282,7 @@ namespace My.Scripts.Core.Pages
             while (timer < cameraFadeDuration)
             {
                 timer += Time.deltaTime;
+                // ex: timer=0.25, duration=0.5 -> 알파 0.5 (50%)
                 SetRawImageAlpha(cameraDisplay, Mathf.Lerp(0f, 1f, timer / cameraFadeDuration));
                 yield return null;
             }
@@ -235,6 +290,9 @@ namespace My.Scripts.Core.Pages
             SetRawImageAlpha(cameraDisplay, 1f);
         }
 
+        /// <summary>
+        /// 사진 촬영 전 카운트다운을 진행하고 타임랩스 녹화 상태를 제어함.
+        /// </summary>
         private IEnumerator CountdownRoutine()
         {
             yield return CoroutineData.GetWaitForSeconds(1.0f + cameraFadeDelay);
@@ -245,19 +303,15 @@ namespace My.Scripts.Core.Pages
                 {
                     TimeLapseRecorder.Instance.SetCurrentLevel(_levelID);
                     
-                    // 현재 문항 번호를 가져옴
                     int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
                     
-                    // 타임랩스는 사진 저장이 켜진 모든 문항(Q1~Q15)에서 활성화
                     TimeLapseRecorder.Instance.EnableTimelapseCapture = true;
-                    
-                    // 리얼타임은 11번 문항부터 15번 문항까지만 활성화
                     TimeLapseRecorder.Instance.EnableRealtimeCapture = (qNum >= 11 && qNum <= 15);
                     TimeLapseRecorder.Instance.StartCapture(_webCamTexture);
                 }
                 else
                 {
-                    Debug.LogError("[Page_Camera] 웹캠 오류로 타임랩스를 녹화할 수 없습니다.");
+                    Debug.LogError("웹캠 오류로 타임랩스를 녹화할 수 없음.");
                 }
             }
 
@@ -269,7 +323,6 @@ namespace My.Scripts.Core.Pages
 
             if (_shouldSavePhoto && TimeLapseRecorder.Instance)
             {
-                // 종료 시점에는 둘 다 비활성화 후 캡처 완전 종료
                 TimeLapseRecorder.Instance.EnableRealtimeCapture = false;
                 TimeLapseRecorder.Instance.EnableTimelapseCapture = false;
                 TimeLapseRecorder.Instance.StopCapture();
@@ -278,6 +331,9 @@ namespace My.Scripts.Core.Pages
             yield return StartCoroutine(FlashAndCaptureRoutine());
         }
 
+        /// <summary>
+        /// 카메라 플래시 연출을 실행하고 실제 사진 데이터를 캡처함.
+        /// </summary>
         private IEnumerator FlashAndCaptureRoutine()
         {
             float maxAlpha = 0.8f;
@@ -301,6 +357,7 @@ namespace My.Scripts.Core.Pages
                 while (t < 0.5f)
                 {
                     t += Time.deltaTime;
+                    // ex: maxAlpha=0.8, t=0.25 -> 알파 0.4 (절반 감소)
                     SetImageAlpha(flashImage, Mathf.Lerp(maxAlpha, 0f, t / 0.5f));
                     yield return null;
                 }
@@ -313,16 +370,20 @@ namespace My.Scripts.Core.Pages
             CompleteStep();
         }
 
+        /// <summary>
+        /// 웹캠 텍스처를 RenderTexture로 변환하여 파일로 저장할 이미지를 생성함.
+        /// </summary>
         private void CapturePhoto()
         {
             if (!_webCamTexture || !_webCamTexture.isPlaying)
             {
-                Debug.LogError("[Page_Camera] 웹캠이 중지되어 캡처할 수 없습니다.");
+                Debug.LogError("웹캠이 중지되어 캡처할 수 없음.");
                 return;
             }
 
             RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
             Material maskToUse = _currentMaskingMaterial;
+            
             if (maskToUse) Graphics.Blit(_webCamTexture, rt, maskToUse);
             else Graphics.Blit(_webCamTexture, rt);
 
@@ -347,6 +408,7 @@ namespace My.Scripts.Core.Pages
                 for (int i = 0; i < pixels.Length; i++)
                 {
                     Color32 p = pixels[i];
+                    // ex: p.r=200, tr=0.5 -> 신규 Red값 100
                     pixels[i] = new Color32(
                         (byte)(p.r * tr),
                         (byte)(p.g * tg),
@@ -376,6 +438,10 @@ namespace My.Scripts.Core.Pages
             StopWebCam();
         }
 
+        /// <summary>
+        /// 생성된 텍스처 데이터를 백그라운드 스레드에서 PNG 파일로 인코딩하여 로컬에 저장함.
+        /// </summary>
+        /// <param name="photo">저장할 원본 텍스처 데이터</param>
         private async UniTaskVoid SavePhotoToCustomFolderAsync(Texture2D photo)
         {
             if (!photo) return;
@@ -392,12 +458,11 @@ namespace My.Scripts.Core.Pages
             {
                 await UniTask.RunOnThreadPool(() =>
                 {
-                    byte[] bytes =
-                        UnityEngine.ImageConversion.EncodeArrayToPNG(rawData, format, (uint)width, (uint)height);
+                    byte[] bytes = UnityEngine.ImageConversion.EncodeArrayToPNG(rawData, format, (uint)width, (uint)height);
 
                     DirectoryInfo parentDir = Directory.GetParent(dataPath);
                     string rootPath = parentDir != null ? parentDir.FullName : dataPath;
-
+                    
                     string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                     string folder = Path.Combine(rootPath, "Pictures", dateFolder);
 
@@ -406,21 +471,30 @@ namespace My.Scripts.Core.Pages
                     string path = Path.Combine(folder, $"{photoName}.png");
                     File.WriteAllBytes(path, bytes);
 
-                    Debug.Log($"[Page_Camera] 원본 사진 저장 완료: {path}");
+                    Debug.Log($"원본 사진 저장 완료: {path}");
                 });
             }
             catch (Exception e)
             {
-                Debug.LogError($"[Page_Camera] 사진 저장 실패: {e.Message}");
+                Debug.LogError($"사진 저장 실패: {e.Message}");
             }
         }
 
+        /// <summary>
+        /// UI 상에 남아있는 이전 사진의 잔상을 지움.
+        /// </summary>
         private void CleanupPhotoUI()
         {
             if (cameraDisplay && cameraDisplay.texture == _capturedPhoto)
+            {
                 cameraDisplay.texture = null;
+            }
         }
 
+        /// <summary>
+        /// 지정된 숫자를 텍스트 UI에 출력하고 페이드아웃 효과를 적용함.
+        /// </summary>
+        /// <param name="n">표시할 문자열</param>
         private IEnumerator ShowAndFadeNumber(string n)
         {
             if (countdownText)
@@ -437,6 +511,10 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 텍스트 컴포넌트의 투명도를 설정함.
+        /// </summary>
+        /// <param name="a">목표 알파값 (0~1)</param>
         private void SetTextAlpha(float a)
         {
             if (countdownText)
@@ -447,6 +525,11 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// Image UI 컴포넌트의 투명도를 설정함.
+        /// </summary>
+        /// <param name="i">대상 Image</param>
+        /// <param name="a">목표 알파값 (0~1)</param>
         private void SetImageAlpha(Image i, float a)
         {
             if (i)
@@ -457,6 +540,11 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// RawImage UI 컴포넌트의 투명도를 설정함.
+        /// </summary>
+        /// <param name="ri">대상 RawImage</param>
+        /// <param name="a">목표 알파값 (0~1)</param>
         private void SetRawImageAlpha(RawImage ri, float a)
         {
             if (ri)
@@ -467,6 +555,9 @@ namespace My.Scripts.Core.Pages
             }
         }
 
+        /// <summary>
+        /// 연결된 웹캠 하드웨어를 검색하여 피드 재생을 시작함.
+        /// </summary>
         private void StartWebCam()
         {
             if (_webCamTexture && _webCamTexture.isPlaying) return;
@@ -478,7 +569,7 @@ namespace My.Scripts.Core.Pages
                 WebCamDevice[] devices = WebCamTexture.devices;
                 if (devices.Length == 0)
                 {
-                    Debug.LogError("[Page_Camera] 웹캠 장치가 없습니다.");
+                    Debug.LogError("웹캠 장치가 없음.");
                     return;
                 }
 
@@ -509,14 +600,20 @@ namespace My.Scripts.Core.Pages
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[Page_Camera] 웹캠 예외 발생: {e.Message}");
+                    Debug.LogError($"웹캠 예외 발생: {e.Message}");
                 }
             }
         }
 
+        /// <summary>
+        /// 재생 중인 웹캠 피드를 중지함.
+        /// </summary>
         private void StopWebCam()
         {
-            if (_webCamTexture && _webCamTexture.isPlaying) _webCamTexture.Stop();
+            if (_webCamTexture && _webCamTexture.isPlaying)
+            {
+                _webCamTexture.Stop();
+            }
             _webCamTexture = null;
         }
     }

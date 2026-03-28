@@ -47,6 +47,9 @@ namespace My.Scripts.Core
         public List<List<object>> DATA { get; set; } 
     }
 
+    /// <summary>
+    /// API 서버와 통신하여 유저의 진행 데이터를 조회하고 세션에 동기화함.
+    /// </summary>
     public class APIManager : MonoBehaviour
     {
         private string userUid;
@@ -55,16 +58,30 @@ namespace My.Scripts.Core
         [SerializeField] private int maxRetries = 10;
         [SerializeField] private float retryDelay = 1.0f;
 
+        /// <summary>
+        /// 유저 데이터 조회를 백그라운드 태스크로 실행함.
+        /// </summary>
+        /// <param name="uid">조회할 유저의 고유 식별자</param>
         public void FetchData(string uid)
         {
             FetchDataAsync(uid).Forget();
         }
         
+        /// <summary>
+        /// API 서버에 유저 데이터를 요청하고 네트워크 실패 시 지정된 횟수만큼 재시도함.
+        /// </summary>
+        /// <param name="uid">조회할 유저의 고유 식별자</param>
+        /// <returns>조회 및 처리 성공 여부</returns>
         [ContextMenu("Fetch API Data")]
         public async UniTask<bool> FetchDataAsync(string uid)
         {
             userUid = uid;
-            ApiSettings config = GameManager.Instance ? GameManager.Instance.ApiConfig : null;
+            ApiSettings config = null;
+
+            if (GameManager.Instance)
+            {
+                config = GameManager.Instance.ApiConfig;
+            }
 
             if (config == null)
             {
@@ -77,10 +94,11 @@ namespace My.Scripts.Core
 
             if (config == null)
             {
-                Debug.LogError("[APIManager] API 설정을 찾을 수 없습니다.");
+                Debug.LogError("API 설정을 찾을 수 없음.");
                 return false;
             }
 
+            // ex: config.GetUserUrl = "http://api.test.com/user", userUid = "12345" -> "http://api.test.com/user?uid=12345"
             string requestUrl = $"{config.GetUserUrl}?uid={userUid}";
 
             for (int attempt = 0; attempt < maxRetries; attempt++)
@@ -97,22 +115,28 @@ namespace My.Scripts.Core
 
                     if (attempt < maxRetries - 1)
                     {
-                        Debug.LogWarning($"[APIManager] 유저 데이터 조회 실패 ({attempt + 1}/{maxRetries}): {webRequest.error}. {retryDelay}초 후 재시도");
+                        Debug.LogWarning($"유저 데이터 조회 실패 ({attempt + 1}/{maxRetries}): {webRequest.error}. {retryDelay}초 후 재시도.");
                         await UniTask.Delay(TimeSpan.FromSeconds(retryDelay));
                     }
                     else
                     {
-                        Debug.LogError($"[APIManager] 유저 데이터 조회 최종 실패: {webRequest.error}");
+                        Debug.LogError($"유저 데이터 조회 최종 실패: {webRequest.error}");
                     }
                 }
             }
             return false;
         }
 
+        /// <summary>
+        /// 응답받은 JSON 문자열을 역직렬화하고 세션 매니저 객체에 값을 매핑함.
+        /// </summary>
+        /// <param name="jsonString">API 응답 JSON 문자열</param>
+        /// <returns>파싱 및 동기화 성공 여부</returns>
         public async UniTask<bool> ParseAndProcessDataAsync(string jsonString)
         {
             try
             {
+                // 메인 스레드 프리징 방지를 위해 스레드 풀에서 파싱 처리함.
                 ApiTableResponse response = await UniTask.RunOnThreadPool(() => JsonConvert.DeserializeObject<ApiTableResponse>(jsonString));
 
                 if (response != null && response.DATA != null && response.DATA.Count > 0)
@@ -138,7 +162,7 @@ namespace My.Scripts.Core
                     userData.COLOR_RIGHT = ParseColorSafe(colMap, firstRow, "COLOR_RIGHT");
                     userData.BLOCK_CODE = ParseStringSafe(colMap, firstRow, "BLOCK_CODE");
 
-                    Debug.Log($"[APIManager] 유저 데이터 로드 완료\n" +
+                    Debug.Log($"유저 데이터 로드 완료\n" +
                               $"- 유저 인덱스(IDX_USER): {userData.IDX_USER}\n" +
                               $"- 이름 (L/R): {userData.RESERVATION_FIRST_NAME_LEFT} / {userData.RESERVATION_FIRST_NAME_RIGHT}\n" +
                               $"- UID (L/R): {userData.UID_LEFT} / {userData.UID_RIGHT}\n" +
@@ -169,24 +193,54 @@ namespace My.Scripts.Core
                         SessionManager.Instance.PieceD3 = ParseIntSafe(colMap, firstRow, "PIECE_D3");
 
                         if (!string.IsNullOrWhiteSpace(userData.LANG)) 
+                        {
                             SessionManager.Instance.CurrentLanguage = userData.LANG.Trim();
+                        }
+                        else
+                        {
+                            Debug.LogWarning("LANG 데이터 누락됨.");
+                        }
 
                         if (!string.IsNullOrEmpty(userData.RESERVATION_FIRST_NAME_LEFT))
+                        {
                             SessionManager.Instance.PlayerAFirstName = userData.RESERVATION_FIRST_NAME_LEFT;
+                        }
+                        else
+                        {
+                            Debug.LogWarning("RESERVATION_FIRST_NAME_LEFT 누락됨.");
+                        }
+
                         if (!string.IsNullOrEmpty(userData.RESERVATION_FIRST_NAME_RIGHT))
+                        {
                             SessionManager.Instance.PlayerBFirstName = userData.RESERVATION_FIRST_NAME_RIGHT;
+                        }
+                        else
+                        {
+                            Debug.LogWarning("RESERVATION_FIRST_NAME_RIGHT 누락됨.");
+                        }
                         
                         SessionManager.Instance.PlayerAColor = userData.COLOR_LEFT;
                         SessionManager.Instance.PlayerBColor = userData.COLOR_RIGHT;
 
-                        // =========================================================================
-                        // 카트리지(A~D)와 관계(1~6) 조합 로직
-                        // =========================================================================
-                        string cartridgeStr = string.IsNullOrWhiteSpace(userData.CARTRIDGE) ? "A" : userData.CARTRIDGE.Trim().ToUpper();
-                        int relationNum = userData.RELATION;
-                        if (relationNum < 1 || relationNum > 6) relationNum = 1; // 안전 장치
+                        // # TODO: 문자열 할당(ToUpper, 보간) 및 Enum.TryParse에서 발생하는 GC 억제를 위해 매핑 테이블 캐싱 고려.
+                        string cartridgeStr = userData.CARTRIDGE;
+                        if (string.IsNullOrWhiteSpace(cartridgeStr))
+                        {
+                            Debug.LogWarning("CARTRIDGE 누락됨.");
+                        }
+                        else
+                        {
+                            cartridgeStr = cartridgeStr.Trim().ToUpper();
+                        }
 
-                        string combinedTypeStr = $"{cartridgeStr}{relationNum}"; // 예: "A1", "C4"
+                        int relationNum = userData.RELATION;
+                        if (relationNum < 1 || relationNum > 6)
+                        {
+                            Debug.LogWarning("RELATION 값 범위를 벗어남.");
+                        }
+
+                        // ex: cartridgeStr="C", relationNum=4 -> combinedTypeStr="C4"
+                        string combinedTypeStr = $"{cartridgeStr}{relationNum}"; 
                         
                         if (Enum.TryParse(combinedTypeStr, out UserType parsedType))
                         {
@@ -194,14 +248,13 @@ namespace My.Scripts.Core
                         }
                         else
                         {
-                            Debug.LogWarning($"[APIManager] 알 수 없는 타입 조합({combinedTypeStr})입니다. 기본값(A1)으로 설정합니다.");
-                            SessionManager.Instance.CurrentUserType = UserType.A1;
+                            Debug.LogWarning($"알 수 없는 타입 조합: {combinedTypeStr}");
                         }
-                        // =========================================================================
 
                         int endCount = 0;
                         string currentModuleEnd = $"END_{GameConstants.Module.Code.ToUpper()}"; 
 
+                        // 타 콘텐츠 진행도 확인 루프
                         foreach (string colName in response.COLUMNS)
                         {
                             if (colName.StartsWith("END_"))
@@ -223,7 +276,7 @@ namespace My.Scripts.Core
 
                         SessionManager.Instance.ClearedEndCount = endCount;
                         SessionManager.Instance.IsOtherCartridgeContentsCleared = (endCount >= 3);
-                        Debug.Log($"[APIManager] 타 콘텐츠 완료 개수: {endCount}개 (Z계열 제외, 3개 이상 완료 판정: {SessionManager.Instance.IsOtherCartridgeContentsCleared})");
+                        Debug.Log($"타 콘텐츠 완료 개수: {endCount}개 (Z계열 제외, 3개 이상 완료 판정: {SessionManager.Instance.IsOtherCartridgeContentsCleared})");
 
                         return true; 
                     }
@@ -232,11 +285,18 @@ namespace My.Scripts.Core
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIManager] JSON 파싱 중 에러 발생: {e.Message}");
+                Debug.LogError($"JSON 파싱 중 에러 발생: {e.Message}");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 동적 데이터 배열에서 정수형 값을 안전하게 추출함.
+        /// </summary>
+        /// <param name="map">컬럼명 인덱스 맵</param>
+        /// <param name="row">데이터 배열</param>
+        /// <param name="col">추출할 컬럼명</param>
+        /// <returns>파싱된 정수형 값 (실패 시 0)</returns>
         private int ParseIntSafe(Dictionary<string, int> map, List<object> row, string col)
         {
             if (map.TryGetValue(col, out int idx) && row.Count > idx && row[idx] != null)
@@ -247,6 +307,13 @@ namespace My.Scripts.Core
             return 0; 
         }
 
+        /// <summary>
+        /// 동적 데이터 배열에서 문자열 값을 안전하게 추출함.
+        /// </summary>
+        /// <param name="map">컬럼명 인덱스 맵</param>
+        /// <param name="row">데이터 배열</param>
+        /// <param name="col">추출할 컬럼명</param>
+        /// <returns>파싱된 문자열 (실패 시 Empty)</returns>
         private string ParseStringSafe(Dictionary<string, int> map, List<object> row, string col)
         {
             if (map.TryGetValue(col, out int idx) && row.Count > idx && row[idx] != null) 
@@ -254,6 +321,13 @@ namespace My.Scripts.Core
             return string.Empty; 
         }
 
+        /// <summary>
+        /// 동적 데이터 배열에서 색상 열거형 값을 안전하게 추출함.
+        /// </summary>
+        /// <param name="map">컬럼명 인덱스 맵</param>
+        /// <param name="row">데이터 배열</param>
+        /// <param name="col">추출할 컬럼명</param>
+        /// <returns>파싱된 색상 열거형 값 (실패 시 NotSet)</returns>
         private ColorData ParseColorSafe(Dictionary<string, int> map, List<object> row, string col)
         {
             if (map.TryGetValue(col, out int idx) && row.Count > idx && row[idx] != null)
