@@ -24,7 +24,7 @@ namespace My.Scripts.Global
 
         [SerializeField] private Reporter reporter;
 
-        public bool isDebugMode = false;
+        public bool isDebugMode;
         
         private bool _isTransitioning;
         private float _fadeTime = 0.5f;
@@ -32,7 +32,7 @@ namespace My.Scripts.Global
         private bool _isQuitSafe;
         private Coroutine _transitionRoutine;
 
-        public int firstTaggedPlayer = 0;
+        public int firstTaggedPlayer;
         public ApiSettings ApiConfig { get; set; }
 
         [Header("Player Color Sprites")]
@@ -262,22 +262,27 @@ namespace My.Scripts.Global
         }
 
         /// <summary>
-        /// 문항 번호와 사용자 세션을 조합하여 씬 접미사를 반환함. 유효하지 않은 씬일 경우 경고를 남김.
+        /// 문항 번호와 사용자 세션을 조합하여 씬 접미사를 반환함. 
+        /// 유효하지 않은 씬일 경우 해당 카트리지의 기본값(1번 관계)으로 폴백(Fallback)함.
         /// </summary>
         public string GetLevelSuffix(int questionNumber)
         {
             if (questionNumber <= 0 || !SessionManager.Instance) return "";
+
             string currentType = SessionManager.Instance.CurrentUserType.ToString(); 
             // ex: questionNumber=4, currentType="A3" -> targetScene="Play_Q4_A3"
             string targetScene = $"Play_Q{questionNumber}_{currentType}";
+
             if (Application.CanStreamedLevelBeLoaded(targetScene))
             {
                 return $"_{currentType}"; 
             }
             
-            Debug.LogWarning($"씬 누락됨: {targetScene}");
-            // 씬이 없더라도 타입 정보를 유지하여 호출부에서 적절히 처리하도록 함
-            return $"_{currentType}";
+            // 씬이 존재하지 않을 경우 카트리지 이니셜 + "1" 로 폴백 처리 (예: A3 -> A1)
+            string fallbackType = currentType.Substring(0, 1) + "1";
+            Debug.LogWarning($"씬 누락됨: {targetScene}. 폴백 적용 -> Play_Q{questionNumber}_{fallbackType}");
+            
+            return $"_{fallbackType}";
         }
 
         #region Hardware Control Helper
