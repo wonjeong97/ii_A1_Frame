@@ -141,7 +141,11 @@ namespace My.Scripts.Global
                 reporter.showGameManagerControl = !reporter.showGameManagerControl;
                 if (reporter.show) reporter.show = false;
             }
-            else if (Input.GetKeyDown(KeyCode.M)) Cursor.visible = !Cursor.visible;
+            else if (Input.GetKeyDown(KeyCode.M)) 
+            {
+                Cursor.visible = !Cursor.visible;
+                Cursor.lockState = Cursor.visible ? CursorLockMode.None : CursorLockMode.Locked;
+            }
 
             if (Input.GetKeyDown(KeyCode.F))
             {
