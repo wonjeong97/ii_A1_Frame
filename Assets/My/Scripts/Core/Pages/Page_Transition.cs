@@ -45,23 +45,24 @@ namespace My.Scripts.Core.Pages
         {
             if (data == null) return;
 
-            if (data.descriptionText != null)
+            // UI 컴포넌트가 인스펙터에 할당되어 있을 때만 데이터를 검사하여 불필요한 경고를 방지함
+            if (descriptionText)
             {
-                if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+                if (data.descriptionText != null) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+                else Debug.LogWarning("descriptionText 데이터 누락됨.");
             }
-            else Debug.LogWarning("descriptionText 데이터 누락됨.");
 
-            if (data.playerAName != null)
+            if (playerAName)
             {
-                if (playerAName) UIManager.Instance.SetText(playerAName.gameObject, data.playerAName);
+                if (data.playerAName != null) UIManager.Instance.SetText(playerAName.gameObject, data.playerAName);
+                else Debug.LogWarning("playerAName 데이터 누락됨.");
             }
-            else Debug.LogWarning("playerAName 데이터 누락됨.");
 
-            if (data.playerBName != null)
+            if (playerBName)
             {
-                if (playerBName) UIManager.Instance.SetText(playerBName.gameObject, data.playerBName);
+                if (data.playerBName != null) UIManager.Instance.SetText(playerBName.gameObject, data.playerBName);
+                else Debug.LogWarning("playerBName 데이터 누락됨.");
             }
-            else Debug.LogWarning("playerBName 데이터 누락됨.");
 
             ReplaceNameTags(descriptionText);
             ReplaceNameTags(playerAName);
