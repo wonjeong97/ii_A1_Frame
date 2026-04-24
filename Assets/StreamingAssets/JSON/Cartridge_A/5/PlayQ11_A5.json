@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 770, "y": 405},
+        "position": {"x": 768, "y": 404},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "말로 다 설명하지 않아도\n통하는 순간들이 있다.",
         "fontName": "font7",

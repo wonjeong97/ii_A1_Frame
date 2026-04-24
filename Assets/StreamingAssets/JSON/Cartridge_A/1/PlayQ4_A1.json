@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 770, "y": -415},
+        "position": {"x": 768, "y": -400},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "나는 상대의 말투나\n반응이 남겨둔 여운을\n곱씹게 될 때가 있다.",
         "fontName": "font7",

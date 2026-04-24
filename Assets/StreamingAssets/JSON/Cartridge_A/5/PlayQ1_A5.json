@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 770, "y": 405},
+        "position": {"x": -380, "y": -398},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대방과 대화할 때,\n말의 내용보다 느낌에\n더 영향을 받는 편이다.",
         "fontName": "font7",
@@ -12,7 +12,7 @@
       }
     ],
     "questionSpots": [
-      {"x": 4, "y": 0}
+      {"x": 1, "y": 3}
     ]
   },
   "page2": {

@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -760, "y": -135},
+        "position": {"x": -760, "y": -132},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대방이 감정에\n솔직할 때, 오히려\n더 편하다고 느낀다.",
         "fontName": "font7",

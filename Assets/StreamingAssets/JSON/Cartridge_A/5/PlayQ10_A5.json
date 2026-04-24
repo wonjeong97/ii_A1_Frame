@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 0, "y": 135},
+        "position": {"x": 0, "y": 132},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 서로의 마음을\n이미 안다고 느껴,\n감정 표현이\n줄어들 때가 있다.",
         "fontName": "font7",

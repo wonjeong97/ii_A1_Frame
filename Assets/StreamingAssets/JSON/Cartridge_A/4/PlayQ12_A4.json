@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -765, "y": 140},
+        "position": {"x": -760, "y": 140},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 별다른 노력을\n하지 않아도 분위기가\n자연스럽게 풀릴 때가 있다.",
         "fontName": "font7",

@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using My.Scripts._01_Tutorial.Pages;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -59,13 +59,13 @@ namespace My.Scripts._01_Tutorial
                 else
                 {
                     Debug.LogWarning("GameManager Missing. Force loading.");
-                    SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
+                    SceneLoader.LoadAsync(GameConstants.Scene.PlayTutorial).Forget();
                 }
             }
             else
             {
                 Debug.LogWarning("FadeManager Missing. Force loading.");
-                SceneManager.LoadScene(GameConstants.Scene.PlayTutorial);
+                SceneLoader.LoadAsync(GameConstants.Scene.PlayTutorial).Forget();
             }
         }
 

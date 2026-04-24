@@ -66,13 +66,28 @@ namespace My.Scripts.Core
         {
             FetchDataAsync(uid).Forget();
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Fill Debug Session")]
+        public void FillDebugSession()
+        {
+            if (!SessionManager.Instance) return;
+            SessionManager.Instance.CurrentUserId = -1;
+            SessionManager.Instance.PlayerAFirstName = "TestA";
+            SessionManager.Instance.PlayerBFirstName = "TestB";
+            SessionManager.Instance.PlayerAColor = ColorData.Cyan;
+            SessionManager.Instance.PlayerBColor = ColorData.Pink;
+            SessionManager.Instance.CurrentUserType = UserType.A2;
+            SessionManager.Instance.BlockCode = "A1,B1,C1,D1";
+            Debug.Log("[Debug] 테스트 세션 주입 완료");
+        }
+#endif
         
         /// <summary>
         /// API 서버에 유저 데이터를 요청하고 네트워크 실패 시 지정된 횟수만큼 재시도함.
         /// </summary>
         /// <param name="uid">조회할 유저의 고유 식별자</param>
         /// <returns>조회 및 처리 성공 여부</returns>
-        [ContextMenu("Fetch API Data")]
         public async UniTask<bool> FetchDataAsync(string uid)
         {
             userUid = uid;

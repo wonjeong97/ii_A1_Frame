@@ -84,8 +84,15 @@ namespace My.Scripts.Core.Data
             string relation = typeStr.Substring(1);
 
             string path = $"JSON/Cartridge_{cartridge}/{relation}/Play{levelID}_{levelType}";
-
             StandardLevelSetting specificData = JsonLoader.Load<StandardLevelSetting>(path);
+
+            if (specificData == null)
+            {
+                string fallbackType = $"{cartridge}1";
+                string fallbackPath = $"JSON/Cartridge_{cartridge}/1/Play{levelID}_{fallbackType}";
+                Debug.LogWarning($"JSON 누락됨: {path}. 폴백 적용 -> {fallbackPath}");
+                specificData = JsonLoader.Load<StandardLevelSetting>(fallbackPath);
+            }
 
             if (specificData == null)
             {

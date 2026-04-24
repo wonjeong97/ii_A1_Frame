@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 0, "y": 135},
+        "position": {"x": 0, "y": 132},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리가 함께 있을 때,\n감정의 흐름은\n자연스럽다고 느낀다.",
         "fontName": "font7",

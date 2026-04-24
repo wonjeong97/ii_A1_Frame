@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 390, "y": -410},
+        "position": {"x": 384, "y": -396},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "말로 다 설명하지 않아도\n손발이 잘 맞는\n편이라고 느낀다.",
         "fontName": "font7",

@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 380, "y": -130},
+        "position": {"x": 380, "y": -128},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "문득 스쳐지나간\n상대방의 반응이\n떠올라 돌아보게\n되는 때가 있다.",
         "fontName": "font7",

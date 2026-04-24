@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -760, "y": 410},
+        "position": {"x": -760, "y": 412},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "나는 상대가 조용했던\n순간에 대해 종종\n생각해 보곤 한다.",
         "fontName": "font7",
