@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
@@ -236,7 +236,7 @@ namespace My.Scripts.Core.Pages
 
             // 강제 리셋: 세션 데이터를 초기화하기 위해 타이틀 씬으로 회귀
             if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
-            else SceneManager.LoadScene(GameConstants.Scene.Title);
+            else SceneLoader.LoadAsync(GameConstants.Scene.Title).Forget();
         }
 
         /// <summary> 지정된 메시지로 팝업 텍스트를 갱신하고 페이드인 연출을 가동합니다. </summary>

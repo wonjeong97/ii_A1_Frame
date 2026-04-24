@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -380, "y": 140},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "업무(과제) 외적으로\n상대와 너무 빨리\n가까워지는 것이n부담스럽다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 1, "y": 1 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.업무(과제) 외적으로 상대와 너무 빨리 가까워지는 것이 부담스럽다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

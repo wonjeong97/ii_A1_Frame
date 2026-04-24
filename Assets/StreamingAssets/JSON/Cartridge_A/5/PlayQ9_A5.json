@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 385, "y": -400},
+        "position": {"x": 386, "y": -400},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 함께 있을 때\n자연스럽게 감정과\n생각을 주고 받는다.",
         "fontName": "font7",

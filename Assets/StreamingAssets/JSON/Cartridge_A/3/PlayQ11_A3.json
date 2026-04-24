@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 770, "y": 405},
+        "position": {"x": 768, "y": 404},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "서로의 감정을\n존중하려고 하고 있다는\n느낌이 들 때가 많다.",
         "fontName": "font7",

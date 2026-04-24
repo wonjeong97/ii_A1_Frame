@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 770, "y": 405},
+        "position": {"x": 768, "y": 404},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "우리는 함께 있을 때\n감정 소모가\n크지 않은 편이다.",
         "fontName": "font7",

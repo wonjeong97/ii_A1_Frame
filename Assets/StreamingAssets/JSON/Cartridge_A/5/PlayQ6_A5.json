@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 380, "y": -130},
+        "position": {"x": 380, "y": -128},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대가 평소와 다른\n반응을 보이면,\n그 의미를 곱씹게 된다.",
         "fontName": "font7",

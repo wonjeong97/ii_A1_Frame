@@ -170,19 +170,14 @@ namespace My.Scripts.Global
 
             if (currentScene == GameConstants.Scene.Title) nextScene = GameConstants.Scene.Tutorial;
             else if (currentScene == GameConstants.Scene.Tutorial) nextScene = GameConstants.Scene.PlayTutorial;
-            else if (currentScene == GameConstants.Scene.PlayTutorial) nextScene = $"Play_Q1{GetLevelSuffix(1)}";
+            else if (currentScene == GameConstants.Scene.PlayTutorial) nextScene = "Play_Q1";
             else if (currentScene.StartsWith("Play_Q"))
             {
-                // # TODO: Substring 연산이 빈번하여 GC를 유발하므로 정규식 캐싱 구조 고려 필요.
                 int qIdx = currentScene.IndexOf('Q') + 1;
-                int underIdx = currentScene.IndexOf('_', qIdx);
-                if (underIdx == -1) underIdx = currentScene.Length;
-                
-                // ex: currentScene="Play_Q14_A2", qIdx=6, underIdx=8 -> currentQ=14
-                if (int.TryParse(currentScene.Substring(qIdx, underIdx - qIdx), out int currentQ))
+                if (int.TryParse(currentScene.Substring(qIdx), out int currentQ))
                 {
                     if (currentQ >= 15) nextScene = GameConstants.Scene.Ending;
-                    else nextScene = $"Play_Q{currentQ + 1}{GetLevelSuffix(currentQ + 1)}";
+                    else nextScene = $"Play_Q{currentQ + 1}";
                 }
             }
             else if (currentScene == GameConstants.Scene.Ending)
@@ -205,7 +200,7 @@ namespace My.Scripts.Global
 
                 if (FadeManager.Instance) FadeManager.Instance.FadeIn(0f);
                 
-                SceneManager.LoadScene(nextScene);
+                SceneLoader.LoadAsync(nextScene).Forget();
             }
         }
 
@@ -225,7 +220,7 @@ namespace My.Scripts.Global
         {
             if (!FadeManager.Instance)
             {
-                SceneManager.LoadScene(sceneName);
+                yield return SceneLoader.LoadAsync(sceneName).ToCoroutine();
                 _isTransitioning = false;
                 yield break;
             }
@@ -234,8 +229,7 @@ namespace My.Scripts.Global
             FadeManager.Instance.FadeOut(_fadeTime, () => { fadeDone = true; });
             while (!fadeDone) yield return null;
 
-            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
-            while (asyncLoad != null && !asyncLoad.isDone) yield return null;
+            yield return SceneLoader.LoadAsync(sceneName).ToCoroutine();
 
             FadeManager.Instance.FadeIn(_fadeTime);
             _isTransitioning = false;
@@ -266,30 +260,6 @@ namespace My.Scripts.Global
 
             _isTransitioning = false; 
             ChangeScene(GameConstants.Scene.Title);
-        }
-
-        /// <summary>
-        /// 문항 번호와 사용자 세션을 조합하여 씬 접미사를 반환함. 
-        /// 유효하지 않은 씬일 경우 해당 카트리지의 기본값(1번 관계)으로 폴백(Fallback)함.
-        /// </summary>
-        public string GetLevelSuffix(int questionNumber)
-        {
-            if (questionNumber <= 0 || !SessionManager.Instance) return "";
-
-            string currentType = SessionManager.Instance.CurrentUserType.ToString(); 
-            // ex: questionNumber=4, currentType="A3" -> targetScene="Play_Q4_A3"
-            string targetScene = $"Play_Q{questionNumber}_{currentType}";
-
-            if (Application.CanStreamedLevelBeLoaded(targetScene))
-            {
-                return $"_{currentType}"; 
-            }
-            
-            // 씬이 존재하지 않을 경우 카트리지 이니셜 + "1" 로 폴백 처리 (예: A3 -> A1)
-            string fallbackType = currentType.Substring(0, 1) + "1";
-            Debug.LogWarning($"씬 누락됨: {targetScene}. 폴백 적용 -> Play_Q{questionNumber}_{fallbackType}");
-            
-            return $"_{fallbackType}";
         }
 
         #region Hardware Control Helper

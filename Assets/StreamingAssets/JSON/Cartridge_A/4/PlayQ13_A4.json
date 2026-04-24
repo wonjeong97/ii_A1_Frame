@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 390, "y": -410},
+        "position": {"x": 384, "y": -396},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대방이 나의 감정에\n존중하려고 노력할 때,\n그것을 잘 알아차린다.",
         "fontName": "font7",

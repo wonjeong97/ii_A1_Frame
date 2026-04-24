@@ -1,13 +1,13 @@
 using System;
 using System.Collections;
-using System.Text.RegularExpressions; 
+using System.Text.RegularExpressions;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -94,20 +94,6 @@ namespace My.Scripts.Core
             else
             {
                 UserType uType = HasActiveSession ? SessionManager.Instance.CurrentUserType : levelType;
-                
-                if (HasActiveSession && GameManager.Instance)
-                {
-                    string suffix = GameManager.Instance.GetLevelSuffix(_currentQuestionNumber);
-                    if (!string.IsNullOrEmpty(suffix))
-                    {
-                        string typeStr = suffix.Replace("_", "");
-                        if (Enum.TryParse(typeStr, out UserType mappedType))
-                        {
-                            uType = mappedType;
-                        }
-                    }
-                }
-
                 StandardLevelSetting sSetting = LevelDataLoader.LoadStandardLevel(levelID, uType);
                 if (sSetting != null)
                 {
@@ -415,15 +401,15 @@ namespace My.Scripts.Core
             {
                 string firstScene = GetNextSceneName(1); 
                 if (useFadeTransition && GameManager.Instance) GameManager.Instance.ChangeScene(firstScene);
-                else SceneManager.LoadScene(firstScene);
+                else SceneLoader.LoadAsync(firstScene).Forget();
                 return;
             }
 
             int nextNum = _currentQuestionNumber + 1;
             string nextScene = GetNextSceneName(nextNum);
-            
+
             if (useFadeTransition && GameManager.Instance) GameManager.Instance.ChangeScene(nextScene);
-            else SceneManager.LoadScene(nextScene);
+            else SceneLoader.LoadAsync(nextScene).Forget();
         }
 
         /// <summary>
@@ -432,9 +418,7 @@ namespace My.Scripts.Core
         private string GetNextSceneName(int qNum)
         {
             if (qNum > 15) return GameConstants.Scene.Ending;
-            string suffix = GameManager.Instance ? GameManager.Instance.GetLevelSuffix(qNum) : "";
-            // ex: qNum=2, suffix="_A1" -> "Play_Q2_A1"
-            return $"Play_Q{qNum}{suffix}"; 
+            return $"Play_Q{qNum}";
         }
         
         /// <summary>

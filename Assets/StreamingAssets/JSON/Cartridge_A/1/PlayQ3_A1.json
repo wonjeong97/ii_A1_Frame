@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": 385, "y": 415},
+        "position": {"x": 384, "y": 412},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "나는 상대와 함께 있을 때\n느꼈던 분위기에\n그 이후에도 영향을 받는다.",
         "fontName": "font7",

@@ -3,7 +3,7 @@
     "questions": [
         {
           "name": "01",
-          "position": {"x": -760, "y": 410},
+          "position": {"x": -760, "y": 412},
           "scale": {"x": 1, "y": 1, "z": 1},
           "text": "상대방의 표정이나 말투가\n평소와 다를 때,\n그 변화가 먼저\n눈에 들어온다.",
           "fontName": "font7",

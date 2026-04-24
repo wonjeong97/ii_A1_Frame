@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -765, "y": -135},
+        "position": {"x": -760, "y": -132},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "갈등이 끝났다고 생각해도,\n비슷한 상황이 되면\n다시 감정이 떠오르곤 한다.",
         "fontName": "font7",

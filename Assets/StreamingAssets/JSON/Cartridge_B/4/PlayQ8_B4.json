@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -760, "y": -132},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대방에게\n내 기분이나 상태를\n있는 그대로 솔직하게\n표현하는 편이다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 0, "y": 2 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.상대방에게 내 기분이나 상태를 있는 그대로 솔직하게 표현하는 편이다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

@@ -6,7 +6,6 @@ using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -205,7 +204,7 @@ namespace My.Scripts._00_Title
             if (_isTransitioning) return;
 
             _isTransitioning = true;
-            SceneManager.LoadScene(GameConstants.Scene.Tutorial);
+            SceneLoader.LoadAsync(GameConstants.Scene.Tutorial).Forget();
         }
 
         /// <summary>

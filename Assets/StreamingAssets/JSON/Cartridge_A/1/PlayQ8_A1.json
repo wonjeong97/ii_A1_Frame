@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -760, "y": -135},
+        "position": {"x": -760, "y": -132},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "나는 상대의 반응이\n애매할 때,\n마음이 복잡해 진다.",
         "fontName": "font7",

@@ -5774,10 +5774,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3545887170608323685}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2638781559351585929
 CanvasRenderer:
@@ -5811,14 +5811,14 @@ MonoBehaviour:
     m_Font: {fileID: 12800000, guid: c864d8fa6f6cc9a4c9aa25c3853742b1, type: 3}
     m_FontSize: 40
     m_FontStyle: 0
-    m_BestFit: 0
+    m_BestFit: 1
     m_MinSize: 4
     m_MaxSize: 40
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 1
-    m_VerticalOverflow: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "Q.\uB098\uB294 \uC0C1\uB300\uBC29\uC758 \uAE30\uBD84\uC744 \uD5E4\uC544\uB9AC\uAE30
     \uC704\uD574 \uB9CE\uC740 \uC5D0\uB108\uC9C0\uB97C \uC3DF\uB294\uB2E4."
