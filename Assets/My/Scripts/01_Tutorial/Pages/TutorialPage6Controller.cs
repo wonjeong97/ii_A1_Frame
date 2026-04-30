@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -71,6 +72,36 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private const int StepsForFullRotation = 3; 
         private const float FastInputThreshold = 0.2f; 
+
+        public override object ExtractCurrentData()
+        {
+            // _currentStage가 0이면 A 텍스트가 표시 중이므로 A만 컴포넌트에서 읽고 B는 원본 유지
+            // _currentStage가 1이면 B 텍스트가 표시 중이므로 B만 컴포넌트에서 읽고 A는 원본 유지
+            TextSetting txtA_Start, txtA_Info, txtB_Start, txtB_Info;
+            if (_currentStage == 0)
+            {
+                txtA_Start = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.txtA_Start, _data?.txtA_Start?.text);
+                txtA_Info  = TutorialPageUtils.BuildTextSetting(infoText,        _data?.txtA_Info,  _data?.txtA_Info?.text);
+                txtB_Start = _data?.txtB_Start;
+                txtB_Info  = _data?.txtB_Info;
+            }
+            else
+            {
+                txtA_Start = _data?.txtA_Start;
+                txtA_Info  = _data?.txtA_Info;
+                txtB_Start = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.txtB_Start, _data?.txtB_Start?.text);
+                txtB_Info  = TutorialPageUtils.BuildTextSetting(infoText,        _data?.txtB_Info,  _data?.txtB_Info?.text);
+            }
+            return new TutorialPage6Data
+            {
+                txtA_Start     = txtA_Start,
+                txtA_Info      = txtA_Info,
+                txtB_Start     = txtB_Start,
+                txtB_Info      = txtB_Info,
+                warningMessage = _data?.warningMessage ?? string.Empty,
+                resetMessage   = _data?.resetMessage   ?? string.Empty,
+            };
+        }
 
         /// <summary> JSON에서 로드한 각 플레이어별 안내 텍스트 및 경고 팝업 데이터 주입 </summary>
         protected override void SetupData(TutorialPage6Data data)

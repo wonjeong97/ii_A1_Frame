@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -23,14 +24,24 @@ namespace My.Scripts._01_Tutorial.Pages
     public class TutorialPage5Controller : GamePage<TutorialPage5Data>
     {
         [Header("Page 5 UI")]
-        [SerializeField] private Text descriptionText; 
-        
+        [SerializeField] private Text descriptionText;
+
         private Coroutine autoNextStepRoutine;
+        private TutorialPage5Data _data;
 
         /// <summary> JSON에서 로드한 안내 텍스트 데이터 주입 </summary>
         protected override void SetupData(TutorialPage5Data data)
         {
+            _data = data;
             if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage5Data
+            {
+                descriptionText = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.descriptionText),
+            };
         }
 
         /// <summary> 페이지 진입 시 중복 실행을 방지하고 자동 전환(타이머) 코루틴 시작 </summary>

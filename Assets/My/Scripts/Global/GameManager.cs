@@ -8,8 +8,8 @@ using My.Scripts.Hardware;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
+using Wonjeong.Core; 
 using Wonjeong.Data;
-using Wonjeong.Reporter;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -17,13 +17,10 @@ namespace My.Scripts.Global
 {
     /// <summary>
     /// 게임의 전반적인 상태, 씬 전환, 전역 하드웨어 제어 및 앱 종료 시퀀스를 관리함.
+    /// GameManagerBase를 상속받아 공통 시스템(Reporter, Cursor, Inspector 등) 기능을 위임함.
     /// </summary>
-    public class GameManager : MonoBehaviour
+    public class GameManager : GameManagerBase<GameManager>
     {
-        public static GameManager Instance;
-
-        [SerializeField] private Reporter reporter;
-
         public bool isDebugMode;
         
         private bool _isTransitioning;
@@ -31,8 +28,6 @@ namespace My.Scripts.Global
         private bool _isQuitting;
         private bool _isQuitSafe;
         private Coroutine _transitionRoutine;
-
-        public int firstTaggedPlayer;
         public ApiSettings ApiConfig { get; set; }
 
         [Header("Player Color Sprites")]
@@ -43,45 +38,31 @@ namespace My.Scripts.Global
         [SerializeField] private float retryDelay = 1.0f;
 
         /// <summary>
-        /// 싱글톤 인스턴스를 초기화하고 전역 로깅 및 세션 매니저를 구성함.
+        /// 부모 객체의 싱글톤 및 로깅 설정을 상속받고 세션 매니저를 구성함.
         /// </summary>
-        private void Awake()
+        protected override void Awake()
         {   
-            if (!Instance)
+            base.Awake();
+
+            if (Instance != this) return;
+
+            if (!SessionManager.Instance)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-
-                TimestampLogHandler.Attach();
-
-                if (!SessionManager.Instance)
-                {
-                    GameObject sessionObj = new GameObject("SessionManager");
-                    sessionObj.AddComponent<SessionManager>();
-                }
-
-                Application.wantsToQuit += WantsToQuit;
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
+                GameObject sessionObj = new GameObject("SessionManager");
+                sessionObj.AddComponent<SessionManager>();
             }
 
-            if (!reporter) reporter = FindObjectOfType<Reporter>();
+            Application.wantsToQuit += WantsToQuit;
         }
 
         /// <summary>
-        /// 게임 초기 설정 로드 및 불필요한 마우스 커서/리포터 UI를 숨김.
+        /// 게임 초기 설정 로드. (Reporter 및 커서 숨김 기능은 부모 Start에서 처리됨)
         /// </summary>
-        private void Start()
+        protected override void Start()
         {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
+            base.Start();
+
             Application.runInBackground = true;
-            
-            LoadSettings();
-            if (reporter && reporter.show) reporter.show = false;
         }
 
         /// <summary>
@@ -109,19 +90,18 @@ namespace My.Scripts.Global
         }
 
         /// <summary>
-        /// 로컬 JSON 파일에서 전역 환경 설정값을 로드함. 누락 시 경고 로그를 남김.
+        /// 프로젝트 전용 경로 상수를 사용하여 설정을 로드하고, 자식 클래스 전용 필드를 초기화함.
         /// </summary>
-        private void LoadSettings()
+        protected override void LoadSettings()
         {
-            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-            if (settings != null)
+            // 부모 클래스의 settings 필드에 프로젝트 상수에 정의된 경로로 데이터를 로드함.
+            settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
+            if (settings == null)
             {
-                _fadeTime = settings.fadeTime;
+                Debug.LogWarning($"{GameConstants.Path.JsonSetting} 설정 파일 로드 실패. 기본값으로 대체함.");
+                settings = new Settings();
             }
-            else
-            {
-                Debug.LogWarning("Settings.json 설정이 누락됨.");
-            }
+            _fadeTime = settings.fadeTime;
 
             ApiConfig = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
             if (ApiConfig == null)
@@ -131,20 +111,11 @@ namespace My.Scripts.Global
         }
 
         /// <summary>
-        /// 디버그 모드 전환 및 강제 씬 스킵 키보드 입력을 처리함.
+        /// 부모의 공통 키 입력 처리 외에, 자식 고유의 디버그 모드 전환을 처리함.
         /// </summary>
-        private void Update()
+        protected override void Update()
         {
-            if (Input.GetKeyDown(KeyCode.D) && reporter)
-            {
-                reporter.showGameManagerControl = !reporter.showGameManagerControl;
-                if (reporter.show) reporter.show = false;
-            }
-            else if (Input.GetKeyDown(KeyCode.M)) 
-            {
-                Cursor.visible = !Cursor.visible;
-                Cursor.lockState = Cursor.visible ? CursorLockMode.None : CursorLockMode.Locked;
-            }
+            base.Update(); // 부모의 Update 실행 (D키 Reporter, M키 커서 토글 등)
 
             if (Input.GetKeyDown(KeyCode.F))
             {
@@ -152,10 +123,7 @@ namespace My.Scripts.Global
                 Debug.Log($"디버그 모드 {(isDebugMode ? "활성화" : "비활성화")} 됨");
             }
 
-            if (isDebugMode && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
-            {
-                SkipToNextSceneDebug();
-            }
+            if (isDebugMode && (Input.GetKeyDown(KeyCode.Return))) SkipToNextSceneDebug();
         }
 
         /// <summary>
@@ -253,8 +221,6 @@ namespace My.Scripts.Global
             SendExitRoomAPI();
 
             await TurnOffAllHardwareOutputsAsync();
-
-            firstTaggedPlayer = 0;
 
             if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
@@ -444,7 +410,6 @@ namespace My.Scripts.Global
         private async UniTask ClearSourceFoldersAsync()
         {
             string dataPath = Application.dataPath;
-            // # TODO: 파일 IO 관련 반복적인 DateTime 문자열 생성은 GC를 유발하므로 캐싱 고려 필요.
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
 
             try

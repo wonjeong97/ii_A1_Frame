@@ -2,7 +2,8 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core.Pages;
-using My.Scripts.Global; 
+using My.Scripts.Global;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
@@ -54,6 +55,19 @@ namespace My.Scripts._01_Tutorial.Pages
             if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
             SetupPopupMessage(data.warningMessage, data.resetMessage);
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage3Data
+            {
+                descriptionText = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.descriptionText),
+                // 닉네임 텍스트는 런타임에 실제 이름으로 치환되므로 템플릿 문자열을 보존
+                nicknamePlayerA = TutorialPageUtils.BuildTextSetting(nicknameA, _data?.nicknamePlayerA, _data?.nicknamePlayerA?.text),
+                nicknamePlayerB = TutorialPageUtils.BuildTextSetting(nicknameB, _data?.nicknamePlayerB, _data?.nicknamePlayerB?.text),
+                warningMessage  = _data?.warningMessage ?? string.Empty,
+                resetMessage    = _data?.resetMessage   ?? string.Empty,
+            };
         }
 
         /// <summary> 페이지 진입 시 실시간 이름 텍스트 할당 및 센서 입력 변수 초기화 </summary>

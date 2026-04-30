@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -24,16 +25,27 @@ namespace My.Scripts._01_Tutorial.Pages
     public class TutorialPage7Controller : GamePage<TutorialPage7Data>
     {
         [Header("Page 7 UI")]
-        [SerializeField] private Text text1; 
-        [SerializeField] private Text text2; 
-        
+        [SerializeField] private Text text1;
+        [SerializeField] private Text text2;
+
         private Coroutine _endSequenceRoutine;
+        private TutorialPage7Data _data;
 
         /// <summary> JSON에서 로드한 두 개의 안내 텍스트 데이터 주입 </summary>
         protected override void SetupData(TutorialPage7Data data)
         {
+            _data = data;
             if (text1) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
             if (text2) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage7Data
+            {
+                descriptionText1 = TutorialPageUtils.BuildTextSetting(text1, _data?.descriptionText1),
+                descriptionText2 = TutorialPageUtils.BuildTextSetting(text2, _data?.descriptionText2),
+            };
         }
 
         /// <summary> 페이지 진입 시 중복 실행을 방지하고 자동 전환(타이머) 코루틴 시작 </summary>
