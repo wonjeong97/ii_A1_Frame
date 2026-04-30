@@ -73,11 +73,11 @@ namespace My.Scripts.Core
         {
             if (!SessionManager.Instance) return;
             SessionManager.Instance.CurrentUserId = -1;
-            SessionManager.Instance.PlayerAFirstName = "TestA";
-            SessionManager.Instance.PlayerBFirstName = "TestB";
-            SessionManager.Instance.PlayerAColor = ColorData.Cyan;
-            SessionManager.Instance.PlayerBColor = ColorData.Pink;
-            SessionManager.Instance.CurrentUserType = UserType.A2;
+            SessionManager.Instance.PlayerAFirstName = "집가";
+            SessionManager.Instance.PlayerBFirstName = "고싶다";
+            SessionManager.Instance.PlayerAColor = ColorData.Green;
+            SessionManager.Instance.PlayerBColor = ColorData.Yellow;
+            SessionManager.Instance.CurrentUserType = UserType.B2;
             SessionManager.Instance.BlockCode = "A1,B1,C1,D1";
             Debug.Log("[Debug] 테스트 세션 주입 완료");
         }

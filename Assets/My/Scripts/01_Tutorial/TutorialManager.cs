@@ -5,6 +5,8 @@ using My.Scripts._01_Tutorial.Pages;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using UnityEngine;
+using UnityEngine.UI;
+using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
@@ -28,6 +30,34 @@ namespace My.Scripts._01_Tutorial
     /// </summary>
     public class TutorialManager : BaseFlowManager
     {
+        protected override void Start()
+        {
+            base.Start();
+            if (GameManager.Instance)
+                GameManager.Instance.OnInspectorClosed += SaveCurrentSettings;
+        }
+
+        private void OnDestroy()
+        {
+            if (GameManager.Instance)
+                GameManager.Instance.OnInspectorClosed -= SaveCurrentSettings;
+        }
+
+        private void SaveCurrentSettings()
+        {
+            TutorialSetting setting = new TutorialSetting
+            {
+                page1 = pages.Length > 0 && pages[0] ? pages[0].ExtractCurrentData() as TutorialPage1Data : null,
+                page2 = pages.Length > 1 && pages[1] ? pages[1].ExtractCurrentData() as TutorialPage2Data : null,
+                page3 = pages.Length > 2 && pages[2] ? pages[2].ExtractCurrentData() as TutorialPage3Data : null,
+                page4 = pages.Length > 3 && pages[3] ? pages[3].ExtractCurrentData() as TutorialPage4Data : null,
+                page5 = pages.Length > 4 && pages[4] ? pages[4].ExtractCurrentData() as TutorialPage5Data : null,
+                page6 = pages.Length > 5 && pages[5] ? pages[5].ExtractCurrentData() as TutorialPage6Data : null,
+                page7 = pages.Length > 6 && pages[6] ? pages[6].ExtractCurrentData() as TutorialPage7Data : null,
+            };
+            JsonLoader.Save(setting, GameConstants.Path.Tutorial);
+        }
+
         /// <summary> 로컬 JSON에서 튜토리얼 텍스트 데이터를 읽어와 각 페이지 컨트롤러에 미리 주입합니다. </summary>
         protected override void LoadSettings()
         {
@@ -112,12 +142,42 @@ namespace My.Scripts._01_Tutorial
         private void HandleTriggerInfo(GamePage page, int triggerInfo)
         {
             if (triggerInfo == 0) return;
-            
+
             // 공용 인터페이스를 통해 강한 결합도(Coupling) 없이 안전하게 트리거 전달
             if (page is ITriggerReceiver receiver)
             {
                 receiver.ReceiveTrigger(triggerInfo);
             }
+        }
+    }
+
+    /// <summary> 튜토리얼 페이지 컨트롤러가 UI 컴포넌트에서 TextSetting을 추출할 때 사용하는 공용 헬퍼 </summary>
+    public static class TutorialPageUtils
+    {
+        /// <summary>
+        /// Text 컴포넌트와 RectTransform의 현재 런타임 값을 읽어 TextSetting을 구성한다.
+        /// fontName, isBold처럼 역추적이 불가한 필드는 original에서 그대로 유지한다.
+        /// overrideText를 지정하면 text 필드를 컴포넌트 값 대신 해당 값으로 고정한다
+        /// ({nameA} 등 템플릿 변수가 런타임에 치환된 경우 원본 템플릿 보존용).
+        /// </summary>
+        public static TextSetting BuildTextSetting(Text txt, TextSetting original, string overrideText = null)
+        {
+            if (txt == null) return original;
+            RectTransform rt = txt.GetComponent<RectTransform>();
+            return new TextSetting
+            {
+                name      = original?.name ?? txt.gameObject.name,
+                position  = rt != null ? rt.anchoredPosition  : (original?.position ?? Vector2.zero),
+                size      = rt != null ? rt.sizeDelta          : (original?.size     ?? Vector2.zero),
+                rotation  = rt != null ? rt.localEulerAngles   : (original?.rotation ?? Vector3.zero),
+                scale     = rt != null ? rt.localScale          : (original?.scale    ?? Vector3.one),
+                text      = overrideText ?? txt.text,
+                fontName  = original?.fontName ?? string.Empty,
+                fontSize  = txt.fontSize,
+                fontColor = txt.color,
+                alignment = txt.alignment,
+                isBold    = original?.isBold ?? false,
+            };
         }
     }
 }

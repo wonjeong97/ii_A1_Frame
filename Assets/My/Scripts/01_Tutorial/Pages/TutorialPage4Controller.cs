@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using My.Scripts.Core;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -65,6 +66,17 @@ namespace My.Scripts._01_Tutorial.Pages
             if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
 
             SetupPopupMessage(data.warningMessage, data.resetMessage);
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage4Data
+            {
+                nicknamePlayerA = TutorialPageUtils.BuildTextSetting(nicknameA, _data?.nicknamePlayerA, _data?.nicknamePlayerA?.text),
+                nicknamePlayerB = TutorialPageUtils.BuildTextSetting(nicknameB, _data?.nicknamePlayerB, _data?.nicknamePlayerB?.text),
+                warningMessage  = _data?.warningMessage ?? string.Empty,
+                resetMessage    = _data?.resetMessage   ?? string.Empty,
+            };
         }
 
         /// <summary> 페이지 진입 시 실시간 이름 할당, 선택된 컬러 적용 및 입력 상태 초기화 </summary>

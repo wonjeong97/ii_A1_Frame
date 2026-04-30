@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
+using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
@@ -23,15 +24,26 @@ namespace My.Scripts._01_Tutorial.Pages
     public class TutorialPage2Controller : GamePage<TutorialPage2Data>
     {
         [Header("Page 2 UI")]
-        [SerializeField] private Text descriptionText; 
+        [SerializeField] private Text descriptionText;
+
+        private TutorialPage2Data _data;
 
         /// <summary> JSON에서 로드한 텍스트 데이터 주입 </summary>
         protected override void SetupData(TutorialPage2Data data)
         {
-            if (descriptionText) 
+            _data = data;
+            if (descriptionText)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
             }
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage2Data
+            {
+                descriptionText = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.descriptionText),
+            };
         }
 
         /// <summary> 페이지 진입 시 UI 표시 및 BGM 전환, 타이머 시작 </summary>

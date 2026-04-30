@@ -42,6 +42,9 @@ namespace My.Scripts.Core
         {
             onStepComplete?.Invoke(triggerInfo);
         }
+
+        /// <summary> 현재 UI 상태를 데이터 객체로 반환 (JSON 저장용) </summary>
+        public virtual object ExtractCurrentData() => null;
     }
 
     /// <summary> 제네릭 데이터 페이지 부모 (타입 안전) </summary>

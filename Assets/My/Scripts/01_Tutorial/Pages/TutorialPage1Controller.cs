@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
+using My.Scripts._01_Tutorial;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -38,6 +39,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
         private readonly float fadeTime = 1f;
         private Coroutine _pollCoroutine;
+        private TutorialPage1Data _data;
 
         /// <summary>
         /// 초기화 단계에서 페이드인 연출을 위해 텍스트 투명도를 선제적으로 낮춤.
@@ -69,11 +71,22 @@ namespace My.Scripts._01_Tutorial.Pages
         /// <param name="data">적용할 텍스트 및 경고 메시지 데이터</param>
         protected override void SetupData(TutorialPage1Data data)
         {
+            _data = data;
             if (descriptionText)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
             }
             SetupPopupMessage(data.warningMessage, data.resetMessage);
+        }
+
+        public override object ExtractCurrentData()
+        {
+            return new TutorialPage1Data
+            {
+                descriptionText = TutorialPageUtils.BuildTextSetting(descriptionText, _data?.descriptionText),
+                warningMessage  = _data?.warningMessage ?? string.Empty,
+                resetMessage    = _data?.resetMessage   ?? string.Empty,
+            };
         }
 
         /// <summary>
