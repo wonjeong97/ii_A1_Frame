@@ -76,11 +76,12 @@ namespace My.Scripts.Hardware
         /// </summary>
         private void LoadConfig()
         {
-            Config = JsonLoader.Load<HueConfig>("JSON/HueConfig");
+            string huePath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.HueConfig);
+            Config = JsonLoader.Load<HueConfig>(huePath);
             
             if (Config == null)
             {
-                Debug.LogError("JSON/HueConfig.json 파일을 찾을 수 없음. Hue 기능이 비활성화됨.");
+                Debug.LogError($"{huePath}.json 파일을 찾을 수 없음. Hue 기능이 비활성화됨.");
             }
             else
             {

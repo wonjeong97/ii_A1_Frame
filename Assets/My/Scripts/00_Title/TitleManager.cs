@@ -27,8 +27,6 @@ namespace My.Scripts._00_Title
 
         private void Start()
         {
-            LoadSettings();
-
             if (_soundCoroutine == null)
             {
                 _soundCoroutine = StartCoroutine(StartMainBGM());
@@ -51,20 +49,7 @@ namespace My.Scripts._00_Title
 
             _pollCoroutine = StartCoroutine(PollRoomStateRoutine());
         }
-
-        /// <summary>
-        /// 외부 설정 파일을 로드하여 게임 환경을 구성함.
-        /// </summary>
-        private void LoadSettings()
-        {
-            Settings settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-
-            if (settings == null)
-            {
-                Debug.LogWarning("환경 설정 파일 누락으로 기본값 사용 가능성 있음.");
-            }
-        }
-
+        
         /// <summary>
         /// 전시 시작 전 조명을 초기 상태(Off)로 전환함.
         /// </summary>

@@ -94,19 +94,22 @@ namespace My.Scripts.Global
         /// </summary>
         protected override void LoadSettings()
         {
-            // 부모 클래스의 settings 필드에 프로젝트 상수에 정의된 경로로 데이터를 로드함.
             settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
+    
             if (settings == null)
             {
                 Debug.LogWarning($"{GameConstants.Path.JsonSetting} 설정 파일 로드 실패. 기본값으로 대체함.");
                 settings = new Settings();
             }
+    
             _fadeTime = settings.fadeTime;
 
-            ApiConfig = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
+            string apiPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.ApiSetting);
+            ApiConfig = JsonLoader.Load<ApiSettings>(apiPath);
+
             if (ApiConfig == null)
             {
-                Debug.LogWarning("API.json 설정이 누락됨.");
+                Debug.LogWarning($"{apiPath}.json 설정이 누락됨.");
             }
         }
 

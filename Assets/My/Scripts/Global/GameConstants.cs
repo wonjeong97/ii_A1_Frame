@@ -16,19 +16,28 @@ namespace My.Scripts.Global
         public static class Path
         {
             public const string JsonSetting = "Settings"; 
-            public const string Title = "Title"; 
             public const string Tutorial = "Tutorial"; 
             public const string PlayTutorial = "PlayTutorial"; 
             public const string Ending = "Ending"; 
             public const string ApiSetting = "API";
             public const string PlayCommon = "PlayCommon";
+            public const string HueConfig = "HueConfig";
             
             /// <summary>
-            /// 현재 언어(ko/en/jp) 폴더가 포함된 전체 JSON 경로를 반환합니다.
-            /// 예: GetLocalizedPath("Tutorial") -> "JSON/ko/Tutorial"
+            /// 파일 성격에 따라 전역 JSON 또는 언어별 JSON 경로를 반환합니다.
             /// </summary>
             public static string GetLocalizedPath(string fileName)
             {
+                // 1. 전역 설정 파일(API, HueConfig)은 언어 폴더를 거치지 않고 JSON 폴더에서 직접 참조
+                if (fileName == ApiSetting || fileName == HueConfig)
+                {
+                    return $"JSON/{fileName}";
+                }
+
+                // 2. Settings.json은 루트 폴더에 있으므로 그대로 반환 (필요시)
+                if (fileName == JsonSetting) return fileName;
+
+                // 3. 그 외 나머지는 현재 설정된 언어 폴더(ko/en/jp) 경로 반환
                 string lang = SessionManager.Instance ? SessionManager.Instance.CurrentLanguage : "ko";
                 return $"JSON/{lang}/{fileName}";
             }
