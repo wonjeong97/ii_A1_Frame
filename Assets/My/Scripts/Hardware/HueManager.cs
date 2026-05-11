@@ -76,7 +76,8 @@ namespace My.Scripts.Hardware
         /// </summary>
         private void LoadConfig()
         {
-            Config = JsonLoader.Load<HueConfig>("JSON/HueConfig");
+            string huePath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.HueConfig);
+            Config = JsonLoader.Load<HueConfig>(huePath);
             
             if (Config == null)
             {

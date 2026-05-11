@@ -56,7 +56,9 @@ namespace My.Scripts._18_Ending
         /// <summary> 각 엔딩 페이지 컨트롤러(1~5)에 필요한 텍스트 및 UI 설정 JSON 데이터를 로드하여 주입합니다. </summary>
         protected override void LoadSettings()
         {   
-            EndingLevelSetting setting = JsonLoader.Load<EndingLevelSetting>("JSON/Ending");
+            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Ending);
+            EndingLevelSetting setting = JsonLoader.Load<EndingLevelSetting>(path);
+            
             if (setting != null)
             {
                 if (pages == null || pages.Length == 0) return;
@@ -65,6 +67,10 @@ namespace My.Scripts._18_Ending
                 if (pages.Length > 2 && setting.page3 != null && pages[2] is EndingPage3Controller p3) p3.SetupData(setting.page3);
                 if (pages.Length > 3 && setting.page4 != null && pages[3] is EndingPage4Controller p4) p4.SetupData(setting.page4);
                 if (pages.Length > 4 && setting.page5 != null && pages[4] is EndingPage5Controller p5) p5.SetupData(setting.page5);
+            }
+            else
+            {
+                Debug.LogError($"[EndingManager] 엔딩 설정 파일 로드 실패. 경로: {path}");
             }
         }
 
