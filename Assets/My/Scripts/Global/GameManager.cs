@@ -109,7 +109,7 @@ namespace My.Scripts.Global
 
             if (ApiConfig == null)
             {
-                Debug.LogWarning("API.json 설정이 누락됨.");
+                Debug.LogWarning($"{apiPath}.json 설정이 누락됨.");
             }
         }
 

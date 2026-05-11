@@ -81,7 +81,7 @@ namespace My.Scripts.Hardware
             
             if (Config == null)
             {
-                Debug.LogError("JSON/HueConfig.json 파일을 찾을 수 없음. Hue 기능이 비활성화됨.");
+                Debug.LogError($"{huePath}.json 파일을 찾을 수 없음. Hue 기능이 비활성화됨.");
             }
             else
             {
