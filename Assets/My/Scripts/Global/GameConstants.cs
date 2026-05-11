@@ -16,11 +16,22 @@ namespace My.Scripts.Global
         public static class Path
         {
             public const string JsonSetting = "Settings"; 
-            public const string Title = "JSON/Title"; 
-            public const string Tutorial = "JSON/Tutorial"; 
-            public const string PlayTutorial = "JSON/PlayTutorial"; 
-            public const string Ending = "JSON/Ending"; 
-            public const string ApiSetting = "JSON/API";
+            public const string Title = "Title"; 
+            public const string Tutorial = "Tutorial"; 
+            public const string PlayTutorial = "PlayTutorial"; 
+            public const string Ending = "Ending"; 
+            public const string ApiSetting = "API";
+            public const string PlayCommon = "PlayCommon";
+            
+            /// <summary>
+            /// 현재 언어(ko/en/jp) 폴더가 포함된 전체 JSON 경로를 반환합니다.
+            /// 예: GetLocalizedPath("Tutorial") -> "JSON/ko/Tutorial"
+            /// </summary>
+            public static string GetLocalizedPath(string fileName)
+            {
+                string lang = SessionManager.Instance ? SessionManager.Instance.CurrentLanguage : "ko";
+                return $"JSON/{lang}/{fileName}";
+            }
         }
         
         /// <summary> 모듈 및 레벨 상수 모음 </summary>

@@ -35,12 +35,24 @@ namespace My.Scripts._01_Tutorial
             base.Start();
             if (GameManager.Instance)
                 GameManager.Instance.OnInspectorClosed += SaveCurrentSettings;
+            
+            if (SessionManager.Instance)
+                SessionManager.Instance.OnLanguageChanged += HandleLanguageChanged;
         }
 
         private void OnDestroy()
         {
             if (GameManager.Instance)
                 GameManager.Instance.OnInspectorClosed -= SaveCurrentSettings;
+            
+            if (SessionManager.Instance)
+                SessionManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
+        }
+        
+        private void HandleLanguageChanged(string newLanguage)
+        {
+            Debug.Log($"[TutorialManager] 언어 변경 감지됨: {newLanguage}. JSON 설정을 다시 로드합니다.");
+            LoadSettings(); // 변경된 언어 경로의 JSON으로 재로드 및 각 페이지 SetupData 재실행
         }
 
         private void SaveCurrentSettings()
@@ -55,13 +67,15 @@ namespace My.Scripts._01_Tutorial
                 page6 = pages.Length > 5 && pages[5] ? pages[5].ExtractCurrentData() as TutorialPage6Data : null,
                 page7 = pages.Length > 6 && pages[6] ? pages[6].ExtractCurrentData() as TutorialPage7Data : null,
             };
-            JsonLoader.Save(setting, GameConstants.Path.Tutorial);
+            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial);
+            JsonLoader.Save(setting, path);
         }
 
         /// <summary> 로컬 JSON에서 튜토리얼 텍스트 데이터를 읽어와 각 페이지 컨트롤러에 미리 주입합니다. </summary>
         protected override void LoadSettings()
         {
-            TutorialSetting setting = JsonLoader.Load<TutorialSetting>(GameConstants.Path.Tutorial);
+            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial);
+            TutorialSetting setting = JsonLoader.Load<TutorialSetting>(path);
             if (setting == null)
             {
                 Debug.LogError($"[TutorialManager] JSON Load Failed");
