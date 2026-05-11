@@ -24,7 +24,7 @@
       "name": "Text_PleaseWait",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "기록된 우리의 모습을 준비 중 입니다.\n잠시만 기다려 주세요.",
+      "text": "기록된 우리의 모습을 준비 중입니다.\n잠시만 기다려 주세요.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.196, "g": 0.196, "b": 0.196, "a": 1}

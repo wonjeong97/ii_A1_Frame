@@ -32,8 +32,8 @@
             "alignment": 4,
             "isBold": true
         },
-        "warningMessage": "태그 해주세요",
-        "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
+        "warningMessage": "태그 해 주세요",
+        "resetMessage": "동작이 인식되지 않아\n초기화합니다."
     },
     "page2": {
         "descriptionText": {
@@ -167,7 +167,7 @@
             "isBold": false
         },
         "warningMessage": "휠을 돌려주세요.",
-        "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
+        "resetMessage": "동작이 인식되지 않아\n초기화합니다."
     },
     "page4": {
         "nicknamePlayerA": {
@@ -235,7 +235,7 @@
             "isBold": false
         },
         "warningMessage": "휠을 돌려주세요.",
-        "resetMessage": "동작이 인식 되지 않아\n초기화 됩니다."
+        "resetMessage": "동작이 인식되지 않아\n초기화합니다."
     },
     "page5": {
         "descriptionText": {

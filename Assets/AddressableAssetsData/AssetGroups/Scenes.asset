@@ -89,12 +89,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - scene
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b9c0bde5b548c5e4988d28565dd20549
-    m_Address: 00_Title
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - scene
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cd5d43188cd400f4a9dce6021fc7b6bc
     m_Address: Play_Q8
     m_ReadOnly: 0

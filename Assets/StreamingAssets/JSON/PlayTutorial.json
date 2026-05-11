@@ -40,7 +40,7 @@
       "name": "Text_Camera_Guide_Tutorial",
       "position": {"x": 960, "y": -300},
       "scale": {"x": 1, "y": 1, "z": 1},
-      "text": "두 분 모두 답변을 완료할 때마다\n촬영 버튼이 활성화 됩니다.",
+      "text": "두 분 모두 답변을 완료할 때마다\n촬영 버튼이 활성화됩니다.",
       "fontName": "font4",
       "fontSize": 55,
       "fontColor": {"r": 0.976, "g": 0.952, "b": 0.909, "a": 1}      
