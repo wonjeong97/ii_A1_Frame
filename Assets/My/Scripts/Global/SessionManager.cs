@@ -1,3 +1,4 @@
+using System;
 using My.Scripts.Core;
 using UnityEngine;
 
@@ -15,11 +16,26 @@ namespace My.Scripts.Global
     public class SessionManager : MonoBehaviour
     {
         public static SessionManager Instance { get; private set; }
+        
+        public event Action<string> OnLanguageChanged;
 
         public int CurrentUserId { get; set; } 
         public string PlayerAUid { get; set; } = string.Empty;
         public string PlayerBUid { get; set; } = string.Empty;
-        public string CurrentLanguage { get; set; } = "ko";
+        
+        private string _currentLanguage = "ko";
+        public string CurrentLanguage 
+        { 
+            get => _currentLanguage; 
+            set 
+            {
+                if (_currentLanguage != value)
+                {
+                    _currentLanguage = value;
+                    OnLanguageChanged?.Invoke(_currentLanguage);
+                }
+            } 
+        }
         public string BlockCode { get; set; } = string.Empty;
         
         

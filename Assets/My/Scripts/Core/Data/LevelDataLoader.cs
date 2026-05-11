@@ -74,22 +74,24 @@ namespace My.Scripts.Core.Data
         /// <returns>병합된 레벨 설정 객체</returns>
         public static StandardLevelSetting LoadStandardLevel(string levelID, UserType levelType)
         {
-            StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
+            // 1. 공통 데이터 로드 경로 수정
+            string commonPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.PlayCommon);
+            StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>(commonPath);
 
-            // # TODO: 잦은 문자열 할당을 방지하기 위해 타입 매핑용 별도 테이블 구조 고려
             string typeStr = levelType.ToString();
-            
-            // ex: typeStr="C3" -> cartridge="C", relation="3"
             string cartridge = typeStr.Substring(0, 1);
             string relation = typeStr.Substring(1);
+            string lang = SessionManager.Instance ? SessionManager.Instance.CurrentLanguage : "ko";
 
-            string path = $"JSON/Cartridge_{cartridge}/{relation}/Play{levelID}_{levelType}";
+            // 2. 카트리지 데이터 경로에 언어(lang) 추가
+            // 예: "JSON/ko/Cartridge_A/1/PlayQ1_A1"
+            string path = $"JSON/{lang}/Cartridge_{cartridge}/{relation}/Play{levelID}_{levelType}";
             StandardLevelSetting specificData = JsonLoader.Load<StandardLevelSetting>(path);
 
             if (specificData == null)
             {
                 string fallbackType = $"{cartridge}1";
-                string fallbackPath = $"JSON/Cartridge_{cartridge}/1/Play{levelID}_{fallbackType}";
+                string fallbackPath = $"JSON/{lang}/Cartridge_{cartridge}/1/Play{levelID}_{fallbackType}";
                 Debug.LogWarning($"JSON 누락됨: {path}. 폴백 적용 -> {fallbackPath}");
                 specificData = JsonLoader.Load<StandardLevelSetting>(fallbackPath);
             }
@@ -110,12 +112,15 @@ namespace My.Scripts.Core.Data
         /// <returns>병합된 튜토리얼 설정 객체</returns>
         public static TutorialLevelSetting LoadTutorialLevel()
         {
-            StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>("JSON/PlayCommon");
-            TutorialLevelSetting specificData = JsonLoader.Load<TutorialLevelSetting>(GameConstants.Path.PlayTutorial);
+            string commonPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.PlayCommon);
+            StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>(commonPath);
+
+            string tutorialPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.PlayTutorial);
+            TutorialLevelSetting specificData = JsonLoader.Load<TutorialLevelSetting>(tutorialPath);
 
             if (specificData == null)
             {
-                Debug.LogError($"튜토리얼 데이터 로드 실패. 경로: {GameConstants.Path.PlayTutorial}");
+                Debug.LogError($"튜토리얼 데이터 로드 실패. 경로: {tutorialPath}");
                 return null;
             }
 
