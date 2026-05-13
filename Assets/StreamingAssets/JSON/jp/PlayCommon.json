@@ -1,0 +1,146 @@
+{
+  "page1": {
+    "descriptionText1": {
+      "name": "Text_\"포커스를 움직여 숨은 질문을 찾아 보세요.\"",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "포커스를 움직여\n숨은 질문을 찾아 보세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText2": {
+      "name": "Text_\"상하, 좌우로 동시에 움직일 수 없습니다.\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "상하, 좌우로 동시에 움직일 수 없습니다.",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText3": {
+      "name": "Text_\"숨은 문항을 모두 찾아주세요!\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "숨은 문항을 모두 찾아주세요!",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "failText": {
+      "name": "Text_Fail",
+      "text": "포커스 조절 실패!",
+      "fontName": "font7",
+      "fontSize": 50,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "warningMessage": "숨은 문항을\n모두 찾아주세요!",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": { "x": 960, "y": -300 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "text": "뒤를 돌아 각자 버튼을 눌러 답변해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": -698, "y": 80},
+      "text": "{nameA}님",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 698, "y": 80},
+      "text": "{nameB}님",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
+    "answerTexts": [
+      {
+        "name": "Text_Ans1",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "전혀 아니다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans2",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "아니다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans3",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "보통이다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans4",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "그렇다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans5",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "매우 그렇다.",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      }
+    ],
+    "warningMessage": "답변해 주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
+  },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_답변이 완료되었습니다.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "촬영 버튼을 눌러 촬영해 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "warningMessage": "촬영 버튼을 눌러주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
+  },
+  "page5": {},
+  "page6": {
+    "descriptionText": {
+      "name": "Text_사진이 기록되었습니다.",
+      "position": {"x": 960, "y": -265},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "사진이 기록되었습니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  }
+}

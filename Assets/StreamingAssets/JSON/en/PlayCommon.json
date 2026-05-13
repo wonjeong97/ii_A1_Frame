@@ -1,0 +1,146 @@
+{
+  "page1": {
+    "descriptionText1": {
+      "name": "Text_\"포커스를 움직여 숨은 질문을 찾아 보세요.\"",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Move the focus\nto find the hidden questions.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText2": {
+      "name": "Text_\"상하, 좌우로 동시에 움직일 수 없습니다.\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "You cannot move up/down and left/right at the same time.",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "descriptionText3": {
+      "name": "Text_\"숨은 문항을 모두 찾아주세요!\"",
+      "position": {"x": 960, "y": -1024},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Please find all the hidden questions!",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1},
+      "isBold": true
+    },
+    "failText": {
+      "name": "Text_Fail",
+      "text": "Focus adjustment failed!",
+      "fontName": "font7",
+      "fontSize": 50,
+      "fontColor": {"r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1}
+    },
+    "warningMessage": "Please find all\nthe hidden questions!",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": { "x": 960, "y": -300 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "text": "Please turn around and each press a button to answer.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": -698, "y": 80},
+      "text": "{nameA}",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 698, "y": 80},
+      "text": "{nameB}",
+      "fontName": "font8",
+      "fontSize": 45,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 4
+    },
+    "answerTexts": [
+      {
+        "name": "Text_Ans1",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "Strongly disagree",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans2",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "Disagree",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans3",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "Neutral",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans4",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "Agree",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      },
+      {
+        "name": "Text_Ans5",
+        "position": { "x": 0, "y": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 },
+        "text": "Strongly agree",
+        "fontName": "font8",
+        "fontSize": 35,
+        "fontColor": { "r": 0.2588235, "g": 0.2588235, "b": 0.2588235, "a": 1 }
+      }
+    ],
+    "warningMessage": "Please answer.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_답변이 완료되었습니다.",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Please press the shutter button to take a photo.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "warningMessage": "Please press the shutter button.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page5": {},
+  "page6": {
+    "descriptionText": {
+      "name": "Text_사진이 기록되었습니다.",
+      "position": {"x": 960, "y": -265},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "The photo has been recorded.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  }
+}

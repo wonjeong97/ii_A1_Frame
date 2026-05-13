@@ -1,0 +1,111 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": 390, "y": 135},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "나는 상대방의 기분을\n헤아리기 위해\n많은 에너지를 쏟는다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 3, "y": 1 }
+    ]
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "질문을 찾으면 뒤를 돌아\n각자 버튼을 눌러 답변해 주시면 됩니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.나는 상대방의 기분을 헤아리기 위해 많은 에너지를 쏟는다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_Camera_Guide_Tutorial",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "두 분 모두 답변을 완료할 때마다\n촬영 버튼이 활성화됩니다.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.976, "g": 0.952, "b": 0.909, "a": 1}      
+    },
+    "warningMessage": "촬영 버튼을 눌러주세요.",
+    "resetMessage": "동작이 인식되지 않아\n초기화합니다."
+  },
+  "page7": {
+    "descriptionText": {
+      "name": "Text_Stand",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "자, 이제 첫 번째 질문을 찾아보겠습니다.\n각자 자신의 자리에 서 주세요.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "playerAName": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "{nameA}님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 3
+    },
+    "playerBName": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1790, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "{nameB}님",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 5
+    }
+  },
+  "page8": {
+    "introText": {
+      "name": "Text_Step1",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "STEP.1\n숨은 질문 찾기",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "countdownText": {
+      "name": "Text_Countdown",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "",
+      "fontName": "font8",
+      "fontSize": 192,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "startText": {
+      "name": "Text_Start",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "시작!",
+      "fontName": "font8",
+      "fontSize": 113,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  }
+}

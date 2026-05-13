@@ -1,0 +1,206 @@
+﻿{
+  "page1": {
+    "descriptionText": {
+      "name": "Text_\"두 사람 모두 태그하면, 체험이 시작됩니다.\"",
+      "position": {"x": 960.0, "y": -832.5999755859375},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "The experience begins when both of you tag.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": true
+    },
+    "warningMessage": "Please tag.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_체험 후 마음조각 5개",
+      "position": {"x": 960.0, "y": -832.5999755859375},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "You will receive 5 mind fragments after the experience.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    }
+  },
+  "page3": {
+    "descriptionText": {
+      "name": "Text_\"각자의 자리에 서서 휠을 한 바퀴 돌려주세요.\"",
+      "position": {"x": 960.0, "y": -833.6599731445313},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "Please stand in your respective places and turn the wheel once.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": true
+    },
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130.4600067138672, "y": -568.3900146484375},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameA}",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176470756530762, "g": 0.6627451181411743, "b": 0.6235293745994568, "a": 1.0},
+      "alignment": 3,
+      "isBold": false
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1789.5400390625, "y": -568.3900146484375},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameB}",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176470756530762, "g": 0.6627451181411743, "b": 0.6235293745994568, "a": 1.0},
+      "alignment": 5,
+      "isBold": false
+    },
+    "warningMessage": "Please turn the wheel.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page4": {
+    "nicknamePlayerA": {
+      "name": "Text_PlayerA",
+      "position": {"x": 748.4000244140625, "y": -357.5},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameA}",
+      "fontName": "font8",
+      "fontSize": 55,
+      "fontColor": {"r": 0.7176470756530762, "g": 0.6627451181411743, "b": 0.6235293745994568, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "nicknamePlayerB": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1198.0, "y": -357.2099914550781},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameB}",
+      "fontName": "font8",
+      "fontSize": 55,
+      "fontColor": {"r": 0.7176470756530762, "g": 0.6627451181411743, "b": 0.6235293745994568, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "warningMessage": "Please turn the wheel.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page5": {
+    "descriptionText": {
+      "name": "Text_\"이 공간에서는 함께 카메라의 포커스를 맞춰...\"",
+      "position": {"x": 960.9000244140625, "y": -266.0799865722656},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "In this space, we will adjust the camera's focus together\nto find questions and capture our honest selves!",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    }
+  },
+  "page6": {
+    "txtA_Start": {
+      "name": "Text_description1",
+      "position": {"x": 960.9000244140625, "y": -266.0799865722656},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameA}, please turn the wheel.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "txtA_Info": {
+      "name": "Text_description2",
+      "position": {"x": 960.9000244140625, "y": -948.0800170898438},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameA} can only move up and down.",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.5686274766921997, "g": 0.5176470875740051, "b": 0.4823529124259949, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "txtB_Start": {
+      "name": "Text_description1",
+      "position": {"x": 960.9000244140625, "y": -266.0799865722656},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameB}, please turn the wheel.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "txtB_Info": {
+      "name": "Text_description2",
+      "position": {"x": 960.9000244140625, "y": -948.0800170898438},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "{nameB} can only move left and right.",
+      "fontName": "font4",
+      "fontSize": 39,
+      "fontColor": {"r": 0.5686274766921997, "g": 0.5176470875740051, "b": 0.4823529124259949, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "warningMessage": "",
+    "resetMessage": ""
+  },
+  "page7": {
+    "descriptionText1": {
+      "name": "Text_\"포커스를 움직여 숨은 질문을 찾아보세요.\"",
+      "position": {"x": 960.9000244140625, "y": -300.0},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "Move the focus\nto find the hidden questions.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.2588235139846802, "g": 0.2588235139846802, "b": 0.2588235139846802, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    },
+    "descriptionText2": {
+      "name": "Text_\"상하, 좌우로 동시에 움직일 수 없습니다.\"",
+      "position": {"x": 960.9000244140625, "y": -420.0},
+      "size": {"x": 0.0, "y": 0.0},
+      "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+      "scale": {"x": 1.0, "y": 1.0, "z": 1.0},
+      "text": "You cannot move up/down and left/right at the same time.",
+      "fontName": "font4",
+      "fontSize": 38,
+      "fontColor": {"r": 0.5686274766921997, "g": 0.5176470875740051, "b": 0.4823529124259949, "a": 1.0},
+      "alignment": 4,
+      "isBold": false
+    }
+  }
+}

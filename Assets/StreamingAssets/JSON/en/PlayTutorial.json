@@ -1,0 +1,111 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": 390, "y": 135},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "I put a lot of energy\ninto understanding\nother people's feelings.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 3, "y": 1 }
+    ]
+  },
+  "page2": {
+    "descriptionText": {
+      "name": "Text_Description",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "When you find a question, turn around\nand each press a button to answer.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.9764706, "g": 0.9529412, "b": 0.9098039, "a": 1}
+    },
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q. I put a lot of energy into understanding other people's feelings.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  },
+  "page4": {
+    "descriptionText": {
+      "name": "Text_Camera_Guide_Tutorial",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "The shutter button will be activated\nwhenever both of you finish answering.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.976, "g": 0.952, "b": 0.909, "a": 1}
+    },
+    "warningMessage": "Please press the shutter button.",
+    "resetMessage": "Motion not recognized,\nresetting."
+  },
+  "page7": {
+    "descriptionText": {
+      "name": "Text_Stand",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Now, let's look for the first question.\nPlease stand in your places.",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "playerAName": {
+      "name": "Text_PlayerA",
+      "position": {"x": 130, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "{nameA}",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 3
+    },
+    "playerBName": {
+      "name": "Text_PlayerB",
+      "position": {"x": 1790, "y": -603},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "{nameB}",
+      "fontName": "font8",
+      "fontSize": 60,
+      "fontColor": {"r": 0.7176471, "g": 0.6627451, "b": 0.6235294, "a": 1},
+      "alignment": 5
+    }
+  },
+  "page8": {
+    "introText": {
+      "name": "Text_Step1",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "STEP.1\nFinding Hidden Questions",
+      "fontName": "font4",
+      "fontSize": 55,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "countdownText": {
+      "name": "Text_Countdown",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "",
+      "fontName": "font8",
+      "fontSize": 192,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    },
+    "startText": {
+      "name": "Text_Start",
+      "position": {"x": 960, "y": -300},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Start!",
+      "fontName": "font8",
+      "fontSize": 113,
+      "fontColor": {"r": 0.1960784, "g": 0.1960784, "b": 0.1960784, "a": 1}
+    }
+  }
+}
