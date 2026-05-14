@@ -39,11 +39,7 @@ namespace My.Scripts.Hardware
                 }
             }
 
-            /// <summary>
-            /// 버퍼 데이터에서 한 줄(\n 기준)을 찾아 명령어로 추출함.
-            /// </summary>
-            /// <param name="line">추출된 명령어 문자열(출력 매개변수)</param>
-            /// <returns>추출 성공 여부</returns>
+            /// <summary> 버퍼 데이터에서 한 줄(\n 기준)을 찾아 명령어로 추출함. </summary>
             private bool TryExtractLine(out string line)
             {
                 line = null;
@@ -66,9 +62,7 @@ namespace My.Scripts.Hardware
                 return true;
             }
             
-            /// <summary>
-            /// 버퍼 내에서 개행 문자(\n)의 인덱스를 탐색함.
-            /// </summary>
+            /// <summary> 버퍼 내에서 개행 문자(\n)의 인덱스를 탐색함. </summary>
             private int FindNewLineIndex()
             {
                 for (int i = 0; i < _position; i++)
@@ -78,9 +72,7 @@ namespace My.Scripts.Hardware
                 return -1;
             }
             
-            /// <summary>
-            /// 추출된 바이트를 미리 정의된 상수 명령어와 비교하거나 문자열로 변환함.
-            /// </summary>
+            /// <summary> 추출된 바이트를 미리 정의된 상수 명령어와 비교하거나 문자열로 변환함. </summary>
             private string ConvertBytesToCommand(int length)
             {
                 // 가비지 생성을 막기 위해 하드웨어 상수를 우선 매칭
@@ -94,9 +86,7 @@ namespace My.Scripts.Hardware
                 return command;
             }
             
-            /// <summary>
-            /// 처리 완료된 바이트를 제거하고 남은 데이터를 버퍼의 시작점으로 이동시킴.
-            /// </summary>
+            /// <summary> 처리 완료된 바이트를 제거하고 남은 데이터를 버퍼의 시작점으로 이동시킴. </summary>
             private void ShiftBuffer(int skipCount)
             {
                 int remaining = _position - skipCount;
@@ -109,9 +99,7 @@ namespace My.Scripts.Hardware
                 _position = remaining;
             }
             
-            /// <summary>
-            /// 버퍼가 꽉 찼음에도 개행 문자가 없는 비정상 상황을 처리함.
-            /// </summary>
+            /// <summary> 버퍼가 꽉 찼음에도 개행 문자가 없는 비정상 상황을 처리함. </summary>
             private bool HandleBufferOverflow()
             {
                 if (_position >= _data.Length)
@@ -121,12 +109,7 @@ namespace My.Scripts.Hardware
                 return false;
             }
 
-            /// <summary>
-            /// 바이트 패턴을 분석하여 캐싱된 명령어 상수를 반환함.
-            /// </summary>
-            /// <param name="buffer">데이터 바이트 배열</param>
-            /// <param name="len">데이터 길이</param>
-            /// <returns>매칭된 상수 문자열 또는 null</returns>
+            /// <summary> 바이트 패턴을 분석하여 캐싱된 명령어 상수를 반환함. </summary>
             private string MatchKnownCommand(byte[] buffer, int len)
             {
                 // 명령어 길이에 따라 조기 필터링하여 불필요한 비교 연산 제거
@@ -138,9 +121,7 @@ namespace My.Scripts.Hardware
                 };
             }
             
-            /// <summary>
-            /// 3글자 명령어(예: 1On)를 바이트 단위로 비교하여 상수 반환.
-            /// </summary>
+            /// <summary> 3글자 명령어(예: 1On)를 바이트 단위로 비교하여 상수 반환. </summary>
             private string MatchThreeCharCommand(byte[] buffer)
             {
                 // 공통 접미사 'On' 확인 (ASCII: O=79, n=110)
@@ -157,9 +138,7 @@ namespace My.Scripts.Hardware
                 };
             }
             
-            /// <summary>
-            /// 6글자 명령어(ShotOn)를 바이트 단위로 비교하여 상수 반환.
-            /// </summary>
+            /// <summary> 6글자 명령어(ShotOn)를 바이트 단위로 비교하여 상수 반환. </summary>
             private string MatchSixCharCommand(byte[] buffer)
             {
                 // "ShotOn" 문자열의 각 바이트를 순차 비교하여 동적 할당 회피
@@ -168,6 +147,11 @@ namespace My.Scripts.Hardware
                                 buffer[3] == 116 && buffer[4] == 79 && buffer[5] == 110;
 
                 return isShotOn ? GameConstants.Hardware.InputShotOn : null;
+            }
+                    
+            public void Reset()
+            {
+                _position = 0;
             }
         }
 
@@ -292,6 +276,9 @@ namespace My.Scripts.Hardware
             CloseAndDisposePort(ref _leftPort);
             CloseAndDisposePort(ref _rightPort);
             CloseAndDisposePort(ref _lightPort);
+            _leftBuffer.Reset();
+            _rightBuffer.Reset();
+            _lightBuffer.Reset();
 
             // 하드웨어 포트 반환 대기 시간 확보
             await UniTask.Delay(TimeSpan.FromSeconds(1.0f));

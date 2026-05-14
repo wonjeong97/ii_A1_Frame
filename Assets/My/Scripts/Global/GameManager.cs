@@ -4,7 +4,6 @@ using Cysharp.Threading.Tasks;
 using My.Scripts.Core;
 using My.Scripts.Core.Data;
 using My.Scripts.Hardware;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
@@ -12,6 +11,10 @@ using Wonjeong.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace My.Scripts.Global
 {
@@ -35,6 +38,7 @@ namespace My.Scripts.Global
 
         [Header("API Retry Settings")]
         [SerializeField] private int maxRetries;
+
         [SerializeField] private float retryDelay;
 
         /// <summary>
@@ -211,21 +215,25 @@ namespace My.Scripts.Global
         {
             _isTransitioning = true;
 
-            if (!FadeManager.Instance)
+            try
             {
+                if (!FadeManager.Instance)
+                {
+                    await SceneLoader.LoadAsync(sceneName);
+                    return;
+                }
+
+                UniTaskCompletionSource fadeTcs = new UniTaskCompletionSource();
+                FadeManager.Instance.FadeOut(_fadeTime, () => fadeTcs.TrySetResult());
+                await fadeTcs.Task;
+
                 await SceneLoader.LoadAsync(sceneName);
-                _isTransitioning = false;
-                return;
+                FadeManager.Instance.FadeIn(_fadeTime);
             }
-
-            UniTaskCompletionSource fadeTcs = new UniTaskCompletionSource();
-            FadeManager.Instance.FadeOut(_fadeTime, () => fadeTcs.TrySetResult());
-            await fadeTcs.Task;
-
-            await SceneLoader.LoadAsync(sceneName);
-
-            FadeManager.Instance.FadeIn(_fadeTime);
-            _isTransitioning = false;
+            finally
+            {
+                _isTransitioning = false;
+            }
         }
 
         /// <summary> 앱 종료 요청 시 하드웨어 정리 및 임시 파일을 삭제한 후 안전하게 종료함. </summary>

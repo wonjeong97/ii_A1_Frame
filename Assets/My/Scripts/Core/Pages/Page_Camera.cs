@@ -98,18 +98,19 @@ namespace My.Scripts.Core.Pages
             base.OnEnter();
             
             ResetCameraUI();
-            UpdateLightingState();
+
+            // 모든 연출 시퀀스를 UniTask로 통합 실행
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+
+            UpdateLightingState(_sequenceCts.Token);
             StartWebCam(); 
             
             if (TimeLapseRecorder.Instance)
             {
                 TimeLapseRecorder.Instance.CurrentTint = _currentTintColor;
             }
-
-            // 모든 연출 시퀀스를 UniTask로 통합 실행
-            _sequenceCts?.Cancel();
-            _sequenceCts?.Dispose();
-            _sequenceCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             
             SequenceAsync(_sequenceCts.Token).Forget();
         }
@@ -135,7 +136,7 @@ namespace My.Scripts.Core.Pages
             CleanupPhotoUI();
         }
 
-        private void UpdateLightingState()
+        private void UpdateLightingState(CancellationToken token)
         {
             if (!LevelManager.Instance || !HueManager.Instance) return;
 
@@ -144,8 +145,8 @@ namespace My.Scripts.Core.Pages
             
             _currentTintColor = new Color(targetRgb.r / 255f, targetRgb.g / 255f, targetRgb.b / 255f);
 
-            HueManager.Instance.SetLightColorRGBAsync(1, targetRgb, -1, 4, this.GetCancellationTokenOnDestroy()).Forget();
-            HueManager.Instance.SetLightColorRGBAsync(2, targetRgb, -1, 4, this.GetCancellationTokenOnDestroy()).Forget();
+            HueManager.Instance.SetLightColorRGBAsync(1, targetRgb, -1, 4, token).Forget();
+            HueManager.Instance.SetLightColorRGBAsync(2, targetRgb, -1, 4, token).Forget();
             
             if (cameraDisplay)
             {
@@ -161,12 +162,12 @@ namespace My.Scripts.Core.Pages
             return _isQ6To10 ? (HueManager.Instance.PopRandomColor() ?? HueManager.Instance.Config.whiteColor) : HueManager.Instance.Config.whiteColor;
         }
 
-        private void TurnOffHueLights()
+        private void TurnOffHueLights(CancellationToken token)
         {
             if (HueManager.Instance)
             {
-                HueManager.Instance.SetLightStateAsync(1, false, this.GetCancellationTokenOnDestroy()).Forget();
-                HueManager.Instance.SetLightStateAsync(2, false, this.GetCancellationTokenOnDestroy()).Forget();
+                HueManager.Instance.SetLightStateAsync(1, false, token).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false, token).Forget();
             }
         }
 
@@ -176,7 +177,7 @@ namespace My.Scripts.Core.Pages
             base.OnExit();
             StopWebCam();
             CleanupPhotoUI();
-            TurnOffHueLights();
+            TurnOffHueLights(this.GetCancellationTokenOnDestroy());
 
             if (TimeLapseRecorder.Instance) TimeLapseRecorder.Instance.CurrentTint = Color.white;
         }
@@ -186,7 +187,7 @@ namespace My.Scripts.Core.Pages
             _sequenceCts?.Cancel();
             _sequenceCts?.Dispose();
             StopWebCam();
-            TurnOffHueLights();
+            TurnOffHueLights(this.GetCancellationTokenOnDestroy());
             if (_capturedPhoto) Destroy(_capturedPhoto);
         }
 
@@ -197,12 +198,17 @@ namespace My.Scripts.Core.Pages
             await UniTask.Delay(TimeSpan.FromSeconds(cameraFadeDelay), cancellationToken: token);
             if (_webCamTexture)
             {
-                await UniTask.WaitUntil(
+                bool isTimeout = await UniTask.WaitUntil(
                     _webCamTexture, 
                     cam => cam.width > 16, 
                     PlayerLoopTiming.Update, 
                     token
-                ).Timeout(TimeSpan.FromSeconds(2.0));
+                ).TimeoutWithoutException(TimeSpan.FromSeconds(2.0));
+
+                if (isTimeout)
+                {
+                    Debug.LogWarning("[Page_Camera] WebCamTexture readiness timed out.");
+                }
             }
             await UIFadeUtility.FadeGraphicAsync(cameraDisplay, 0f, 1f, cameraFadeDuration, token);
 
@@ -249,7 +255,7 @@ namespace My.Scripts.Core.Pages
             await UniTask.Delay(TimeSpan.FromSeconds(0.05), cancellationToken: token);
 
             CapturePhoto(); // 실제 텍스트 캡처 및 저장 명령
-            TurnOffHueLights();
+            TurnOffHueLights(token);
 
             if (flashImage)
             {

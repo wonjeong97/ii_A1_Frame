@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using UnityEngine.Networking; 
-using My.Scripts.Global;      
+using UnityEngine.Networking;
+using My.Scripts.Global;
 using Cysharp.Threading.Tasks;
 
 namespace My.Scripts.Utils
@@ -12,14 +12,14 @@ namespace My.Scripts.Utils
     [Serializable]
     public class CompositeSlot
     {
-        public string fileSuffix; 
+        public string fileSuffix;
 
         [Header("Position (Top-Left Pivot)")]
         [Tooltip("배경의 좌상단(0,0)을 기준으로, 사진의 좌상단이 위치할 좌표입니다.")]
-        public Vector2 position; 
-        
+        public Vector2 position;
+
         [Header("Scale")]
-        public Vector2 scale = Vector2.one; 
+        public Vector2 scale = Vector2.one;
     }
 
     /// <summary> 
@@ -29,19 +29,19 @@ namespace My.Scripts.Utils
     public class PhotoCompositor : MonoBehaviour
     {
         [Header("Assets")]
-        public Texture2D baseFrame; 
-        
+        public Texture2D baseFrame;
+
         [Tooltip("배경 이미지(출력 캔버스)의 스케일입니다. 화질을 높이려면 값을 키워 해상도를 증가시킬 수 있습니다.")]
-        public Vector2 baseFrameScale = Vector2.one; 
+        public Vector2 baseFrameScale = Vector2.one;
 
         [Header("Config")]
         public string saveFolderName = "Pictures";
         public string outputFileName = "Composite";
-        
+
         [Tooltip("서버 업로드 시 구분용 카운트 번호")]
         [Min(1)]
         public int uploadCount = 1;
-        
+
         [Header("API Retry Settings")]
         [SerializeField] private int maxRetries = 10;
         [SerializeField] private float retryDelay = 1.0f;
@@ -54,7 +54,7 @@ namespace My.Scripts.Utils
 
         public bool IsProcessing { get; private set; }
 
-        [ContextMenu("Execute Composite Now")] 
+        [ContextMenu("Execute Composite Now")]
         public void DebugProcessAndSave()
         {
             ProcessAndSave(debugBaseName, true);
@@ -69,13 +69,13 @@ namespace My.Scripts.Utils
             }
 
             IsProcessing = true;
-            
+
             string safeBaseName = string.IsNullOrEmpty(baseName) ? "" : baseName;
             string clean = safeBaseName.Replace("\n", "").Replace("\r", "").Trim();
             string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
             string sanitizedName = Regex.Replace(clean, invalidRegStr, "");
-            
+
             if (string.IsNullOrWhiteSpace(sanitizedName))
             {
                 sanitizedName = "UnknownPlayers";
@@ -98,7 +98,7 @@ namespace My.Scripts.Utils
 
                 string finalFileName = string.Concat(sanitizedName, "_", outputFileName, ".png");
                 string fullPath = Path.Combine(GetRootPath(), finalFileName);
-                
+
                 byte[] pngBytes = await EncodeAndSaveTextureAsync(resultTex, fullPath);
 
                 if (!isDebug && pngBytes != null)
@@ -117,10 +117,10 @@ namespace My.Scripts.Utils
             finally
             {
                 if (resultTex) Destroy(resultTex);
-                IsProcessing = false; 
+                IsProcessing = false;
             }
         }
-        
+
         /// <summary>
         /// RenderTexture와 GL 명령을 사용하여 배경 위에 개별 사진들을 합성한 Texture2D를 반환함.
         /// </summary>
@@ -155,7 +155,7 @@ namespace My.Scripts.Utils
 
             return tex;
         }
-        
+
         private void DrawSlotPhoto(string rootPath, string sanitizedName, CompositeSlot slot)
         {
             string targetPath = Path.Combine(rootPath, string.Concat(sanitizedName, slot.fileSuffix, ".png"));
@@ -167,11 +167,11 @@ namespace My.Scripts.Utils
             float w = photoTex.width * slot.scale.x;
             float h = photoTex.height * slot.scale.y;
             Rect drawRect = new Rect(slot.position.x, -slot.position.y, w, h);
-            
+
             Graphics.DrawTexture(drawRect, photoTex);
             Destroy(photoTex);
         }
-        
+
         /// <summary>
         /// 텍스처 데이터를 백그라운드에서 PNG로 인코딩하고 지정된 경로에 비동기로 저장함.
         /// </summary>
@@ -193,8 +193,13 @@ namespace My.Scripts.Utils
                 return null;
             }
 
+            string directory = Path.GetDirectoryName(savePath);
+            {
+                if (directory != null) Directory.CreateDirectory(directory);
+            }
+
             await File.WriteAllBytesAsync(savePath, pngBytes);
-            
+
             // 안전하게 메인 스레드로 복귀
             await UniTask.SwitchToMainThread();
             return pngBytes;
@@ -216,16 +221,17 @@ namespace My.Scripts.Utils
                 }
             }
         }
-        
+
         private string ConstructUploadUrl()
         {
-            if (!SessionManager.Instance || !GameManager.Instance || GameManager.Instance.ApiConfig == null) return null;
+            if (!SessionManager.Instance || !GameManager.Instance || GameManager.Instance.ApiConfig == null)
+                return null;
 
             int idxUser = SessionManager.Instance.CurrentUserId;
             string uid = SessionManager.Instance.PlayerAUid;
             string baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
-            string moduleCode = string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode) 
-                ? "A1" 
+            string moduleCode = string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode)
+                ? "A1"
                 : SessionManager.Instance.CurrentModuleCode.ToUpper();
 
             if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid)) return null;
@@ -233,7 +239,8 @@ namespace My.Scripts.Utils
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             int safeUploadCount = Mathf.Max(1, uploadCount);
 
-            return $"{baseUrl}?idx_user={idxUser.ToString()}&uid={encodedUid}&code={moduleCode}&type=png&count={safeUploadCount.ToString()}";
+            return
+                $"{baseUrl}?idx_user={idxUser.ToString()}&uid={encodedUid}&code={moduleCode}&type=png&count={safeUploadCount.ToString()}";
         }
 
         private async UniTask<bool> ExecuteSingleUpload(string url, byte[] imageBytes)
@@ -265,7 +272,10 @@ namespace My.Scripts.Utils
                 tex.LoadImage(bytes);
                 return tex;
             }
-            catch { return null; }
+            catch
+            {
+                return null;
+            }
         }
 
         private string GetRootPath()

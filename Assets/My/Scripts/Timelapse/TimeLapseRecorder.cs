@@ -24,23 +24,20 @@ namespace My.Scripts.Timelapse
     {
         public static TimeLapseRecorder Instance;
 
-        [Header("Capture Settings")]
+        // Capture Settings
         private int timelapseCaptureFPS;
-
         private int realtimeCaptureFPS;
 
-        [Header("Output Settings")]
+        // Output Settings
         private float timelapseDuration;
-
         private float realtimeDuration;
 
         private int captureWidth;
         private int captureHeight;
 
-        [Header("API Retry Settings")]
-        [SerializeField] private int maxRetries;
-
-        [SerializeField] private float retryDelay;
+        // API Retry Settings
+        private int maxRetries;
+        private float retryDelay;
 
         private WebCamTexture _webCam;
         private bool _isRecording;
@@ -583,16 +580,16 @@ namespace My.Scripts.Timelapse
         private async UniTaskVoid UploadVideoAsync(string filePath)
         {
             IsUploading = true;
-            string url = ConstructUploadUrl();
-
-            if (string.IsNullOrEmpty(url) || !File.Exists(filePath))
+            try
+            {
+                string url = ConstructUploadUrl();
+                if (string.IsNullOrEmpty(url) || !File.Exists(filePath)) return;
+                await ExecuteUploadWithRetryAsync(url, filePath);
+            }
+            finally
             {
                 IsUploading = false;
-                return;
             }
-
-            await ExecuteUploadWithRetryAsync(url, filePath);
-            IsUploading = false;
         }
 
         private string ConstructUploadUrl()

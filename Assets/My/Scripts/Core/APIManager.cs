@@ -125,7 +125,8 @@ namespace My.Scripts.Core
                 return GameManager.Instance.ApiConfig;
             }
 
-            ApiSettings config = JsonLoader.Load<ApiSettings>(GameConstants.Path.ApiSetting);
+            string apiPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.ApiSetting);
+            ApiSettings config = JsonLoader.Load<ApiSettings>(apiPath);
             if (GameManager.Instance && config != null)
             {
                 GameManager.Instance.ApiConfig = config;

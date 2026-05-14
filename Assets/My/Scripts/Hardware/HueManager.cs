@@ -182,6 +182,12 @@ namespace My.Scripts.Hardware
                 if (request.result != UnityWebRequest.Result.Success) return false;
 
                 ParseLightIds(request.downloadHandler.text);
+                if (_physicalLightIds.Count == 0)
+                {
+                    Debug.LogWarning("[HueManager] 조명 ID를 찾지 못해 다시 시도합니다.");
+                    return false;
+                }
+
                 _hasFetchedLights = true;
                 return true;
             }

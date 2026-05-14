@@ -129,21 +129,31 @@ namespace My.Scripts._18_Ending.Pages
                 await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
 
-            // 프로세스가 남았다면 완료될 때까지 비동기 대기 (Closure 방지 위해 recorder 전달)
+            // 프로세스가 남았다면 완료될 때까지 비동기 대기
             if (recorder.IsRealtimeProcessing)
             {
-                await UniTask.WaitUntil(recorder,rec => !rec.IsRealtimeProcessing, PlayerLoopTiming.Update, token);
+                try
+                {
+                    float remainingTime = Mathf.Max(0.1f, conversionTimeout - (Time.time - startTime));
+                    await UniTask.WaitUntil(recorder, rec => !rec.IsRealtimeProcessing, PlayerLoopTiming.Update, token)
+                        .Timeout(TimeSpan.FromSeconds(remainingTime));
+                }
+                catch (TimeoutException)
+                {
+                    Debug.LogWarning($"[EndingPage2Controller] 리얼타임 변환 타임아웃({conversionTimeout}s) - 다음 단계 진행");
+                }
             }
         }
 
         private async UniTask HandleTimelapseConversionAsync(CancellationToken token)
         {
             TimeLapseRecorder recorder = TimeLapseRecorder.Instance;
-            if (!recorder || recorder.IsTimelapseProcessing) return;
-
-            _isTimelapseTriggered = true;
-            recorder.ConvertToVideo();
-            
+            if (!recorder) return;
+            if (!recorder.IsTimelapseProcessing)
+            {
+                _isTimelapseTriggered = true;
+                recorder.ConvertToVideo();
+            }
             await UniTask.WaitUntil(recorder, rec => !rec.IsTimelapseProcessing, PlayerLoopTiming.Update, token);
         }
 

@@ -269,7 +269,7 @@ namespace My.Scripts._01_Tutorial.Pages
             try
             {
                 bool success = await apiManager.FetchDataAsync(uidLeft).Timeout(TimeSpan.FromSeconds(25));
-                
+
                 if (success && SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0)
                 {
                     CompleteStep();
@@ -278,6 +278,10 @@ namespace My.Scripts._01_Tutorial.Pages
             catch (TimeoutException)
             {
                 Debug.LogWarning("TutorialPage1: 유저 데이터 페치 타임아웃.");
+            }
+            catch (OperationCanceledException)
+            {
+                // 페이지 종료/파괴에 의한 정상 취소 - 무시
             }
         }
     }

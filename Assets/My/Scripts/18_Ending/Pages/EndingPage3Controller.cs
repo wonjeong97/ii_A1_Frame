@@ -76,7 +76,7 @@ namespace My.Scripts._18_Ending.Pages
         /// <summary>
         /// 영상 준비부터 재생, 타이머 업데이트 및 퇴장 연출까지의 전체 시퀀스를 제어함.
         /// </summary>
-        private async UniTaskVoid PresentationAsync(CancellationToken token)
+    private async UniTaskVoid PresentationAsync(CancellationToken token)
         {
             if (!videoPlayer || !videoDisplay)
             {
@@ -92,10 +92,16 @@ namespace My.Scripts._18_Ending.Pages
                 return;
             }
 
-            await PrepareVideoAsync(filePath, token);
-
-            // 클로저 할당 방지: videoPlayer를 상태 매개변수로 전달함
-            await UniTask.WaitUntil(videoPlayer, v => v.isPrepared && v.texture != null, PlayerLoopTiming.Update, token);
+            try
+            {
+                await PrepareVideoAsync(filePath, token);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[EndingPage3] 비디오 준비 예외 발생: {e.Message}");
+                CompleteStep();
+                return;
+            }
 
             videoPlayer.isLooping = true;
             videoDisplay.texture = videoPlayer.texture;
@@ -124,8 +130,11 @@ namespace My.Scripts._18_Ending.Pages
             videoPlayer.url = new Uri(path).AbsoluteUri;
             videoPlayer.Prepare();
             
-            // 타임아웃 10초 적용
-            await UniTask.WaitUntil(videoPlayer, v => v.isPrepared, PlayerLoopTiming.Update, token).Timeout(TimeSpan.FromSeconds(10));
+            using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token))
+            {
+                timeoutCts.CancelAfterSlim(TimeSpan.FromSeconds(10));
+                await UniTask.WaitUntil(videoPlayer, v => v.isPrepared && v.texture, PlayerLoopTiming.Update, timeoutCts.Token);
+            }
         }
 
         private async UniTask RunDisplayTimerAsync(CancellationToken token)
