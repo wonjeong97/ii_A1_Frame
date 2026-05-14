@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using My.Scripts._01_Tutorial.Pages;
 using My.Scripts.Core;
@@ -40,8 +40,9 @@ namespace My.Scripts._01_Tutorial
                 SessionManager.Instance.OnLanguageChanged += HandleLanguageChanged;
         }
 
-        private void OnDestroy()
-        {
+        protected override void OnDestroy()
+        {   
+            base.OnDestroy();
             if (GameManager.Instance)
                 GameManager.Instance.OnInspectorClosed -= SaveCurrentSettings;
             
@@ -71,24 +72,52 @@ namespace My.Scripts._01_Tutorial
             JsonLoader.Save(setting, path);
         }
 
-        /// <summary> 로컬 JSON에서 튜토리얼 텍스트 데이터를 읽어와 각 페이지 컨트롤러에 미리 주입합니다. </summary>
+        /// <summary>
+        /// JSON 설정 파일을 로드하여 각 튜토리얼 페이지에 데이터를 주입함.
+        /// 데이터를 배열로 래핑하여 루프로 처리함으로써 코드 중복을 제거함.
+        /// </summary>
         protected override void LoadSettings()
         {
             string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial);
             TutorialSetting setting = JsonLoader.Load<TutorialSetting>(path);
+
             if (setting == null)
             {
-                Debug.LogError($"[TutorialManager] JSON Load Failed");
+                Debug.LogError("[TutorialManager] JSON 데이터 로드 실패. 경로: " + path);
                 return;
             }
 
-            if (pages.Length > 0 && pages[0]) pages[0].SetupData(setting.page1);
-            if (pages.Length > 1 && pages[1]) pages[1].SetupData(setting.page2);
-            if (pages.Length > 2 && pages[2]) pages[2].SetupData(setting.page3);
-            if (pages.Length > 3 && pages[3]) pages[3].SetupData(setting.page4);
-            if (pages.Length > 4 && pages[4]) pages[4].SetupData(setting.page5);
-            if (pages.Length > 5 && pages[5]) pages[5].SetupData(setting.page6);
-            if (pages.Length > 6 && pages[6]) pages[6].SetupData(setting.page7);
+            // 개별 필드로 구성된 페이지 데이터를 배열로 묶어 반복 처리가 가능하도록 함.
+            object[] pageDataArray = new object[]
+            {
+                setting.page1, setting.page2, setting.page3,
+                setting.page4, setting.page5, setting.page6, setting.page7
+            };
+
+            // 할당된 페이지 수와 데이터 구조체의 필드 수 중 작은 값을 기준으로 순회함.
+            int maxCount = Mathf.Min(pages.Length, pageDataArray.Length);
+
+            for (int i = 0; i < maxCount; i++)
+            {
+                GamePage page = pages[i];
+                object data = pageDataArray[i];
+
+                if (page)
+                {
+                    if (data != null)
+                    {
+                        page.SetupData(data);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[TutorialManager] " + (i + 1) + "번 페이지 데이터가 JSON에 누락됨.");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[TutorialManager] " + i + "번 인덱스의 페이지 컴포넌트가 인스펙터에서 누락됨.");
+                }
+            }
         }
 
         /// <summary> 모든 튜토리얼 과정이 완료되면 본 게임(PlayTutorial) 씬으로 부드럽게 전환합니다. </summary>
@@ -114,42 +143,48 @@ namespace My.Scripts._01_Tutorial
         }
 
         /// <summary> 현재 페이지를 페이드아웃하고 다음 페이지를 페이드인하는 시각적 전환 연출을 수행합니다. </summary>
-        protected override IEnumerator TransitionRoutine(int targetIndex, int info)
+        protected override async UniTaskVoid TransitionAsync(int targetIndex, int info, CancellationToken token)
         {
             isTransitioning = true;
-            GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
-            
-            if (targetIndex < 0 || targetIndex >= pages.Length)
+            try
             {
-                Debug.LogWarning($"[TutorialManager] Invalid targetIndex: {targetIndex}");
-                isTransitioning = false;
-                yield break;
-            }
-            GamePage next = pages[targetIndex];
-
-            if (current)
-            {
-                yield return StartCoroutine(FadePage(current, 1f, 0f));
-                current.OnExit();
-            }
-
-            if (next)
-            {
-                next.OnEnter();
-                HandleTriggerInfo(next, info); 
+                GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
                 
-                if (targetIndex == 0)
+                if (targetIndex < 0 || targetIndex >= pages.Length)
                 {
-                    next.SetAlpha(1f);
+                    Debug.LogWarning($"[TutorialManager] Invalid targetIndex: {targetIndex}");
+                    return;
                 }
-                else
-                {
-                    yield return StartCoroutine(FadePage(next, 0f, 1f));
-                }
-            }
+                GamePage next = pages[targetIndex];
 
-            currentPageIndex = targetIndex;
-            isTransitioning = false;
+                if (current)
+                {
+                    await FadePageAsync(current, 1f, 0f, 0.5f, token);
+                    current.OnExit();
+                }
+
+                if (next)
+                {
+                    next.OnEnter();
+                    HandleTriggerInfo(next, info); 
+                    
+                    if (targetIndex == 0)
+                    {
+                        next.SetAlpha(1f);
+                    }
+                    else
+                    {
+                        await FadePageAsync(next, 0f, 1f, 0.5f, token);
+                    }
+                }
+
+                currentPageIndex = targetIndex;
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                isTransitioning = false;
+            }
         }
 
         /// <summary> 이전 페이지의 특정 조작 결과(info)를 다음 페이지의 초기 상태에 반영합니다. </summary>

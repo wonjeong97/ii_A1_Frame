@@ -12,7 +12,7 @@ namespace My.Scripts.Core
         protected virtual void Awake()
         {
             canvasGroup = GetComponent<CanvasGroup>();
-            if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            if (!canvasGroup) canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
         /// <summary> 데이터 설정 (타입 미정) </summary>

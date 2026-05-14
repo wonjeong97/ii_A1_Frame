@@ -1,4 +1,6 @@
-using System.Collections;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace My.Scripts.Core
@@ -10,7 +12,8 @@ namespace My.Scripts.Core
         [SerializeField] protected GamePage[] pages; // 진행될 페이지 리스트
 
         protected int currentPageIndex = -1; // 현재 페이지 인덱스
-        protected bool isTransitioning = false; // 전환 연출 진행 여부
+        protected bool isTransitioning; // 전환 연출 진행 여부
+        protected CancellationTokenSource transitionCts; // 비동기 전환 취소 토큰
 
         protected virtual void Start()
         {
@@ -22,6 +25,21 @@ namespace My.Scripts.Core
             }
             InitializePages(); // 2. 페이지 초기화
             StartFlow(); // 3. 흐름 시작
+        }
+
+        protected virtual void OnDestroy()
+        {
+            CancelTransition();
+        }
+
+        protected void CancelTransition()
+        {
+            if (transitionCts != null)
+            {
+                transitionCts.Cancel();
+                transitionCts.Dispose();
+                transitionCts = null;
+            }
         }
 
         /// <summary> 데이터 로드 (자식 구현) </summary>
@@ -36,7 +54,7 @@ namespace My.Scripts.Core
             if (pages == null) return;
             for (int i = 0; i < pages.Length; i++)
             {
-                if (pages[i] == null) continue;
+                if (!pages[i]) continue;
                 
                 // 초기 상태: 비활성화 및 투명
                 pages[i].gameObject.SetActive(false);
@@ -83,50 +101,59 @@ namespace My.Scripts.Core
                 Debug.LogWarning($"[BaseFlowManager] 잘못된 인덱스: {targetIndex}");
                 return;
             }
-            isTransitioning = true;
-            StartCoroutine(TransitionRoutine(targetIndex, info));
+            
+            CancelTransition();
+            transitionCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            
+            TransitionAsync(targetIndex, info, transitionCts.Token).Forget();
         }
 
-        /// <summary> 페이지 전환 연출 (Fade Out -> Fade In) </summary>
-        protected virtual IEnumerator TransitionRoutine(int targetIndex, int info)
+        /// <summary> 
+        /// 페이지 전환 연출 (Fade Out -> Fade In) 
+        /// IEnumerator 대신 UniTask를 사용하여 가비지 할당(GC)을 제거함.
+        /// </summary>
+        protected virtual async UniTaskVoid TransitionAsync(int targetIndex, int info, CancellationToken token)
         {
+            isTransitioning = true;
             try
             {
                 // 1. 현재 페이지 퇴장 (있다면)
                 if (currentPageIndex >= 0 && currentPageIndex < pages.Length)
                 {
-                    var current = pages[currentPageIndex];
-                    if (current != null)
+                    GamePage current = pages[currentPageIndex];
+                    if (current)
                     {
-                        yield return StartCoroutine(FadePage(current, 1f, 0f));
+                        await FadePageAsync(current, 1f, 0f, 0.5f, token);
                         current.OnExit();
                     }
                 }
+                
                 // 2. 다음 페이지 준비
                 currentPageIndex = targetIndex;
-                var next = pages[targetIndex];
-                if (next != null)
+                GamePage next = pages[targetIndex];
+                if (next)
                 {
                     next.OnEnter(); // 활성화 및 초기화
                     
                     // 3. 다음 페이지 등장
-                    yield return StartCoroutine(FadePage(next, 0f, 1f));
+                    await FadePageAsync(next, 0f, 1f, 0.5f, token);
                 }
             }
+            catch (OperationCanceledException) { }
             finally
             {
                 isTransitioning = false;
             }
         }
 
-        /// <summary> 페이지 투명도 조절 코루틴 </summary>
-        protected IEnumerator FadePage(GamePage page, float start, float end, float duration = 0.5f)
+        /// <summary> 페이지 투명도 조절 </summary>
+        protected async UniTask FadePageAsync(GamePage page, float start, float end, float duration, CancellationToken token)
         {
-            if (!page) yield break;
+            if (!page) return;
             if (duration <= 0f)
             {
                 page.SetAlpha(end);
-                yield break;
+                return;
             }
             
             float t = 0f;
@@ -135,7 +162,7 @@ namespace My.Scripts.Core
             {
                 t += Time.deltaTime;
                 page.SetAlpha(Mathf.Lerp(start, end, t / duration));
-                yield return null;
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
             page.SetAlpha(end);
         }

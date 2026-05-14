@@ -20,11 +20,11 @@ namespace My.Scripts.Global
         private Material _materialInstance; // 런타임 인스턴스 머티리얼
 
         // 쉐이더 프로퍼티 ID 캐싱 (X, Y 분리)
-        private static readonly int AspectRatioID = Shader.PropertyToID("_AspectRatio");
-        private static readonly int GridSizeXID = Shader.PropertyToID("_GridSizeX");
-        private static readonly int GridSizeYID = Shader.PropertyToID("_GridSizeY");
-        private static readonly int ThicknessID = Shader.PropertyToID("_Thickness");
-        private static readonly int DashFreqID = Shader.PropertyToID("_DashFreq");
+        private readonly static int AspectRatioID = Shader.PropertyToID("_AspectRatio");
+        private readonly static int GridSizeXID = Shader.PropertyToID("_GridSizeX");
+        private readonly static int GridSizeYID = Shader.PropertyToID("_GridSizeY");
+        private readonly static int ThicknessID = Shader.PropertyToID("_Thickness");
+        private readonly static int DashFreqID = Shader.PropertyToID("_DashFreq");
 
         /// <summary> 컴포넌트 캐싱 및 초기화 </summary>
         private void OnEnable()

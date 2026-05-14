@@ -1,11 +1,12 @@
 using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
+using My.Scripts.Utils;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -33,11 +34,14 @@ namespace My.Scripts._18_Ending.Pages
         {
             _data = data;
             
-            // 진입 시 화면이 비어있지 않도록 첫 문구를 미리 렌더링
             if (descriptionText && _data.firstText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.firstText);
-                SetTextAlpha(1f);
+                UIFadeUtility.SetAlpha(descriptionText, 1f);
+            }
+            else if (!descriptionText)
+            {
+                Debug.LogWarning("EndingPage1Controller: descriptionText가 할당되지 않았습니다.");
             }
         }
 
@@ -45,71 +49,40 @@ namespace My.Scripts._18_Ending.Pages
         public override void OnEnter()
         {
             base.OnEnter();
-            StartCoroutine(SequenceRoutine());
+            SequenceAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        /// <summary> 
-        /// 텍스트의 가독성과 연출 흐름을 위해 대기 및 페이드 효과를 순차 제어합니다.
-        /// (텍스트1 유지 -> 페이드아웃 -> 내용 교체 -> 페이드인)
+        /// <summary>
+        /// 텍스트의 가독성과 연출 흐름을 위한 순차 제어.
+        /// IEnumerator를 제거하고 UniTask를 도입하여 코루틴 할당 오버헤드를 제거함.
         /// </summary>
-        private IEnumerator SequenceRoutine()
+        private async UniTaskVoid SequenceAsync(CancellationToken token)
         {
-            // 데이터 무결성 재확인 후 첫 문구 노출
             if (descriptionText && _data?.firstText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.firstText);
-                SetTextAlpha(1f);
+                UIFadeUtility.SetAlpha(descriptionText, 1f);
             }
             
-            // 사용자가 첫 문구를 인지할 수 있는 최소 시간 확보
-            yield return CoroutineData.GetWaitForSeconds(2.0f); 
+            // yield return WaitForSeconds 대신 UniTask.Delay 사용
+            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
+            
+            // await를 사용하여 비동기 페이드 완료까지 대기
+            await UIFadeUtility.FadeGraphicAsync(descriptionText, 1f, 0f, 1f, token);
 
-            // 자연스러운 내용 교체를 위한 투명도 연출
-            yield return StartCoroutine(FadeText(1f, 0f, 1f));
-
-            // 두 번째 단계 안내 내용으로 갱신
             if (descriptionText && _data?.secondText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, _data.secondText);
-                SoundManager.Instance?.PlaySFX("공통_13"); // 시각 변화에 따른 효과음 강조
+                if (SoundManager.Instance)
+                {
+                    SoundManager.Instance.PlaySFX("공통_13"); 
+                }
             }
 
-            // 교체된 내용을 부드럽게 노출
-            yield return StartCoroutine(FadeText(0f, 1f, 1f));
+            await UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, 1f, token);
             
-            // 안내 완료 후 다음 페이지로 자동 전환
-            yield return CoroutineData.GetWaitForSeconds(2.0f);
+            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
             CompleteStep();
-        }
-
-        /// <summary> 
-        /// 지정된 시간 동안 텍스트 투명도를 선형 보간하여 시각적 전환을 수행합니다. 
-        /// </summary>
-        private IEnumerator FadeText(float start, float end, float duration)
-        {
-            if (!descriptionText) yield break;
-            
-            float t = 0f;
-            SetTextAlpha(start);
-            
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                SetTextAlpha(Mathf.Lerp(start, end, t / duration));
-                yield return null;
-            }
-            SetTextAlpha(end);
-        }
-
-        /// <summary> UI 텍스트 컬러 속성의 알파값을 직접 수정합니다. </summary>
-        private void SetTextAlpha(float alpha)
-        {
-            if (descriptionText)
-            {
-                Color c = descriptionText.color;
-                c.a = alpha;
-                descriptionText.color = c;
-            }
         }
     }
 }

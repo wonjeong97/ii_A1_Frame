@@ -1,12 +1,15 @@
 using System;
 using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Core.Data;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Pages
 {
@@ -30,13 +33,16 @@ namespace My.Scripts.Core.Pages
 
         [Header("Canvas Groups")] 
         [SerializeField] private CanvasGroup contentsGroup;
-
-        private Coroutine _sequenceRoutine; 
+        
+        private CancellationTokenSource _sequenceCts;
         
         private bool _isAnsweredA;
         private bool _isAnsweredB;
         private bool _completionStarted; 
-        private bool _isInputEnabled; 
+        private bool _isInputEnabled;
+        
+        private const string SideLeft = "left";
+        private const string SideRight = "right";
 
         /// <summary>
         /// 외부 JSON 데이터의 텍스트를 UI에 바인딩하며, 누락 시 경고 로그를 출력함.
@@ -46,53 +52,56 @@ namespace My.Scripts.Core.Pages
         {
             if (data == null) return;
 
-            if (data.descriptionText != null)
-            {
-                if (descriptionText) UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            }
-            else Debug.LogWarning("descriptionText 누락됨.");
+            ApplyTextSetting(descriptionText, data.descriptionText, "descriptionText");
+            ApplyTextSetting(questionText, data.questionText, "questionText");
+            ApplyTextSetting(nicknameA, data.nicknamePlayerA, "nicknamePlayerA");
+            ApplyTextSetting(nicknameB, data.nicknamePlayerB, "nicknamePlayerB");
 
-            if (data.questionText != null)
+            SetupAnswerTexts(data.answerTexts);
+        }
+        
+        /// <summary>
+        /// 단일 텍스트 컴포넌트에 데이터를 적용하고, 유효하지 않을 경우 경고 로그를 출력함.
+        /// </summary>
+        private void ApplyTextSetting(Text uiText, TextSetting setting, string fieldName)
+        {
+            if (setting != null && !string.IsNullOrEmpty(setting.text))
             {
-                if (questionText) UIManager.Instance.SetText(questionText.gameObject, data.questionText);
+                if (uiText) UIManager.Instance.SetText(uiText.gameObject, setting);
             }
-            else Debug.LogWarning("questionText 누락됨.");
-            
-            if (data.nicknamePlayerA != null && !string.IsNullOrEmpty(data.nicknamePlayerA.text))
+            else
             {
-                if (nicknameA) UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
+                Debug.LogWarning($"{fieldName} 누락됨.");
             }
-            else Debug.LogWarning("nicknamePlayerA 누락됨.");
-            
-            if (data.nicknamePlayerB != null && !string.IsNullOrEmpty(data.nicknamePlayerB.text))
-            {
-                if (nicknameB) UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
-            }
-            else Debug.LogWarning("nicknamePlayerB 누락됨.");
+        }
+        
+        /// <summary>
+        /// 다중 선택지 텍스트 배열을 순회하며 UI에 적용하고 활성 상태를 제어함.
+        /// </summary>
+        private void SetupAnswerTexts(TextSetting[] providedAnswers)
+        {
+            if (answerTexts == null) return;
 
-            if (answerTexts != null)
+            if (providedAnswers == null)
             {
-                if (data.answerTexts != null)
+                Debug.LogWarning("answerTexts 배열 데이터 누락됨.");
+                return;
+            }
+
+            for (int i = 0; i < answerTexts.Length; i++)
+            {
+                if (!answerTexts[i]) continue;
+                
+                if (i < providedAnswers.Length && providedAnswers[i] != null)
                 {
-                    for (int i = 0; i < answerTexts.Length; i++)
-                    {
-                        if (!answerTexts[i]) continue;
-                        
-                        if (i < data.answerTexts.Length && data.answerTexts[i] != null)
-                        {
-                            UIManager.Instance.SetText(answerTexts[i].gameObject, data.answerTexts[i]);
-                            answerTexts[i].gameObject.SetActive(true);
-                        }
-                        else
-                        {
-                            answerTexts[i].gameObject.SetActive(false);
-                        }
-                    }
+                    UIManager.Instance.SetText(answerTexts[i].gameObject, providedAnswers[i]);
+                    answerTexts[i].gameObject.SetActive(true);
                 }
-                else Debug.LogWarning("answerTexts 배열 데이터 누락됨.");
+                else
+                {
+                    answerTexts[i].gameObject.SetActive(false);
+                }
             }
-            
-            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
         /// <summary>
@@ -129,8 +138,19 @@ namespace My.Scripts.Core.Pages
                 if (imgLightB) imgLightB.sprite = spriteB;
             }
 
-            if (_sequenceRoutine != null) StopCoroutine(_sequenceRoutine);
-            _sequenceRoutine = StartCoroutine(ShowSequence());
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            
+            ShowSequenceAsync(_sequenceCts.Token).Forget();
+        }
+        
+        public override void OnExit()
+        {
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+            base.OnExit();
         }
 
         /// <summary>
@@ -157,9 +177,7 @@ namespace My.Scripts.Core.Pages
             if (_completionStarted || !_isInputEnabled) return;
 
             int selectedValue = 0;
-            
-            // # TODO: 하드코딩된 "left"/"right" 문자열 할당으로 인한 가비지 방지를 위해 enum 또는 const 캐싱 변수 활용 필요.
-            string side = isLeft ? "left" : "right";
+            string side = isLeft ? SideLeft : SideRight;
 
             switch (input)
             {
@@ -176,36 +194,66 @@ namespace My.Scripts.Core.Pages
         /// <summary>
         /// 유효한 입력에 대해 LED 상태를 끄고 API 서버에 선택값을 전송함.
         /// </summary>
-        /// <param name="selectedValue">선택한 버튼의 인덱스</param>
-        /// <param name="side">입력 주체 위치</param>
         private void ProcessInput(int selectedValue, string side)
         {
             bool isPlayerA = side.Equals("left");
 
-            if (isPlayerA && _isAnsweredA) return;
-            if (!isPlayerA && _isAnsweredB) return;
+            // 이미 답변을 완료한 상태라면 하위 로직을 무시함 (가드 클로즈)
+            if (HasAlreadyAnswered(isPlayerA)) return;
 
             ResetIdleState(false);
+            MarkAsAnswered(isPlayerA);
             
-            if (isPlayerA) _isAnsweredA = true;
-            else _isAnsweredB = true;
-            
-            if (ArduinoManager.Instance)
-            {
-                if (isPlayerA) ArduinoManager.Instance.SendCommandToLeft(GameConstants.Hardware.CmdLedAllOff);
-                else ArduinoManager.Instance.SendCommandToRight(GameConstants.Hardware.CmdLedAllOff);
-            }
-            
-            if (GameManager.Instance && LevelManager.Instance)
-            {
-                int qNo = LevelManager.Instance.CurrentQuestionNumber;
-                if (qNo > 0) GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
-            }
-
-            CanvasGroup targetCg = isPlayerA ? cgLightA : cgLightB;
-            StartCoroutine(LightOnRoutine(targetCg));
+            TurnOffHardwareLed(isPlayerA);
+            SendApiUpdate(side, selectedValue);
+            ShowLightUI(isPlayerA);
             
             CheckCompletion();
+        }
+        
+        /// <summary> 해당 플레이어가 이미 답변을 제출했는지 확인함. </summary>
+        private bool HasAlreadyAnswered(bool isPlayerA)
+        {
+            return isPlayerA ? _isAnsweredA : _isAnsweredB;
+        }
+
+        /// <summary> 플레이어의 답변 완료 상태를 갱신함. </summary>
+        private void MarkAsAnswered(bool isPlayerA)
+        {
+            if (isPlayerA) _isAnsweredA = true;
+            else _isAnsweredB = true;
+        }
+
+        /// <summary> 선택 완료 피드백으로 해당 플레이어 측 아두이노 LED를 소등함. </summary>
+        private void TurnOffHardwareLed(bool isPlayerA)
+        {
+            if (!ArduinoManager.Instance) return;
+            
+            if (isPlayerA) ArduinoManager.Instance.SendCommandToLeft(GameConstants.Hardware.CmdLedAllOff);
+            else ArduinoManager.Instance.SendCommandToRight(GameConstants.Hardware.CmdLedAllOff);
+        }
+
+        /// <summary> 현재 문항 번호와 선택한 값을 API 서버로 전송함. </summary>
+        private void SendApiUpdate(string side, int selectedValue)
+        {
+            if (!GameManager.Instance || !LevelManager.Instance) return;
+
+            int qNo = LevelManager.Instance.CurrentQuestionNumber;
+            if (qNo > 0)
+            {
+                GameManager.Instance.SendValueUpdateAPI(qNo, side, selectedValue);
+            }
+        }
+
+        /// <summary> 화면 상의 선택 완료 라이트 점등 연출을 가동함. </summary>
+        private void ShowLightUI(bool isPlayerA)
+        {
+            CanvasGroup targetCg = isPlayerA ? cgLightA : cgLightB;
+            if (targetCg)
+            {
+                targetCg.gameObject.SetActive(true);
+                UIFadeUtility.FadeCanvasGroupAsync(targetCg, 0f, 1f, 1.0f, this.GetCancellationTokenOnDestroy()).Forget();
+            }
         }
 
         /// <summary>
@@ -216,70 +264,42 @@ namespace My.Scripts.Core.Pages
             if (_isAnsweredA && _isAnsweredB && !_completionStarted)
             {
                 _completionStarted = true;
-                StartCoroutine(CompleteRoutine());
+                CompleteAsync(this.GetCancellationTokenOnDestroy()).Forget();
             }
         }
-
-        /// <summary>
-        /// 답변 완료 시 사운드 피드백을 제공하고 다음 스텝으로 넘어감.
-        /// </summary>
-        private IEnumerator CompleteRoutine()
+        
+        private async UniTaskVoid CompleteAsync(CancellationToken token)
         {   
             if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_22");
-            yield return CoroutineData.GetWaitForSeconds(1.0f);
+            await UniTask.Delay(TimeSpan.FromSeconds(1.0), cancellationToken: token);
             CompleteStep();
         }
-
-        /// <summary>
-        /// 답변을 완료한 플레이어 측의 확인 라이트 UI를 점진적으로 밝힘.
-        /// </summary>
-        /// <param name="cg">대상 캔버스 그룹</param>
-        private IEnumerator LightOnRoutine(CanvasGroup cg)
+        
+        private async UniTaskVoid ShowSequenceAsync(CancellationToken token)
         {
-            if (!cg) yield break;
-            cg.gameObject.SetActive(true);
-            cg.alpha = 0f;
-
-            float t = 0f;
-            while (t < 1.0f)
-            {
-                t += Time.deltaTime;
-                // ex: t=0.5 -> alpha=0.5 (50%)
-                cg.alpha = Mathf.Lerp(0f, 1f, t);
-                yield return null;
-            }
-            cg.alpha = 1f;
-        }
-
-        /// <summary>
-        /// 질문과 선택지를 노출시키고 튜토리얼 여부에 따라 입력 대기 상태를 제어함.
-        /// </summary>
-        private IEnumerator ShowSequence()
-        {
-            if (canvasGroup) yield return new WaitUntil(() => canvasGroup.alpha >= 0.9f);
+            if (canvasGroup) await UniTask.WaitUntil(canvasGroup, cg => cg.alpha >= 0.9f, PlayerLoopTiming.Update, token);
             
             if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_8");
             
-            yield return StartCoroutine(FadeContent(contentsGroup, 0f, 1f, 0.5f));
+            if (contentsGroup)
+            {
+                contentsGroup.gameObject.SetActive(true);
+                await UIFadeUtility.FadeCanvasGroupAsync(contentsGroup, 0f, 1f, 0.5f, token);
+            }
             
             if (ArduinoManager.Instance)
             {
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdSoundOn);
-                yield return CoroutineData.GetWaitForSeconds(0.1f);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.1), cancellationToken: token);
                 ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOn);
             }
             
-            bool isTutorial = false;
-            if (LevelManager.Instance)
-            {
-                isTutorial = LevelManager.Instance.CurrentQuestionNumber == 0;
-            }
+            bool isTutorial = LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 0;
             
             if (isTutorial)
             {
-                // 사용자의 입력 개입을 막아 튜토리얼 시퀀스의 흐름을 강제함
                 _isInputEnabled = false; 
-                yield return CoroutineData.GetWaitForSeconds(3.5f);
+                await UniTask.Delay(TimeSpan.FromSeconds(3.5), cancellationToken: token);
                 
                 if (ArduinoManager.Instance)
                 {
@@ -292,28 +312,6 @@ namespace My.Scripts.Core.Pages
             {
                 _isInputEnabled = true;
             }
-        }
-
-        /// <summary>
-        /// 대상 캔버스 그룹의 알파값을 설정된 시간 동안 부드럽게 변경함.
-        /// </summary>
-        private IEnumerator FadeContent(CanvasGroup cg, float start, float end, float duration)
-        {
-            if (!cg) yield break;
-            if (end > 0f) cg.gameObject.SetActive(true);
-
-            float t = 0f;
-            cg.alpha = start;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                // ex: start=0, end=1, t=0.25, duration=0.5 -> result=0.5
-                cg.alpha = Mathf.Lerp(start, end, t / duration);
-                yield return null;
-            }
-            cg.alpha = end;
-            
-            if (end <= 0f) cg.gameObject.SetActive(false);
         }
 
         /// <summary>

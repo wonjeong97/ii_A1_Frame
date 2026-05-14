@@ -1,12 +1,12 @@
 using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using My.Scripts.Core;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core;
-using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -48,35 +48,34 @@ namespace My.Scripts._01_Tutorial.Pages
             };
         }
 
-        /// <summary> 페이지 진입 시 중복 실행을 방지하고 자동 전환(타이머) 코루틴 시작 </summary>
+        /// <summary>
+        /// 페이지 진입 시 안내 문구들을 활성화하고 종료 시퀀스를 시작함.
+        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
 
-            if (_endSequenceRoutine != null)
+            if (text1)
             {
-                StopCoroutine(_endSequenceRoutine);
+                UIFadeUtility.SetAlpha(text1, 1f);
             }
-            _endSequenceRoutine = StartCoroutine(EndSequence());
-        }
 
-        /// <summary> 유저가 텍스트를 충분히 인지할 수 있도록 3초간 대기 후 완료 신호 전송 </summary>
-        private IEnumerator EndSequence()
+            if (text2)
+            {
+                UIFadeUtility.SetAlpha(text2, 1f);
+            }
+
+            WaitAndNextAsync(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+        
+        /// <summary>
+        /// 유저가 안내를 충분히 읽을 수 있도록 대기 후 튜토리얼을 종료함.
+        /// </summary>
+        /// <param name="token">비동기 작업 취소 토큰</param>
+        private async UniTaskVoid WaitAndNextAsync(CancellationToken token)
         {
-            yield return CoroutineData.GetWaitForSeconds(3.0f);
+            await UniTask.Delay(TimeSpan.FromSeconds(3.0), cancellationToken: token);
             CompleteStep();
-            _endSequenceRoutine = null; 
-        }
-
-        /// <summary> 페이지 퇴장 시 진행 중인 대기 코루틴을 강제 중단하여 안전하게 메모리 해제 </summary>
-        public override void OnExit()
-        {
-            if (_endSequenceRoutine != null)
-            {
-                StopCoroutine(_endSequenceRoutine);
-                _endSequenceRoutine = null;
-            }
-            base.OnExit();
         }
     }
 }

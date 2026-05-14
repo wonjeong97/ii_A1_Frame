@@ -1,15 +1,17 @@
 using System;
 using System.Collections;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
 
-namespace My.Scripts.Core.Pages
+namespace My.Scripts.Core
 {
     /// <summary>
     /// 일정 시간 무응답 시 경고 팝업을 띄우고 타이틀로 복귀(리셋)하는 기능을 제공하는 추상 기반 클래스.
@@ -31,11 +33,11 @@ namespace My.Scripts.Core.Pages
         protected float inactivityThreshold = 30f; 
         protected float countdownDuration = 10f;   
         
-        protected float currentIdleTime = 0f;
-        protected bool isResetSequenceActive = false;
+        protected float currentIdleTime;
+        protected bool isResetSequenceActive;
         
-        protected Coroutine resetSequenceRoutine;
-        protected Coroutine popupFadeRoutine;
+        protected CancellationTokenSource resetSequenceCts;
+        protected CancellationTokenSource popupFadeCts;
 
         /// <summary> JSON 설정 파일에서 무응답 경고 및 리셋 타이머 기준값을 동적으로 불러와 할당합니다. </summary>
         protected virtual void Start()
@@ -76,8 +78,8 @@ namespace My.Scripts.Core.Pages
         {
             if (ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.OnHardwareInput -= ProcessHardwareInput;
-                ArduinoManager.Instance.OnHardwareInput += ProcessHardwareInput;
+                ArduinoManager.Instance.onHardwareInput -= ProcessHardwareInput;
+                ArduinoManager.Instance.onHardwareInput += ProcessHardwareInput;
             }
         }
 
@@ -86,7 +88,7 @@ namespace My.Scripts.Core.Pages
         {
             if (ArduinoManager.Instance)
             {
-                ArduinoManager.Instance.OnHardwareInput -= ProcessHardwareInput;
+                ArduinoManager.Instance.onHardwareInput -= ProcessHardwareInput;
             }
         }
         
@@ -108,29 +110,39 @@ namespace My.Scripts.Core.Pages
 
         /// <summary> 
         /// 아두이노 장비가 없는 PC 개발 환경에서 키보드(QWERT/YUIOP)를 통해 하드웨어 1~5번 버튼 입력을 에뮬레이션합니다. 
+        /// 동적 문자열 보간을 제거하고 상수를 직접 매핑하여 가비지(GC) 발생을 원천 차단함.
         /// </summary>
         protected bool ProcessCommonKeyboardInput()
         {
-            int selectedValue = 0;
-            bool isLeft = true;
+            (string inputCommand, bool isLeft) = GetEmulatedKey();
 
-            if (Input.GetKeyDown(KeyCode.Q)) { selectedValue = 1; isLeft = true; }
-            else if (Input.GetKeyDown(KeyCode.W)) { selectedValue = 2; isLeft = true; }
-            else if (Input.GetKeyDown(KeyCode.E)) { selectedValue = 3; isLeft = true; }
-            else if (Input.GetKeyDown(KeyCode.R)) { selectedValue = 4; isLeft = true; }
-            else if (Input.GetKeyDown(KeyCode.T)) { selectedValue = 5; isLeft = true; }
-            else if (Input.GetKeyDown(KeyCode.Y)) { selectedValue = 1; isLeft = false; }
-            else if (Input.GetKeyDown(KeyCode.U)) { selectedValue = 2; isLeft = false; }
-            else if (Input.GetKeyDown(KeyCode.I)) { selectedValue = 3; isLeft = false; }
-            else if (Input.GetKeyDown(KeyCode.O)) { selectedValue = 4; isLeft = false; }
-            else if (Input.GetKeyDown(KeyCode.P)) { selectedValue = 5; isLeft = false; }
-
-            if (selectedValue != 0)
+            if (!string.IsNullOrEmpty(inputCommand))
             {
-                ProcessHardwareInput($"{selectedValue}On", isLeft);
+                ProcessHardwareInput(inputCommand, isLeft);
                 return true;
             }
+            
             return false;
+        }
+        
+        /// <summary>
+        /// 눌린 키보드 키를 판별하여 해당하는 하드웨어 버튼 명령어(상수)와 좌우 위치를 즉시 반환함.
+        /// </summary>
+        private (string command, bool isLeft) GetEmulatedKey()
+        {
+            if (Input.GetKeyDown(KeyCode.Q)) return (GameConstants.Hardware.Input1On, true);
+            if (Input.GetKeyDown(KeyCode.W)) return (GameConstants.Hardware.Input2On, true);
+            if (Input.GetKeyDown(KeyCode.E)) return (GameConstants.Hardware.Input3On, true);
+            if (Input.GetKeyDown(KeyCode.R)) return (GameConstants.Hardware.Input4On, true);
+            if (Input.GetKeyDown(KeyCode.T)) return (GameConstants.Hardware.Input5On, true);
+            
+            if (Input.GetKeyDown(KeyCode.Y)) return (GameConstants.Hardware.Input1On, false);
+            if (Input.GetKeyDown(KeyCode.U)) return (GameConstants.Hardware.Input2On, false);
+            if (Input.GetKeyDown(KeyCode.I)) return (GameConstants.Hardware.Input3On, false);
+            if (Input.GetKeyDown(KeyCode.O)) return (GameConstants.Hardware.Input4On, false);
+            if (Input.GetKeyDown(KeyCode.P)) return (GameConstants.Hardware.Input5On, false);
+
+            return (null, true);
         }
 
         /// <summary> 파생 클래스에서 JSON 데이터를 로드할 때 팝업용 메시지 텍스트를 초기화하기 위해 호출합니다. </summary>
@@ -173,70 +185,86 @@ namespace My.Scripts.Core.Pages
         {
             if (isResetSequenceActive) return;
             isResetSequenceActive = true;
-            resetSequenceRoutine = StartCoroutine(ResetProcessRoutine());
+            
+            // 기존 코루틴 취소 및 새로운 토큰 발행
+            resetSequenceCts?.Cancel();
+            resetSequenceCts?.Dispose();
+            resetSequenceCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            
+            ResetProcessAsync(resetSequenceCts.Token).Forget();
         }
-
-        /// <summary> 유저 개입으로 인해 진행 중이던 리셋 시퀀스를 중단하고 팝업 UI를 화면에서 치웁니다. </summary>
-        protected virtual void StopResetSequence(bool immediate = true)
-        {
-            bool wasResetSequenceActive = isResetSequenceActive;
-            isResetSequenceActive = false;
-            currentIdleTime = 0f;
-            
-            if (wasResetSequenceActive)
-            {
-                if (SoundManager.Instance) SoundManager.Instance.StopSFX();
-            }
-            
-            if (resetSequenceRoutine != null) StopCoroutine(resetSequenceRoutine);
-            
-            if (popupCanvasGroup)
-            {
-                if (immediate)
-                {
-                    popupCanvasGroup.alpha = 0f;
-                    popupCanvasGroup.gameObject.SetActive(false);
-                }
-                else
-                {
-                    if (popupCanvasGroup.gameObject.activeSelf)
-                    {
-                        if (popupFadeRoutine != null) StopCoroutine(popupFadeRoutine);
-                        popupFadeRoutine = StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 0f, 1.0f, false));
-                    }
-                }
-            }
-        }
-
-        /// <summary> 경고 메시지 노출 -> 카운트다운 대기 -> 최종 리셋 안내 -> 타이틀 화면 이동의 시퀀스를 제어합니다. </summary>
-        protected virtual IEnumerator ResetProcessRoutine()
+        
+        protected virtual async UniTaskVoid ResetProcessAsync(CancellationToken token)
         {
             Debug.Log($"[{gameObject.name}] 리셋 시퀀스 시작");
 
             ShowPopup(msgWarning);
             
-            yield return CoroutineData.GetWaitForSeconds(warningDuration); 
+            await UniTask.Delay(TimeSpan.FromSeconds(warningDuration), cancellationToken: token);
 
             if (popupCanvasGroup && popupCanvasGroup.gameObject.activeSelf)
             {
-                if (popupFadeRoutine != null) StopCoroutine(popupFadeRoutine);
-                popupFadeRoutine = StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 0f, 1.0f, false));
+                popupFadeCts?.Cancel();
+                popupFadeCts?.Dispose();
+                popupFadeCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                
+                UIFadeUtility.FadeCanvasGroupAsync(popupCanvasGroup, popupCanvasGroup.alpha, 0f, 1.0f, popupFadeCts.Token).Forget();
             }
+            
             if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_23");
 
             float timer = countdownDuration;
             while (timer > 0f)
             {
                 timer -= 1.0f;
-                yield return CoroutineData.GetWaitForSeconds(1.0f);
+                await UniTask.Delay(TimeSpan.FromSeconds(1.0), cancellationToken: token);
             }
 
             ShowPopup(msgReset);
-            yield return CoroutineData.GetWaitForSeconds(resetPopupDuration);
+            await UniTask.Delay(TimeSpan.FromSeconds(resetPopupDuration), cancellationToken: token);
 
-            // 강제 리셋: 세션 데이터를 초기화하기 위해 타이틀 씬으로 회귀
             if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
             else SceneLoader.LoadAsync(GameConstants.Scene.Title).Forget();
+        }
+
+        /// <summary> 
+        /// 유저 개입으로 인해 진행 중이던 리셋 시퀀스를 중단하고 팝업 UI를 화면에서 치웁니다. 
+        /// </summary>
+        protected virtual void StopResetSequence(bool immediate = true)
+        {
+            bool wasResetSequenceActive = isResetSequenceActive;
+            
+            isResetSequenceActive = false;
+            currentIdleTime = 0f;
+            
+            if (wasResetSequenceActive && SoundManager.Instance)
+            {
+                SoundManager.Instance.StopSFX();
+            }
+            
+            resetSequenceCts?.Cancel();
+            HidePopupCanvas(immediate);
+        }
+        
+        private void HidePopupCanvas(bool immediate)
+        {
+            if (!popupCanvasGroup) return;
+
+            if (immediate)
+            {
+                popupFadeCts?.Cancel();
+                popupCanvasGroup.alpha = 0f;
+                popupCanvasGroup.gameObject.SetActive(false);
+                return;
+            }
+
+            if (!popupCanvasGroup.gameObject.activeSelf) return;
+
+            popupFadeCts?.Cancel();
+            popupFadeCts?.Dispose();
+            popupFadeCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            
+            UIFadeUtility.FadeCanvasGroupAsync(popupCanvasGroup, popupCanvasGroup.alpha, 0f, 1.0f, popupFadeCts.Token).Forget();
         }
 
         /// <summary> 지정된 메시지로 팝업 텍스트를 갱신하고 페이드인 연출을 가동합니다. </summary>
@@ -251,23 +279,11 @@ namespace My.Scripts.Core.Pages
                 popupCanvasGroup.gameObject.SetActive(true);
             }
 
-            if (popupFadeRoutine != null) StopCoroutine(popupFadeRoutine);
-            popupFadeRoutine = StartCoroutine(FadeGroup(popupCanvasGroup, popupCanvasGroup.alpha, 1f, 1.0f, true));
-        }
-
-        /// <summary> 팝업 캔버스 그룹의 투명도를 선형 보간하여 시각적으로 자연스럽게 등장/퇴장시킵니다. </summary>
-        private IEnumerator FadeGroup(CanvasGroup cg, float start, float end, float duration, bool activeAtEnd)
-        {
-            float t = 0f;
-            cg.alpha = start;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                cg.alpha = Mathf.Lerp(start, end, t / duration);
-                yield return null;
-            }
-            cg.alpha = end;
-            if (!activeAtEnd && end <= 0.01f) cg.gameObject.SetActive(false);
+            popupFadeCts?.Cancel();
+            popupFadeCts?.Dispose();
+            popupFadeCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            
+            UIFadeUtility.FadeCanvasGroupAsync(popupCanvasGroup, popupCanvasGroup.alpha, 1f, 1.0f, popupFadeCts.Token).Forget();
         }
     }
 }

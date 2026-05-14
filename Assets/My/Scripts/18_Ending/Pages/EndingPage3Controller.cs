@@ -1,15 +1,16 @@
 using System;
-using System.Collections;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Text;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Core;
 using My.Scripts.Global;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -25,7 +26,7 @@ namespace My.Scripts._18_Ending.Pages
     /// 녹화된 '리얼타임' 영상을 재생하며 15초 카운트다운을 시각적으로 동기화합니다.
     /// 영상이 15초보다 짧을 경우 반복 재생하여 연출 시간을 유지합니다.
     /// </summary>
-    public class EndingPage3Controller : GamePage<EndingPage3Data>
+   public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
         [Header("UI References")]
         [SerializeField] private RawImage videoDisplay; 
@@ -33,8 +34,9 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text descriptionText; 
         
         private const float FixedDuration = 15f; 
-        
-        /// <summary> 텍스트 설정 로드 및 타이머 초기값 할당 </summary>
+        private readonly static StringBuilder TimerBuilder = new StringBuilder(16);
+        private CancellationTokenSource _presentationCts;
+
         protected override void SetupData(EndingPage3Data data)
         {
             if (descriptionText && data.descriptionText != null)
@@ -44,11 +46,10 @@ namespace My.Scripts._18_Ending.Pages
             }
         }
 
-        /// <summary> 페이지 진입 시 UI 초기화 및 연출 시퀀스 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter();
-            SetImageAlpha(videoDisplay, 0f);
+            UIFadeUtility.SetAlpha(videoDisplay, 0f);
             
             if (descriptionText) 
             {
@@ -57,175 +58,106 @@ namespace My.Scripts._18_Ending.Pages
                 descriptionText.color = c;
             }
             
-            StartCoroutine(PresentationRoutine());
+            _presentationCts?.Cancel();
+            _presentationCts?.Dispose();
+            _presentationCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+
+            PresentationAsync(_presentationCts.Token).Forget();
         }
 
-        /// <summary> 퇴장 시 모든 연출 코루틴 중단 </summary>
         public override void OnExit()
         {
+            _presentationCts?.Cancel();
+            _presentationCts?.Dispose();
+            _presentationCts = null;
             base.OnExit();
-            StopAllCoroutines();
         }
-        
+
         /// <summary>
-        /// 영상 준비, 재생, 타이머 진행 및 페이드 효과를 포함한 전체 연출 흐름을 제어합니다.
-        /// 영상 길이가 짧을 경우를 대비해 반복 재생(Loop) 모드를 활성화합니다.
+        /// 영상 준비부터 재생, 타이머 업데이트 및 퇴장 연출까지의 전체 시퀀스를 제어함.
         /// </summary>
-        private IEnumerator PresentationRoutine()
-        {   
+        private async UniTaskVoid PresentationAsync(CancellationToken token)
+        {
             if (!videoPlayer || !videoDisplay)
             {
                 CompleteStep();
-                yield break;
+                return;
             }
-            
-            string filePath = GetVideoPath();
 
+            string filePath = GetVideoPath();
             if (!File.Exists(filePath))
             {
-                Debug.LogError($"[EndingPage3] 영상 파일을 찾을 수 없습니다: {filePath}");
+                Debug.LogError($"[EndingPage3] 영상 누락: {filePath}");
                 CompleteStep();
-                yield break;
+                return;
             }
 
-            // 부드러운 재생 시작을 위해 비디오 준비 과정 수행
-            videoPlayer.source = VideoSource.Url;
-            videoPlayer.url = new Uri(filePath).AbsoluteUri; 
-            videoPlayer.Prepare();
+            await PrepareVideoAsync(filePath, token);
 
-            // 파일 손상 시 무한 대기를 방지하기 위해 10초 타임아웃 설정
-            float prepareWait = 0f;
-            while (!videoPlayer.isPrepared && prepareWait < 10f)
-            {
-                yield return null;
-                prepareWait += Time.deltaTime;
-            }
+            // 클로저 할당 방지: videoPlayer를 상태 매개변수로 전달함
+            await UniTask.WaitUntil(videoPlayer, v => v.isPrepared && v.texture != null, PlayerLoopTiming.Update, token);
 
-            if (!videoPlayer.isPrepared)
-            {
-                CompleteStep();
-                yield break;
-            }
-
-            // 첫 프레임 렌더링 지연을 방지하기 위해 텍스처 생성 대기
-            float textureWait = 0f;
-            while (!videoPlayer.texture && textureWait < 5f)
-            {
-                yield return null;
-                textureWait += Time.deltaTime;
-            }
-
-            if (!videoPlayer.texture)
-            {
-                Debug.LogError("[EndingPage3] Video prepared but texture is null.");
-                CompleteStep();
-                yield break;
-            }
-
-            // 영상 길이가 15초보다 짧을 경우 끊기지 않도록 반복 재생 활성화
             videoPlayer.isLooping = true;
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
-            
-            StartCoroutine(FadeRawImage(videoDisplay, 0f, 1f, 1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 0f, 1f, 1f));
 
-            // 영상 실제 길이와 상관없이 기획된 15초 연출 시간 준수
+            // 등장 연출
+            UIFadeUtility.FadeGraphicAsync(videoDisplay, 0f, 1f, 1f, token).Forget();
+            UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, 1f, token).Forget();
+
+            await RunDisplayTimerAsync(token);
+
+            if (videoPlayer.isPlaying) videoPlayer.Pause();
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
+
+            // 퇴장 연출
+            var f1 = UIFadeUtility.FadeGraphicAsync(videoDisplay, 1f, 0f, 1f, token);
+            var f2 = UIFadeUtility.FadeGraphicAsync(descriptionText, 1f, 0f, 1f, token);
+            await UniTask.WhenAll(f1, f2);
+
+            CompleteStep();
+        }
+
+        private async UniTask PrepareVideoAsync(string path, CancellationToken token)
+        {
+            videoPlayer.source = VideoSource.Url;
+            videoPlayer.url = new Uri(path).AbsoluteUri;
+            videoPlayer.Prepare();
+            
+            // 타임아웃 10초 적용
+            await UniTask.WaitUntil(videoPlayer, v => v.isPrepared, PlayerLoopTiming.Update, token).Timeout(TimeSpan.FromSeconds(10));
+        }
+
+        private async UniTask RunDisplayTimerAsync(CancellationToken token)
+        {
             float currentTimer = 0f;
             while (currentTimer < FixedDuration)
             {
                 currentTimer += Time.deltaTime;
-                float displayTime = Mathf.Min(currentTimer, FixedDuration);
-
-                if (descriptionText)
-                {
-                    int seconds = Mathf.FloorToInt(displayTime);
-                    int milliseconds = Mathf.FloorToInt((displayTime * 100) % 100);
-                    descriptionText.text = $"{seconds:00}:{milliseconds:00}";
-                }
-                yield return null;
+                UpdateTimerUI(Mathf.Min(currentTimer, FixedDuration));
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
-            
-            // 타이머 종료 확정 표시
-            if (descriptionText) 
-            {
-                int finalSeconds = Mathf.FloorToInt(FixedDuration);
-                int finalMilliseconds = Mathf.FloorToInt((FixedDuration * 100) % 100);
-                descriptionText.text = $"{finalSeconds:00}:{finalMilliseconds:00}";
-            }
-            
-            // 15초 시점에 영상의 반복 상태와 관계없이 강제 정지
-            if (videoPlayer.isPlaying) videoPlayer.Pause();
-
-            yield return CoroutineData.GetWaitForSeconds(1.5f);
-
-            StartCoroutine(FadeRawImage(videoDisplay, 1f, 0f, 1f));
-            if (descriptionText) StartCoroutine(FadeText(descriptionText, 1f, 0f, 1f));
-            
-            CompleteStep();
+            UpdateTimerUI(FixedDuration);
         }
 
-        /// <summary> 현재 유저 ID와 오늘 날짜에 기반한 영상 파일 경로를 반환합니다. </summary>
+        private void UpdateTimerUI(float time)
+        {
+            if (!descriptionText) return;
+
+            int seconds = Mathf.FloorToInt(time);
+            int milliseconds = Mathf.FloorToInt((time * 100) % 100);
+
+            TimerBuilder.Clear();
+            TimerBuilder.Append(seconds.ToString("D2")).Append(":").Append(milliseconds.ToString("D2"));
+            descriptionText.text = TimerBuilder.ToString();
+        }
+
         private string GetVideoPath()
         {   
             string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            
-            string userIdStr = "0";
-            if (GameManager.Instance && SessionManager.Instance)
-            {
-                userIdStr = SessionManager.Instance.CurrentUserId.ToString();
-            }
-            
-            string dynamicVideoFileName = $"{userIdStr}_Realtime.mp4";
-            
-            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, dynamicVideoFileName);
-        }
-
-        /// <summary> RawImage의 알파값을 선형 보간하여 시각적 전환 수행 </summary>
-        private IEnumerator FadeRawImage(RawImage t, float s, float e, float d)
-        {
-            if (!t) yield break;
-            float time = 0f;
-            SetImageAlpha(t, s);
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                SetImageAlpha(t, Mathf.Lerp(s, e, time/d)); 
-                yield return null; 
-            }
-            SetImageAlpha(t, e);
-        }
-        
-        /// <summary> Text 컴포넌트의 알파값을 선형 보간하여 등장/퇴장 연출 </summary>
-        private IEnumerator FadeText(Text t, float s, float e, float d)
-        {
-            if (!t) yield break;
-            float time = 0f;
-            Color c = t.color;
-            c.a = s;
-            t.color = c;
-            
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                c.a = Mathf.Lerp(s, e, time/d);
-                t.color = c;
-                yield return null; 
-            }
-            c.a = e;
-            t.color = c;
-        }
-
-        /// <summary> 지정된 이미지의 투명도 즉시 변경 </summary>
-        private void SetImageAlpha(RawImage i, float a) 
-        { 
-            if(i) 
-            { 
-                Color c = i.color; 
-                c.a = a; 
-                i.color = c; 
-            } 
+            string userIdStr = (SessionManager.Instance) ? SessionManager.Instance.CurrentUserId.ToString() : "0";
+            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, $"{userIdStr}_Realtime.mp4");
         }
     }
 }

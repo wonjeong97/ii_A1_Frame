@@ -1,14 +1,12 @@
 using System;
-using System.Collections;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
 using UnityEngine;
 using UnityEngine.Networking;
-using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._00_Title
 {
@@ -21,65 +19,59 @@ namespace My.Scripts._00_Title
         [SerializeField] private float pollInterval = 3.0f;
 
         private bool _isTransitioning;
-
-        private Coroutine _soundCoroutine;
-        private Coroutine _pollCoroutine;
+        private string _cachedRoomStateUrl;
 
         private void Start()
         {
-            if (_soundCoroutine == null)
-            {
-                _soundCoroutine = StartCoroutine(StartMainBGM());
-            }
+            CancellationToken token = this.GetCancellationTokenOnDestroy();
 
-            // 이전 사용자의 데이터가 남아있지 않도록 보장함.
+            StartMainBGMAsync(token).Forget();
+
             if (SessionManager.Instance)
             {
                 SessionManager.Instance.ClearSession();
             }
 
-            // 저장 공간 확보 및 보안을 위해 로컬 임시 이미지를 제거함.
             if (TimeLapseRecorder.Instance)
             {
                 TimeLapseRecorder.Instance.ClearRecordingData();
             }
 
-            StartCoroutine(TurnOffArduinoLedsRoutine());
-            StartCoroutine(TurnOffHueLightsRoutine());
+            TurnOffArduinoLedsAsync(token).Forget();
+            TurnOffHueLightsAsync(token).Forget();
 
-            _pollCoroutine = StartCoroutine(PollRoomStateRoutine());
+            PollRoomStateAsync(token).Forget();
         }
         
         /// <summary>
         /// 전시 시작 전 조명을 초기 상태(Off)로 전환함.
         /// </summary>
-        private IEnumerator TurnOffHueLightsRoutine()
+        private async UniTaskVoid TurnOffHueLightsAsync(CancellationToken token)
         {
             float timeout = 5.0f;
             float timer = 0f;
 
-            // 싱글톤 인스턴스가 생성될 때까지 대기하여 참조 에러를 방지함.
             while (!HueManager.Instance && timer < timeout)
             {
                 timer += Time.deltaTime;
-                yield return null;
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
 
             if (HueManager.Instance)
             {
-                HueManager.Instance.SetLightStateAsync(1, false).Forget();
-                HueManager.Instance.SetLightStateAsync(2, false).Forget();
+                HueManager.Instance.SetLightStateAsync(1, false, token).Forget();
+                HueManager.Instance.SetLightStateAsync(2, false, token).Forget();
             }
             else
             {
-                Debug.LogWarning("조명 컨트롤러 연결 불가.");
+                Debug.LogWarning("TitleManager: 조명 컨트롤러 연결 불가.");
             }
         }
 
         /// <summary>
         /// 아두이노 하드웨어 재연결 및 LED 상태를 초기화함.
         /// </summary>
-        private IEnumerator TurnOffArduinoLedsRoutine()
+        private async UniTaskVoid TurnOffArduinoLedsAsync(CancellationToken token)
         {
             float timeout = 60.0f;
             float timer = 0f;
@@ -87,86 +79,100 @@ namespace My.Scripts._00_Title
             while (!ArduinoManager.Instance && timer < timeout)
             {
                 timer += Time.deltaTime;
-                yield return null;
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
 
-            if (!ArduinoManager.Instance) yield break;
+            if (!ArduinoManager.Instance)
+            {
+                Debug.LogWarning("TitleManager: ArduinoManager 인스턴스 누락.");
+                return;
+            }
 
-            // 시리얼 포트 안정성을 위해 기존 연결을 모두 초기화하고 재시작함.
-            ArduinoManager.Instance.ReconnectAllAsync().Forget();
+            await ArduinoManager.Instance.ReconnectAllAsync();
 
             timer = 0f;
             while (!ArduinoManager.Instance.AreAllConnected && timer < timeout)
             {
                 timer += Time.deltaTime;
-                yield return null;
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
 
             if (!ArduinoManager.Instance.AreAllConnected)
             {
-                Debug.LogWarning("하드웨어 통신 복구 실패.");
-                yield break;
+                Debug.LogWarning("TitleManager: 하드웨어 통신 복구 실패.");
+                return;
             }
 
-            // 명령 간 경합 방지를 위해 물리적인 장치 응답 대기 시간을 가짐.
-            yield return CoroutineData.GetWaitForSeconds(1.5f);
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
 
-            bool allOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
-            bool shotOff = ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
-            bool lightOff = ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
-
-            if (!allOff || !shotOff || !lightOff)
-            {
-                Debug.LogWarning("일부 하드웨어 명령 전송 누락.");
-            }
-            yield break;
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+            ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+            ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
         }
 
         /// <summary>
-        /// 서버를 지속적으로 확인하여 전시 사용 가능 여부를 판별함.
+        /// 서버 지속 확인 루프를 제어함.
         /// </summary>
-        private IEnumerator PollRoomStateRoutine()
+        private async UniTaskVoid PollRoomStateAsync(CancellationToken token)
         {
 #if UNITY_EDITOR
-            // 개발 중 서버 큐를 가로채어 실제 전시가 중단되는 현상을 방지함.
-            yield break;
+            return;
 #endif
-
-            while (!_isTransitioning)
+            while (!token.IsCancellationRequested && !_isTransitioning)
             {
-                if (!GameManager.Instance || GameManager.Instance.ApiConfig == null)
+                await ProcessRoomStateCheckAsync(token);
+
+                if (_isTransitioning)
                 {
-                    yield return CoroutineData.GetWaitForSeconds(pollInterval);
-                    continue;
+                    return;
                 }
 
-                string requestUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code={GameConstants.Module.Code.ToLower()}";
+                await UniTask.Delay(TimeSpan.FromSeconds(pollInterval), cancellationToken: token);
+            }
+        }
 
-                using (UnityWebRequest webRequest = UnityWebRequest.Get(requestUrl))
+        /// <summary>
+        /// 서버 API를 호출하여 현재 전시실의 사용 가능 상태를 확인함.
+        /// </summary>
+        private async UniTask ProcessRoomStateCheckAsync(CancellationToken token)
+        {
+            if (!GameManager.Instance)
+            {
+                Debug.LogWarning("TitleManager: GameManager 인스턴스 누락.");
+                return;
+            }
+
+            if (GameManager.Instance.ApiConfig == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_cachedRoomStateUrl))
+            {
+                string baseUrl = GameManager.Instance.ApiConfig.CheckRoomStateUrl;
+                string moduleCode = GameConstants.Module.Code.ToLower();
+                _cachedRoomStateUrl = string.Format("{0}?code={1}", baseUrl, moduleCode);
+            }
+
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(_cachedRoomStateUrl))
+            {
+                webRequest.timeout = 10;
+                await webRequest.SendWebRequest().ToUniTask(cancellationToken: token);
+
+                if (webRequest.result != UnityWebRequest.Result.Success)
                 {
-                    webRequest.timeout = 10;
-                    yield return webRequest.SendWebRequest();
-
-                    if (webRequest.result == UnityWebRequest.Result.ConnectionError ||
-                        webRequest.result == UnityWebRequest.Result.ProtocolError)
-                    {
-                        Debug.LogWarning("네트워크 불안정으로 상태 체크 실패.");
-                    }
-                    else
-                    {
-                        string responseText = webRequest.downloadHandler.text;
-
-                        // 서버로부터 '사용 중' 신호를 받으면 즉시 체험 단계로 진입함.
-                        if (!string.IsNullOrEmpty(responseText) && responseText.IndexOf(GameConstants.Api.StatusUsing,
-                                StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            GoToTutorial();
-                            yield break;
-                        }
-                    }
+                    Debug.LogWarning(string.Format("TitleManager: 상태 체크 실패 - {0}", webRequest.error));
+                    return;
                 }
 
-                yield return CoroutineData.GetWaitForSeconds(pollInterval);
+                string responseText = webRequest.downloadHandler.text;
+                bool isUsing = !string.IsNullOrEmpty(responseText) &&
+                               responseText.IndexOf(GameConstants.Api.StatusUsing, StringComparison.OrdinalIgnoreCase) >= 0;
+
+                if (isUsing)
+                {
+                    GoToTutorial();
+                }
             }
         }
 
@@ -195,23 +201,17 @@ namespace My.Scripts._00_Title
         /// <summary>
         /// 사운드 매니저 초기화 및 배경음을 재생함.
         /// </summary>
-        private IEnumerator StartMainBGM()
+        private async UniTaskVoid StartMainBGMAsync(CancellationToken token)
         {
-            if (!SoundManager.Instance) yield break;
+            if (!SoundManager.Instance)
+            {
+                return;
+            }
 
-            // 오디오 소스 정리를 위해 이전 음원을 중단하고 재생함.
             SoundManager.Instance.StopBGM();
-            yield return CoroutineData.GetWaitForSeconds(1.0f);
+            await UniTask.Delay(TimeSpan.FromSeconds(1.0), cancellationToken: token);
 
             SoundManager.Instance.PlayBGM("MainBGM");
-        }
-
-        private void OnDestroy()
-        {
-            // 메모리 누수 방지 및 씬 전환 후 비정상적인 로직 실행을 차단함.
-            StopAllCoroutines();
-            _soundCoroutine = null;
-            _pollCoroutine = null;
         }
     }
 }
