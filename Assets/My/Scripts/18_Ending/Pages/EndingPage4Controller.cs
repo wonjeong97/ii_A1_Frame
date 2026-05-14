@@ -1,7 +1,11 @@
 using System;
 using System.Collections;
+using System.Text;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using My.Scripts.Core;
-using My.Scripts.Global; 
+using My.Scripts.Global;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.Data;
@@ -17,6 +21,9 @@ namespace My.Scripts._18_Ending.Pages
         public TextSetting descriptionText2; 
     }
 
+    /// <summary>
+    /// 엔딩 단계에서 획득한 마음 조각 애니메이션과 최종 개수를 표시하는 컨트롤러.
+    /// </summary>
     public class EndingPage4Controller : GamePage<EndingPage4Data>
     {
         [Header("UI References")]
@@ -26,27 +33,50 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private CanvasGroup textCanvasGroup;
         
         [Header("Piece Animation")]
-        [Tooltip("순차적으로 나타날 5개의 조각 이미지를 할당해 주세요.")]
+        [Tooltip("순차적으로 나타날 5개의 조각 이미지를 할당")]
         [SerializeField] private Image[] pieceImages; 
         
         private const int PagePieceReward = 5; 
         private EndingPage4Data _data; 
         private bool _hasSentPieceUpdate;
 
+        private readonly static StringBuilder StringBuilder = new StringBuilder(128);
+
         protected override void SetupData(EndingPage4Data data)
         {
             _data = data;
-            if (text1 && UIManager.Instance) UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
-            if (text2 && UIManager.Instance) UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
+            if (text1 && UIManager.Instance)
+            {
+                UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
+            }
+            if (text2 && UIManager.Instance)
+            {
+                UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
+            }
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
             
-            if (textCanvasGroup) textCanvasGroup.alpha = 0f;
+            ResetUIStates();
             
-            // 배경 등의 요소를 위해 부모 캔버스 그룹은 켜두고, 내부 조각 이미지들을 투명하게 설정
+            if (CanSendPieceUpdate())
+            {
+                GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
+                _hasSentPieceUpdate = true; 
+            }
+
+            UpdateTotalPiecesText();
+            SequenceAsync(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>
+        /// 진입 시 UI 요소들의 투명도 및 활성 상태를 초기화함.
+        /// </summary>
+        private void ResetUIStates()
+        {
+            if (textCanvasGroup) textCanvasGroup.alpha = 0f;
             if (imageCanvasGroup) imageCanvasGroup.alpha = 1f;
             
             if (pieceImages != null)
@@ -56,100 +86,98 @@ namespace My.Scripts._18_Ending.Pages
                     SetImageAlpha(img, 0f);
                 }
             }
-            
-            if (GameManager.Instance && SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && !_hasSentPieceUpdate)
-            {
-                GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
-                _hasSentPieceUpdate = true; 
-            }
-
-            UpdateTotalPiecesText();
-            
-            StartCoroutine(SequenceRoutine());
         }
 
+        /// <summary>
+        /// API 전송이 가능한 상태인지 확인함.
+        /// </summary>
+        private bool CanSendPieceUpdate()
+        {
+            return GameManager.Instance && SessionManager.Instance && 
+                   SessionManager.Instance.CurrentUserId != 0 && !_hasSentPieceUpdate;
+        }
+
+        /// <summary>
+        /// StringBuilder를 사용하여 가비지 생성 없이 최종 조각 개수를 UI에 반영함.
+        /// </summary>
         private void UpdateTotalPiecesText()
         {
-            if (text2 && _data?.descriptionText2 != null)
-            {
-                if (!GameManager.Instance || !SessionManager.Instance) return;
-                
-                int existingPieces = SessionManager.Instance.TotalPieces;
-                int pendingReward = _hasSentPieceUpdate ? PagePieceReward : 0;
-                
-                int totalPieces = existingPieces + pendingReward;
+            if (!text2 || _data?.descriptionText2 == null) return;
+            if (!GameManager.Instance || !SessionManager.Instance) return;
+            
+            int existingPieces = SessionManager.Instance.TotalPieces;
+            int pendingReward = _hasSentPieceUpdate ? PagePieceReward : 0;
+            int totalPieces = existingPieces + pendingReward;
 
-                string originalText = _data.descriptionText2.text;
-                if (!string.IsNullOrEmpty(originalText))
-                {
-                    text2.text = originalText.Replace("{0}", totalPieces.ToString());
-                }
-            }
+            string template = _data.descriptionText2.text;
+            if (string.IsNullOrEmpty(template)) return;
+
+            StringBuilder.Clear();
+            StringBuilder.Append(template);
+            StringBuilder.Replace("{0}", totalPieces.ToString());
+
+            text2.text = StringBuilder.ToString();
         }
 
-        private IEnumerator SequenceRoutine()
+        private async UniTaskVoid SequenceAsync(CancellationToken token)
         {
-            yield return CoroutineData.GetWaitForSeconds(0.5f);
+            await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
+            await PlayPieceAnimationsAsync(token);
             
-            // 5개의 조각 이미지를 각각 0.8초 동안 순차적으로 나타내며 사운드 재생
-            if (pieceImages != null && pieceImages.Length > 0)
-            {
-                foreach (Image pieceImg in pieceImages)
-                {
-                    if (pieceImg)
-                    {
-                        SoundManager.Instance?.PlaySFX("공통_6"); 
-                        yield return StartCoroutine(FadeImage(pieceImg, 0f, 1f, 0.8f));
-                    }
-                }
-            }
-            else
-            {
-                // 배열에 이미지가 등록되지 않았을 때를 대비한 안전 장치(기존처럼 사운드 1회 재생)
-                SoundManager.Instance?.PlaySFX("공통_6");
-            }
-            
-            yield return CoroutineData.GetWaitForSeconds(2.0f);
-            
-            // 텍스트 그룹 등장
-            yield return StartCoroutine(FadeCanvasGroup(textCanvasGroup, 0f, 1f, 0.5f));
-            yield return CoroutineData.GetWaitForSeconds(3.0f);
+            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
+            await ShowResultTextAsync(token);
 
+            await UniTask.Delay(TimeSpan.FromSeconds(3.0), cancellationToken: token);
             CompleteStep();
         }
 
-        private IEnumerator FadeCanvasGroup(CanvasGroup cg, float s, float e, float d)
+        /// <summary>
+        /// 할당된 조각 이미지들을 순차적으로 페이드인함.
+        /// </summary>
+        private async UniTask PlayPieceAnimationsAsync(CancellationToken token)
         {
-            if (!cg) yield break;
-            float time = 0f;
-            cg.alpha = s;
-            
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                cg.alpha = Mathf.Lerp(s, e, time/d); 
-                yield return null; 
+            if (pieceImages == null || pieceImages.Length == 0)
+            {
+                PlayRewardSFX();
+                return;
             }
-            cg.alpha = e;
+
+            foreach (Image pieceImg in pieceImages)
+            {
+                if (!pieceImg)
+                {
+                    continue;
+                }
+
+                PlayRewardSFX();
+                await UIFadeUtility.FadeGraphicAsync(pieceImg, 0f, 1f, 0.8f, token);
+            }
         }
 
-        /// <summary> 개별 이미지(Image)의 투명도를 선형 보간하여 시각적 전환 수행 </summary>
-        private IEnumerator FadeImage(Image img, float s, float e, float d)
+        /// <summary>
+        /// 보상 획득 시 사용되는 공통 효과음을 재생함.
+        /// </summary>
+        private void PlayRewardSFX()
         {
-            if (!img) yield break;
-            float time = 0f;
-            SetImageAlpha(img, s);
-            
-            while(time < d) 
-            { 
-                time += Time.deltaTime; 
-                SetImageAlpha(img, Mathf.Lerp(s, e, time/d)); 
-                yield return null; 
+            if (SoundManager.Instance)
+            {
+                SoundManager.Instance.PlaySFX("공통_6");
             }
-            SetImageAlpha(img, e);
         }
 
-        /// <summary> 이미지의 투명도 직접 갱신 </summary>
+        /// <summary>
+        /// 결과 텍스트 그룹을 화면에 노출함.
+        /// </summary>
+        private async UniTask ShowResultTextAsync(CancellationToken token)
+        {
+            if (!textCanvasGroup)
+            {
+                return;
+            }
+
+            await UIFadeUtility.FadeCanvasGroupAsync(textCanvasGroup, 0f, 1f, 0.5f, token);
+        }
+
         private void SetImageAlpha(Image img, float a)
         {
             if (img)

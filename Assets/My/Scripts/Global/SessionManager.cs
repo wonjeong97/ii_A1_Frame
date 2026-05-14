@@ -4,13 +4,13 @@ using UnityEngine;
 
 namespace My.Scripts.Global
 {
-    // 카트리지(A~D)와 관계(1~6)의 조합으로 24가지 경우의 수 생성
+    // 카트리지(A~D)와 관계(1~5)의 조합으로 20가지 경우의 수 생성
     public enum UserType
     {
-        A1, A2, A3, A4, A5, A6,
-        B1, B2, B3, B4, B5, B6,
-        C1, C2, C3, C4, C5, C6,
-        D1, D2, D3, D4, D5, D6
+        A1, A2, A3, A4, A5, 
+        B1, B2, B3, B4, B5,
+        C1, C2, C3, C4, C5,
+        D1, D2, D3, D4, D5
     }
 
     public class SessionManager : MonoBehaviour
@@ -38,7 +38,6 @@ namespace My.Scripts.Global
         }
         public string BlockCode { get; set; } = string.Empty;
         
-        
         public string PlayerAFirstName { get; set; } = "NoNameA";
         public string PlayerBFirstName { get; set; } = "NoNameB";
         
@@ -49,8 +48,8 @@ namespace My.Scripts.Global
         public string CurrentModuleCode { get; set; } = GameConstants.Module.Code;
         public string Cartridge { get; set; } = string.Empty;
         
-        public bool IsOtherCartridgeContentsCleared { get; set; } = false;
-        public int ClearedEndCount { get; set; } = 0; 
+        public bool IsOtherCartridgeContentsCleared { get; set; }
+        public int ClearedEndCount { get; set; } 
 
         public int PieceA1 { get; set; }
         public int PieceA2 { get; set; }
@@ -71,45 +70,184 @@ namespace My.Scripts.Global
             {
                 if (string.IsNullOrWhiteSpace(BlockCode)) 
                 {
-                    // A1은 현재 컨텐츠이므로 계산식서 제외함.
-                    return PieceA2 + PieceA3 +
-                           PieceB1 + PieceB2 + PieceB3 +
-                           PieceC1 + PieceC2 + PieceC3 +
-                           PieceD1 + PieceD2 + PieceD3;
+                    return GetDefaultTotalPieces();
                 }
 
-                int sum = 0;
-                string[] blocks = BlockCode.Split(',');
-                string currentModule = CurrentModuleCode.ToUpper();
-
-                foreach (string b in blocks)
-                {
-                    string block = b.Trim().ToUpper();
-            
-                    // 현재 진행 중인 모듈은 합산에서 제외 (엔딩에서 보상으로 따로 더해짐)
-                    if (block == currentModule) 
-                    {
-                        continue;
-                    }
-
-                    switch (block)
-                    {
-                        case "A1": sum += PieceA1; break;
-                        case "A2": sum += PieceA2; break;
-                        case "A3": sum += PieceA3; break;
-                        case "B1": sum += PieceB1; break;
-                        case "B2": sum += PieceB2; break;
-                        case "B3": sum += PieceB3; break;
-                        case "C1": sum += PieceC1; break;
-                        case "C2": sum += PieceC2; break;
-                        case "C3": sum += PieceC3; break;
-                        case "D1": sum += PieceD1; break;
-                        case "D2": sum += PieceD2; break;
-                        case "D3": sum += PieceD3; break;
-                    }
-                }
-                return sum;
+                return CalculatePiecesFromBlockCode();
             }
+        }
+        
+        /// <summary>
+        /// 세션 데이터 누락 시 안전망(Fallback)으로 동작함.
+        /// A1은 현재 진행 컨텐츠이므로 합산에서 제외함.
+        /// </summary>
+        private int GetDefaultTotalPieces()
+        {
+            return PieceA2 + PieceA3 +
+                   PieceB1 + PieceB2 + PieceB3 +
+                   PieceC1 + PieceC2 + PieceC3 +
+                   PieceD1 + PieceD2 + PieceD3;
+        }
+        
+        /// <summary>
+        /// 획득한 블록 코드를 문자열 할당(GC) 없이 인덱스 기반으로 순회하며 조각 개수를 합산함.
+        /// 흐름 제어, 모듈 식별, 문자 분석의 책임을 분리하여 복잡도를 낮춤.
+        /// </summary>
+        private int CalculatePiecesFromBlockCode()
+        {
+            if (string.IsNullOrEmpty(BlockCode))
+            {
+                return 0;
+            }
+
+            (char currentMod1, char currentMod2) = GetCurrentModuleChars();
+
+            return SumParsedBlocks(BlockCode, currentMod1, currentMod2);
+        }
+        
+        /// <summary>
+        /// 기준이 되는 현재 모듈 코드를 두 개의 문자로 분리하여 캐싱 반환함.
+        /// </summary>
+        private (char, char) GetCurrentModuleChars()
+        {
+            if (string.IsNullOrEmpty(CurrentModuleCode) || CurrentModuleCode.Length < 2)
+            {
+                return ('\0', '\0');
+            }
+
+            return (char.ToUpperInvariant(CurrentModuleCode[0]), char.ToUpperInvariant(CurrentModuleCode[1]));
+        }
+        
+        /// <summary>
+        /// 전체 블록 코드 문자열을 순회하며 개별 문자를 처리 및 누적 합산함.
+        /// </summary>
+        private int SumParsedBlocks(string blocks, char currentMod1, char currentMod2)
+        {
+            int sum = 0;
+            char parsedMod1 = '\0';
+            char parsedMod2 = '\0';
+            int length = blocks.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                ProcessBlockChar(blocks[i], ref parsedMod1, ref parsedMod2, ref sum, currentMod1, currentMod2);
+            }
+
+            // 루프 종료 후 마지막에 남은 잔여 파싱 블록 처리
+            sum += EvaluateAndGetPieceCount(parsedMod1, parsedMod2, currentMod1, currentMod2);
+            return sum;
+        }
+        
+        /// <summary>
+        /// 단일 문자를 평가하여 임시 변수에 캐싱하거나, 구분자(,)를 만나면 합산 후 변수를 리셋함.
+        /// </summary>
+        private void ProcessBlockChar(char c, ref char parsedMod1, ref char parsedMod2, ref int sum, char currentMod1, char currentMod2)
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                return;
+            }
+
+            if (c == ',')
+            {
+                sum += EvaluateAndGetPieceCount(parsedMod1, parsedMod2, currentMod1, currentMod2);
+                parsedMod1 = '\0';
+                parsedMod2 = '\0';
+                return;
+            }
+
+            // Split 없이 쉼표 이전의 유효 알파벳 및 숫자를 순차적으로 기록함
+            if (parsedMod1 == '\0')
+            {
+                parsedMod1 = char.ToUpperInvariant(c);
+            }
+            else if (parsedMod2 == '\0')
+            {
+                parsedMod2 = char.ToUpperInvariant(c);
+            }
+        }
+
+        /// <summary>
+        /// 파싱된 콘텐츠 코드가 유효한지, 그리고 현재 진행 중인 모듈이 아닌지 검증한 후 조각 개수를 반환함.
+        /// </summary>
+        private int EvaluateAndGetPieceCount(char parsed1, char parsed2, char current1, char current2)
+        {
+            if (parsed1 == '\0' || parsed2 == '\0')
+            {
+                return 0;
+            }
+
+            if (parsed1 == current1 && parsed2 == current2)
+            {
+                return 0;
+            }
+
+            return GetPieceCount(parsed1, parsed2);
+        }
+
+        /// <summary>
+        /// 콘텐츠 식별 문자를 조합하여 실제 조각 개수를 반환함.
+        /// 거대한 switch 문을 그룹별 하위 메서드로 나누어 코드 복잡도를 낮춤.
+        /// </summary>
+        private int GetPieceCount(char mod1, char mod2)
+        {
+            switch (mod1)
+            {
+                case 'A': return GetPieceGroupA(mod2);
+                case 'B': return GetPieceGroupB(mod2);
+                case 'C': return GetPieceGroupC(mod2);
+                case 'D': return GetPieceGroupD(mod2);
+                default: return 0;
+            }
+        }
+
+        private int GetPieceGroupA(char mod2)
+        {
+            if (mod2 == '1') return PieceA1;
+            if (mod2 == '2') return PieceA2;
+            if (mod2 == '3') return PieceA3;
+            return 0;
+        }
+
+        private int GetPieceGroupB(char mod2)
+        {
+            if (mod2 == '1') return PieceB1;
+            if (mod2 == '2') return PieceB2;
+            if (mod2 == '3') return PieceB3;
+            return 0;
+        }
+
+        private int GetPieceGroupC(char mod2)
+        {
+            if (mod2 == '1') return PieceC1;
+            if (mod2 == '2') return PieceC2;
+            if (mod2 == '3') return PieceC3;
+            return 0;
+        }
+
+        private int GetPieceGroupD(char mod2)
+        {
+            if (mod2 == '1') return PieceD1;
+            if (mod2 == '2') return PieceD2;
+            if (mod2 == '3') return PieceD3;
+            return 0;
+        }
+
+        /// <summary>
+        /// 개별 블록 코드 문자열에 매핑되는 실제 조각 개수를 반환함.
+        /// 타 클래스에서 문자열로 조회할 경우를 대비한 오버로딩 헬퍼.
+        /// </summary>
+        private int GetPieceCount(string blockCode)
+        {
+            if (string.IsNullOrEmpty(blockCode) || blockCode.Length < 2)
+            {
+                return 0;
+            }
+            
+            char mod1 = char.ToUpperInvariant(blockCode[0]);
+            char mod2 = char.ToUpperInvariant(blockCode[1]);
+            
+            return GetPieceCount(mod1, mod2);
         }
 
         private void Awake()

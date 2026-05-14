@@ -1,12 +1,12 @@
 using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using My.Scripts.Core;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
-using My.Scripts.Core;
-using My.Scripts._01_Tutorial;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -50,32 +50,22 @@ namespace My.Scripts._01_Tutorial.Pages
         public override void OnEnter()
         {
             base.OnEnter(); 
-            
-            // 페이드인 없이 즉시 텍스트 표시
-            if (descriptionText)
-            {
-                Color c = descriptionText.color;
-                c.a = 1f;
-                descriptionText.color = c;
-            }
+    
+            if (descriptionText) UIFadeUtility.SetAlpha(descriptionText, 1f);
 
-            // 타이틀 BGM 종료 후 메인 플레이 BGM으로 자연스럽게 교체
             if (SoundManager.Instance)
             {
                 SoundManager.Instance.StopBGM();
                 SoundManager.Instance.PlayBGM("MainBGM");
-                
                 SoundManager.Instance.PlaySFX("공통_6");
             }
-            
-            StartCoroutine(WaitAndNextRoutine());
+    
+            WaitAndNextAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
-
-        /// <summary> 텍스트와 사운드 연출을 유저가 인지할 수 있도록 일정 시간 대기 </summary>
-        private IEnumerator WaitAndNextRoutine()
+        
+        private async UniTaskVoid WaitAndNextAsync(CancellationToken token)
         {
-            yield return CoroutineData.GetWaitForSeconds(3.0f);
-
+            await UniTask.Delay(TimeSpan.FromSeconds(3.0), cancellationToken: token);
             CompleteStep();
         }
     }

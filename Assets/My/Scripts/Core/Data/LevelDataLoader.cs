@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using My.Scripts.Global;
+using Wonjeong.Data;
 using Wonjeong.Utils;
 
 namespace My.Scripts.Core.Data
@@ -129,82 +130,96 @@ namespace My.Scripts.Core.Data
         }
 
         /// <summary>
-        /// 개별 데이터의 누락된 항목을 공통 데이터로 덮어씌움.
+        /// 개별 레벨 데이터의 누락된 항목을 공통 설정으로 보완함.
         /// </summary>
-        /// <param name="specific">개별 레벨 설정</param>
-        /// <param name="common">공통 레벨 설정</param>
         private static void MergeCommonData(ILevelSetting specific, StandardLevelSetting common)
         {
-            if (common == null) return;
-
-            // # TODO: 필드가 늘어날 경우를 대비해 리플렉션(Reflection) 기반의 자동 병합 로직 고려
-            if (specific.Page1 == null)
+            if (common == null)
             {
-                Debug.LogWarning("Page1 데이터 누락됨.");
-            }
-            else if (common.Page1 != null)
-            {
-                if (specific.Page1.descriptionText1 == null || string.IsNullOrEmpty(specific.Page1.descriptionText1.text)) specific.Page1.descriptionText1 = common.Page1.descriptionText1;
-                if (specific.Page1.descriptionText2 == null || string.IsNullOrEmpty(specific.Page1.descriptionText2.text)) specific.Page1.descriptionText2 = common.Page1.descriptionText2;
-                if (specific.Page1.descriptionText3 == null || string.IsNullOrEmpty(specific.Page1.descriptionText3.text)) specific.Page1.descriptionText3 = common.Page1.descriptionText3;
-                if (specific.Page1.failText == null || string.IsNullOrEmpty(specific.Page1.failText.text)) specific.Page1.failText = common.Page1.failText;
-                if (string.IsNullOrEmpty(specific.Page1.warningMessage)) specific.Page1.warningMessage = common.Page1.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page1.resetMessage)) specific.Page1.resetMessage = common.Page1.resetMessage;
+                return;
             }
 
-            if (specific.Page2 == null)
-            {
-                Debug.LogWarning("Page2 데이터 누락됨.");
-            }
-            else if (common.Page2 != null)
-            {
-                if (specific.Page2.descriptionText == null || string.IsNullOrEmpty(specific.Page2.descriptionText.text)) specific.Page2.descriptionText = common.Page2.descriptionText;
-                if (specific.Page2.answerTexts == null || specific.Page2.answerTexts.Length == 0) specific.Page2.answerTexts = common.Page2.answerTexts;
-                if (string.IsNullOrEmpty(specific.Page2.warningMessage)) specific.Page2.warningMessage = common.Page2.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page2.resetMessage)) specific.Page2.resetMessage = common.Page2.resetMessage;
+            // 각 페이지별로 안전한 병합 처리를 수행함.
+            SafeMerge(specific.Page1, common.Page1, MergeGridData, "Page1");
+            SafeMerge(specific.Page2, common.Page2, MergeQnAData, "Page2");
+            SafeMerge(specific.Page4, common.Page4, MergeTransitionData, "Page4");
+            SafeMerge(specific.Page5, common.Page5, MergeTransitionData, "Page5");
+            SafeMerge(specific.Page6, common.Page6, MergeTransitionData, "Page6");
+        }
 
-                if (specific.Page2.nicknamePlayerA == null || string.IsNullOrEmpty(specific.Page2.nicknamePlayerA.text))
-                    specific.Page2.nicknamePlayerA = common.Page2.nicknamePlayerA;
+        /// <summary>
+        /// 대상 객체의 존재 여부를 확인하고, 유효할 경우에만 병합 액션을 실행함.
+        /// 데이터가 누락된 경우 일관된 형식의 경고 로그를 남김.
+        /// </summary>
+        private static void SafeMerge<T>(T target, T source, Action<T, T> mergeAction, string label) where T : class
+        {
+            if (target != null)
+            {
+                mergeAction(target, source);
+            }
+            else
+            {
+                Debug.LogWarning($"{label} 데이터 누락됨.");
+            }
+        }
 
-                if (specific.Page2.nicknamePlayerB == null || string.IsNullOrEmpty(specific.Page2.nicknamePlayerB.text))
-                    specific.Page2.nicknamePlayerB = common.Page2.nicknamePlayerB;
+        /// <summary> 그리드 페이지의 텍스트 및 메시지 설정을 병합함. </summary>
+        private static void MergeGridData(GridPageData target, GridPageData source)
+        {
+            if (source == null) return;
+
+            target.descriptionText1 = GetTextFallback(target.descriptionText1, source.descriptionText1);
+            target.descriptionText2 = GetTextFallback(target.descriptionText2, source.descriptionText2);
+            target.descriptionText3 = GetTextFallback(target.descriptionText3, source.descriptionText3);
+            target.failText = GetTextFallback(target.failText, source.failText);
+            
+            target.warningMessage = GetStringFallback(target.warningMessage, source.warningMessage);
+            target.resetMessage = GetStringFallback(target.resetMessage, source.resetMessage);
+        }
+
+        /// <summary> QnA 페이지의 질문, 답변 및 닉네임 설정을 병합함. </summary>
+        private static void MergeQnAData(QnAPageData target, QnAPageData source)
+        {
+            if (source == null) return;
+
+            target.descriptionText = GetTextFallback(target.descriptionText, source.descriptionText);
+            target.nicknamePlayerA = GetTextFallback(target.nicknamePlayerA, source.nicknamePlayerA);
+            target.nicknamePlayerB = GetTextFallback(target.nicknamePlayerB, source.nicknamePlayerB);
+            
+            if (target.answerTexts == null || target.answerTexts.Length == 0)
+            {
+                target.answerTexts = source.answerTexts;
             }
 
-            if (specific.Page4 == null)
-            {
-                Debug.LogWarning("Page4 데이터 누락됨.");
-            }
-            else if (common.Page4 != null)
-            {
-                if (specific.Page4.descriptionText == null || string.IsNullOrEmpty(specific.Page4.descriptionText.text))
-                    specific.Page4.descriptionText = common.Page4.descriptionText;
-                if (string.IsNullOrEmpty(specific.Page4.warningMessage)) specific.Page4.warningMessage = common.Page4.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page4.resetMessage)) specific.Page4.resetMessage = common.Page4.resetMessage;
-            }
+            target.warningMessage = GetStringFallback(target.warningMessage, source.warningMessage);
+            target.resetMessage = GetStringFallback(target.resetMessage, source.resetMessage);
+        }
 
-            if (specific.Page5 == null)
-            {
-                Debug.LogWarning("Page5 데이터 누락됨.");
-            }
-            else if (common.Page5 != null)
-            {
-                if (specific.Page5.descriptionText == null || string.IsNullOrEmpty(specific.Page5.descriptionText.text))
-                    specific.Page5.descriptionText = common.Page5.descriptionText;
-                if (string.IsNullOrEmpty(specific.Page5.warningMessage)) specific.Page5.warningMessage = common.Page5.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page5.resetMessage)) specific.Page5.resetMessage = common.Page5.resetMessage;
-            }
+        /// <summary> 트랜지션 안내 페이지의 텍스트 및 메시지 설정을 병합함. </summary>
+        private static void MergeTransitionData(TransitionPageData target, TransitionPageData source)
+        {
+            if (source == null) return;
 
-            if (specific.Page6 == null)
-            {
-                Debug.LogWarning("Page6 데이터 누락됨.");
-            }
-            else if (common.Page6 != null)
-            {
-                if (specific.Page6.descriptionText == null || string.IsNullOrEmpty(specific.Page6.descriptionText.text))
-                    specific.Page6.descriptionText = common.Page6.descriptionText;
-                if (string.IsNullOrEmpty(specific.Page6.warningMessage)) specific.Page6.warningMessage = common.Page6.warningMessage;
-                if (string.IsNullOrEmpty(specific.Page6.resetMessage)) specific.Page6.resetMessage = common.Page6.resetMessage;
-            }
+            target.descriptionText = GetTextFallback(target.descriptionText, source.descriptionText);
+            target.warningMessage = GetStringFallback(target.warningMessage, source.warningMessage);
+            target.resetMessage = GetStringFallback(target.resetMessage, source.resetMessage);
+        }
+
+        /// <summary>
+        /// 대상 TextSetting이 null이거나 텍스트가 비어있을 경우 원본 데이터를 반환함.
+        /// </summary>
+        private static TextSetting GetTextFallback(TextSetting target, TextSetting source)
+        {
+            if (source == null) return target;
+            return (target == null || string.IsNullOrEmpty(target.text)) ? source : target;
+        }
+
+        /// <summary>
+        /// 문자열 값이 비어있을 경우 원본 문자열을 반환함.
+        /// </summary>
+        private static string GetStringFallback(string target, string source)
+        {
+            return string.IsNullOrEmpty(target) ? source : target;
         }
     }
 }

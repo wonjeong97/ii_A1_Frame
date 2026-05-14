@@ -1,12 +1,13 @@
 using System;
-using System.Collections;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using My.Scripts.Core;
 using My.Scripts.Timelapse;
+using My.Scripts.Utils;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -33,144 +34,157 @@ namespace My.Scripts._18_Ending.Pages
         [Header("Timeout Settings")]
         [SerializeField] private float conversionTimeout = 40.0f;
 
-        private Coroutine _loadingSoundRoutine;
-        private bool _isTimelapseTriggered; // 중복 인코딩 방지용 플래그
+        private CancellationTokenSource _pageCts;
+        private bool _isTimelapseTriggered;
 
         protected override void SetupData(EndingPage2Data data)
         {
-            if (descriptionText)
+            if (descriptionText && data.descriptionText != null)
             {
                 UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-                SetTextAlpha(0f);
+                UIFadeUtility.SetAlpha(descriptionText, 0f);
             }
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            _isTimelapseTriggered = false; // 진입 시 초기화
+            _isTimelapseTriggered = false;
 
             if (loadingFillImage) loadingFillImage.fillAmount = 0f;
-            StartCoroutine(FadeText(0f, 1f, 1.0f));
-            StartCoroutine(ProcessRealtimeVideoRoutine());
-        }
 
-        /// <summary> 
-        /// 영상 변환 시퀀스 제어. 리얼타임 변환 완료 -> 타임랩스 변환 개시 -> 최종 완료 순으로 진행됩니다. 
-        /// </summary>
-        private IEnumerator ProcessRealtimeVideoRoutine()
-        {
-            if (!TimeLapseRecorder.Instance)
-            {
-                if (loadingFillImage) loadingFillImage.fillAmount = 1f;
-                yield return CoroutineData.GetWaitForSeconds(2.0f);
+            // 기존 작업 취소 및 새로운 토큰 발행
+            _pageCts?.Cancel();
+            _pageCts?.Dispose();
+            _pageCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-                CompleteStep();
-                yield break;
-            }
-
-            yield return CoroutineData.GetWaitForSeconds(0.5f);
-
-            // 1. 리얼타임 영상 변환 시작
-            if (!TimeLapseRecorder.Instance.IsRealtimeProcessing &&
-                string.IsNullOrEmpty(TimeLapseRecorder.Instance.LastRealtimeVideoPath))
-                TimeLapseRecorder.Instance.ConvertToRealtimeVideo();
-
-            if (_loadingSoundRoutine != null) StopCoroutine(_loadingSoundRoutine);
-            _loadingSoundRoutine = StartCoroutine(LoadingSoundLoopRoutine());
-
-            float startWaitTime = Time.time;
-            // UI 업데이트 루프
-            while (TimeLapseRecorder.Instance.IsRealtimeProcessing)
-            {
-                if (Time.time - startWaitTime > conversionTimeout) break;
-
-                if (loadingFillImage)
-                    loadingFillImage.fillAmount = Mathf.Lerp(loadingFillImage.fillAmount,
-                        TimeLapseRecorder.Instance.RealtimeProgress, Time.deltaTime * 5f);
-                yield return null;
-            }
-
-            if (TimeLapseRecorder.Instance.IsRealtimeProcessing)
-            {
-                yield return new WaitUntil(() => !TimeLapseRecorder.Instance.IsRealtimeProcessing);
-            }
-
-            // 리얼타임 종료 후 즉시 타임랩스 변환 큐잉 및 대기
-            if (TimeLapseRecorder.Instance && !TimeLapseRecorder.Instance.IsTimelapseProcessing)
-            {
-                _isTimelapseTriggered = true; // 정상적으로 트리거 되었음을 마킹
-                TimeLapseRecorder.Instance.ConvertToVideo();
-
-                yield return new WaitUntil(() => !TimeLapseRecorder.Instance.IsTimelapseProcessing);
-            }
-
-            if (_loadingSoundRoutine != null)
-            {
-                StopCoroutine(_loadingSoundRoutine);
-                _loadingSoundRoutine = null;
-            }
-
-            if (loadingFillImage) loadingFillImage.fillAmount = 1f;
-            yield return CoroutineData.GetWaitForSeconds(1.5f);
-
-            CompleteStep();
-        }
-
-        private IEnumerator LoadingSoundLoopRoutine()
-        {
-            while (true)
-            {
-                if (SoundManager.Instance) SoundManager.Instance.PlaySFX("키오스크_3");
-                yield return CoroutineData.GetWaitForSeconds(loadingSoundInterval);
-            }
+            ProcessSequenceAsync(_pageCts.Token).Forget();
         }
 
         public override void OnExit()
         {
-            if (_loadingSoundRoutine != null)
-            {
-                StopCoroutine(_loadingSoundRoutine);
-                _loadingSoundRoutine = null;
-            }
+            _pageCts?.Cancel();
+            _pageCts?.Dispose();
+            _pageCts = null;
 
             base.OnExit();
 
-            // 루틴이 아닌 다른 경로로 종료될 때를 대비한 최종 안전 가드
-            // 이미 정상적으로 타임랩스를 켰다면 중복 실행하지 않음
-            if (!_isTimelapseTriggered && TimeLapseRecorder.Instance &&
-                !TimeLapseRecorder.Instance.IsRealtimeProcessing && !TimeLapseRecorder.Instance.IsTimelapseProcessing)
-            {
-                TimeLapseRecorder.Instance.ConvertToVideo();
-            }
-
+            // 루틴 외부에서 종료될 경우를 대비한 최종 안전 가드
+            EnsureTimelapseTriggered();
             SoundManager.Instance?.StopSFX();
         }
 
-        private IEnumerator FadeText(float start, float end, float duration)
+        /// <summary> 페이드, 사운드 루프, 영상 변환 감시를 통합 수행하는 시퀀스 </summary>
+        private async UniTaskVoid ProcessSequenceAsync(CancellationToken token)
         {
-            if (!descriptionText) yield break;
+            // 1. 초기 UI 연출
+            UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, 1.0f, token).Forget();
+            LoadingSoundLoopAsync(token).Forget();
 
-            float t = 0f;
-            SetTextAlpha(start);
-            while (t < duration)
+            if (!TimeLapseRecorder.Instance)
             {
-                t += Time.deltaTime;
-                SetTextAlpha(Mathf.Lerp(start, end, t / duration));
-                yield return null;
+                await HandleRecorderMissingAsync(token);
+                return;
             }
 
-            SetTextAlpha(end);
+            await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
+
+            // 2. 리얼타임 영상 변환 대기
+            await HandleRealtimeConversionAsync(token);
+
+            // 3. 타임랩스 영상 변환 대기
+            await HandleTimelapseConversionAsync(token);
+
+            // 4. 완료 연출
+            if (loadingFillImage) loadingFillImage.fillAmount = 1f;
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
+
+            CompleteStep();
         }
 
-        private void SetTextAlpha(float alpha)
+        private async UniTask HandleRealtimeConversionAsync(CancellationToken token)
         {
-            if (descriptionText)
+            TimeLapseRecorder recorder = TimeLapseRecorder.Instance;
+            
+            if (!recorder.IsRealtimeProcessing && string.IsNullOrEmpty(recorder.LastRealtimeVideoPath))
             {
-                Color c = descriptionText.color;
-                c.a = alpha;
-                descriptionText.color = c;
+                recorder.ConvertToRealtimeVideo();
+            }
+
+            float startTime = Time.time;
+            
+            // 타임아웃을 고려한 UI 업데이트 루프 (GC Zero)
+            while (recorder.IsRealtimeProcessing)
+            {
+                if (Time.time - startTime > conversionTimeout) break;
+
+                if (loadingFillImage)
+                {
+                    loadingFillImage.fillAmount = Mathf.Lerp(
+                        loadingFillImage.fillAmount, 
+                        recorder.RealtimeProgress, 
+                        Time.deltaTime * 5f
+                    );
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
+
+            // 프로세스가 남았다면 완료될 때까지 비동기 대기
+            if (recorder.IsRealtimeProcessing)
+            {
+                try
+                {
+                    float remainingTime = Mathf.Max(0.1f, conversionTimeout - (Time.time - startTime));
+                    await UniTask.WaitUntil(recorder, rec => !rec.IsRealtimeProcessing, PlayerLoopTiming.Update, token)
+                        .Timeout(TimeSpan.FromSeconds(remainingTime));
+                }
+                catch (TimeoutException)
+                {
+                    Debug.LogWarning($"[EndingPage2Controller] 리얼타임 변환 타임아웃({conversionTimeout}s) - 다음 단계 진행");
+                }
             }
         }
+
+        private async UniTask HandleTimelapseConversionAsync(CancellationToken token)
+        {
+            TimeLapseRecorder recorder = TimeLapseRecorder.Instance;
+            if (!recorder) return;
+            if (!recorder.IsTimelapseProcessing)
+            {
+                _isTimelapseTriggered = true;
+                recorder.ConvertToVideo();
+            }
+            await UniTask.WaitUntil(recorder, rec => !rec.IsTimelapseProcessing, PlayerLoopTiming.Update, token);
+        }
+
+        private async UniTaskVoid LoadingSoundLoopAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                SoundManager.Instance?.PlaySFX("키오스크_3");
+                await UniTask.Delay(TimeSpan.FromSeconds(loadingSoundInterval), cancellationToken: token);
+            }
+        }
+
+        private async UniTask HandleRecorderMissingAsync(CancellationToken token)
+        {
+            if (loadingFillImage) loadingFillImage.fillAmount = 1f;
+            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
+            CompleteStep();
+        }
+
+        private void EnsureTimelapseTriggered()
+        {
+            if (!_isTimelapseTriggered && TimeLapseRecorder.Instance)
+            {
+                var rec = TimeLapseRecorder.Instance;
+                if (!rec.IsRealtimeProcessing && !rec.IsTimelapseProcessing)
+                {
+                    rec.ConvertToVideo();
+                }
+            }
+        }
+
+        // TODO: 기존의 FadeText, SetTextAlpha, ProcessRealtimeVideoRoutine 및 모든 IEnumerator 메서드 삭제됨
     }
 }

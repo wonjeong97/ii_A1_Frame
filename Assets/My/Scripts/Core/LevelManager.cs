@@ -1,16 +1,17 @@
 using System;
-using System.Collections;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using My.Scripts.Core.Data;
 using My.Scripts.Core.Pages;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
+using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
 
 namespace My.Scripts.Core
 {
@@ -20,6 +21,7 @@ namespace My.Scripts.Core
     public class LevelManager : BaseFlowManager
     {   
         public static LevelManager Instance { get; private set; }
+        private readonly static System.Text.StringBuilder NameBuilder = new System.Text.StringBuilder(256);
         
         [Header("Level Settings")]
         [SerializeField] private UserType levelType = UserType.A1; 
@@ -57,6 +59,7 @@ namespace My.Scripts.Core
 
         /// <summary>
         /// 레벨 번호를 파싱하고, 튜토리얼 여부 및 세션 정보에 따라 적절한 JSON 데이터를 로드함.
+        /// 분기문을 메서드로 추출하여 가독성과 유지보수성을 높임.
         /// </summary>
         protected override void LoadSettings()
         {
@@ -65,110 +68,107 @@ namespace My.Scripts.Core
 
             if (_isTutorialMode)
             {
-                TutorialLevelSetting tSetting = LevelDataLoader.LoadTutorialLevel();
-                if (tSetting != null)
-                {
-                    string nameA = GetPlayerNameOrDefault(true);
-                    string nameB = GetPlayerNameOrDefault(false);
-
-                    ReplaceNamesInQnAPage(tSetting.Page2, nameA, nameB);
-                    ReplaceNamesInTransitionPage(tSetting.Page4, nameA, nameB);
-                    ReplaceNamesInTransitionPage(tSetting.Page6, nameA, nameB);
-                    ReplaceNamesInTransitionPage(tSetting.Page7, nameA, nameB);
-                    ReplaceNamesInTutorialPage8(tSetting.Page8, nameA, nameB);
-
-                    SetCameraFileName();
-                    ConfigureCameraPage(false);
-
-                    SetupPageData(0, tSetting.Page1);
-                    SetupPageData(1, tSetting.Page2);
-                    SetupPageData(2, tSetting.Page4);
-                    SetupPageData(3, tSetting.Page7); 
-                    SetupPageData(4, tSetting.Page8); 
-                }
-                else
-                {
-                    Debug.LogWarning("TutorialLevelSetting 데이터를 로드하지 못함.");
-                }
+                LoadTutorialSettings();
             }
             else
             {
-                UserType uType = HasActiveSession ? SessionManager.Instance.CurrentUserType : levelType;
-                StandardLevelSetting sSetting = LevelDataLoader.LoadStandardLevel(levelID, uType);
-                if (sSetting != null)
-                {
-                    string nameA = GetPlayerNameOrDefault(true);
-                    string nameB = GetPlayerNameOrDefault(false);
-                    
-                    ReplaceNamesInQnAPage(sSetting.Page2, nameA, nameB);
-                    ReplaceNamesInTransitionPage(sSetting.Page4, nameA, nameB);
-                    ReplaceNamesInTransitionPage(sSetting.Page6, nameA, nameB);
-
-                    SetCameraFileName();
-                    ConfigureCameraPage(true);
-
-                    SetupPageData(0, sSetting.Page1);
-                    SetupPageData(1, sSetting.Page2);
-                    SetupPageData(2, sSetting.Page4); 
-                    SetupPageData(4, sSetting.Page6); 
-                }
-                else
-                {
-                    Debug.LogWarning("StandardLevelSetting 데이터를 로드하지 못함.");
-                }
-
-                if (HueManager.Instance && _currentQuestionNumber == 6)
-                {
-                    HueManager.Instance.InitRandomColors();
-                }
+                LoadStandardSettings();
             }
+        }
+        
+        /// <summary>
+        /// 튜토리얼 전용 설정 데이터를 로드하고 각 페이지에 주입함.
+        /// </summary>
+        private void LoadTutorialSettings()
+        {
+            TutorialLevelSetting tSetting = LevelDataLoader.LoadTutorialLevel();
+            if (tSetting == null)
+            {
+                Debug.LogWarning("TutorialLevelSetting 데이터를 로드하지 못함.");
+                return;
+            }
+
+            string nameA = GetPlayerNameOrDefault(true);
+            string nameB = GetPlayerNameOrDefault(false);
+
+            ReplaceNamesInQnAPage(tSetting.Page2, nameA, nameB);
+            ReplaceNamesInTransitionPage(tSetting.Page4, nameA, nameB);
+            ReplaceNamesInTransitionPage(tSetting.Page6, nameA, nameB);
+            ReplaceNamesInTransitionPage(tSetting.Page7, nameA, nameB);
+            ReplaceNamesInTutorialPage8(tSetting.Page8, nameA, nameB);
+
+            PrepareCameraPage(false);
+
+            SetupPageData(0, tSetting.Page1);
+            SetupPageData(1, tSetting.Page2);
+            SetupPageData(2, tSetting.Page4);
+            SetupPageData(3, tSetting.Page7); 
+            SetupPageData(4, tSetting.Page8); 
+        }
+        
+        /// <summary>
+        /// 일반 문항 전용 설정 데이터를 로드하고 각 페이지에 주입함.
+        /// </summary>
+        private void LoadStandardSettings()
+        {
+            UserType uType = HasActiveSession ? SessionManager.Instance.CurrentUserType : levelType;
+            StandardLevelSetting sSetting = LevelDataLoader.LoadStandardLevel(levelID, uType);
+            
+            if (sSetting == null)
+            {
+                Debug.LogWarning("StandardLevelSetting 데이터를 로드하지 못함.");
+                return;
+            }
+
+            string nameA = GetPlayerNameOrDefault(true);
+            string nameB = GetPlayerNameOrDefault(false);
+            
+            ReplaceNamesInQnAPage(sSetting.Page2, nameA, nameB);
+            ReplaceNamesInTransitionPage(sSetting.Page4, nameA, nameB);
+            ReplaceNamesInTransitionPage(sSetting.Page6, nameA, nameB);
+
+            PrepareCameraPage(true);
+
+            SetupPageData(0, sSetting.Page1);
+            SetupPageData(1, sSetting.Page2);
+            SetupPageData(2, sSetting.Page4); 
+            SetupPageData(4, sSetting.Page6); 
+
+            if (HueManager.Instance && _currentQuestionNumber == 6)
+            {
+                HueManager.Instance.InitRandomColors();
+            }
+        }
+        
+        /// <summary>
+        /// 카메라 파일명을 구성하고 저장 설정을 페이지에 적용함.
+        /// </summary>
+        private void PrepareCameraPage(bool save)
+        {
+            SetCameraFileName();
+            ConfigureCameraPage(save);
         }
        
         /// <summary>
-        /// TransitionPage(4, 5, 7)의 텍스트에 포함된 이름 포맷 태그를 실제 플레이어 닉네임으로 치환함.
+        /// TransitionPage의 텍스트에 포함된 이름 포맷 태그를 런타임 가비지 없이 치환함.
         /// </summary>
         private void ReplaceNamesInTransitionPage(TransitionPageData pageData, string nameA, string nameB)
         {
             if (pageData == null) return;
-
-            // # TODO: string.Replace 연속 호출은 문자열 재할당을 유발하므로, 성능 크리티컬 구간이라면 StringBuilder 포맷팅으로 최적화 필요.
-            if (pageData.descriptionText != null && !string.IsNullOrEmpty(pageData.descriptionText.text))
-            {
-                pageData.descriptionText.text = pageData.descriptionText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
-
-            if (pageData.playerAName != null && !string.IsNullOrEmpty(pageData.playerAName.text))
-            {
-                pageData.playerAName.text = pageData.playerAName.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
-
-            if (pageData.playerBName != null && !string.IsNullOrEmpty(pageData.playerBName.text))
-            {
-                pageData.playerBName.text = pageData.playerBName.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
+            ReplaceTextSettingName(pageData.descriptionText, nameA, nameB);
+            ReplaceTextSettingName(pageData.playerAName, nameA, nameB);
+            ReplaceTextSettingName(pageData.playerBName, nameA, nameB);
         }
 
         /// <summary>
-        /// TutorialPage8의 텍스트에 포함된 이름 포맷 태그를 실제 플레이어 닉네임으로 치환함.
+        /// TutorialPage8의 텍스트에 포함된 이름 포맷 태그를 런타임 가비지 없이 치환함.
         /// </summary>
         private void ReplaceNamesInTutorialPage8(TutorialPage8Data pageData, string nameA, string nameB)
         {
             if (pageData == null) return;
-
-            if (pageData.introText != null && !string.IsNullOrEmpty(pageData.introText.text))
-            {
-                pageData.introText.text = pageData.introText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
-
-            if (pageData.countdownText != null && !string.IsNullOrEmpty(pageData.countdownText.text))
-            {
-                pageData.countdownText.text = pageData.countdownText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
-
-            if (pageData.startText != null && !string.IsNullOrEmpty(pageData.startText.text))
-            {
-                pageData.startText.text = pageData.startText.text.Replace("{nameA}", nameA).Replace("{nameB}", nameB);
-            }
+            ReplaceTextSettingName(pageData.introText, nameA, nameB);
+            ReplaceTextSettingName(pageData.countdownText, nameA, nameB);
+            ReplaceTextSettingName(pageData.startText, nameA, nameB);
         }
         
         /// <summary>
@@ -185,19 +185,41 @@ namespace My.Scripts.Core
         }
 
         /// <summary>
-        /// QnA 페이지의 닉네임 텍스트 포맷 태그를 치환함.
+        /// QnA 페이지의 닉네임 텍스트 포맷 태그를 런타임 가비지 없이 개별 치환함.
         /// </summary>
-        private void ReplaceNamesInQnAPage(QnAPageData page2, string nameA, string nameB)
+        private void ReplaceNamesInQnAPage(QnAPageData pageData, string nameA, string nameB)
         {
-            if (page2 == null) return;
-            
-            if (page2.nicknamePlayerA != null && !string.IsNullOrEmpty(page2.nicknamePlayerA.text))
+            if (pageData == null) return;
+
+            if (pageData.nicknamePlayerA != null && !string.IsNullOrEmpty(pageData.nicknamePlayerA.text))
             {
-                page2.nicknamePlayerA.text = page2.nicknamePlayerA.text.Replace("{nameA}", nameA);
+                NameBuilder.Clear();
+                NameBuilder.Append(pageData.nicknamePlayerA.text);
+                NameBuilder.Replace("{nameA}", nameA);
+                pageData.nicknamePlayerA.text = NameBuilder.ToString();
             }
-            if (page2.nicknamePlayerB != null && !string.IsNullOrEmpty(page2.nicknamePlayerB.text))
+
+            if (pageData.nicknamePlayerB != null && !string.IsNullOrEmpty(pageData.nicknamePlayerB.text))
             {
-                page2.nicknamePlayerB.text = page2.nicknamePlayerB.text.Replace("{nameB}", nameB);
+                NameBuilder.Clear();
+                NameBuilder.Append(pageData.nicknamePlayerB.text);
+                NameBuilder.Replace("{nameB}", nameB);
+                pageData.nicknamePlayerB.text = NameBuilder.ToString();
+            }
+        }
+        
+        /// <summary>
+        /// StringBuilder를 재사용하여 TextSetting 내부의 문자열을 치환함.
+        /// </summary>
+        private void ReplaceTextSettingName(TextSetting setting, string nameA, string nameB)
+        {
+            if (setting != null && !string.IsNullOrEmpty(setting.text))
+            {
+                NameBuilder.Clear();
+                NameBuilder.Append(setting.text);
+                NameBuilder.Replace("{nameA}", nameA);
+                NameBuilder.Replace("{nameB}", nameB);
+                setting.text = NameBuilder.ToString();
             }
         }
         
@@ -272,97 +294,186 @@ namespace My.Scripts.Core
         }
 
         /// <summary>
-        /// 페이지 간의 페이드 및 암전 등 트랜지션 효과를 코루틴으로 처리함.
+        /// 페이지 간의 페이드 및 암전 등 트랜지션 효과를 UniTask로 처리함.
         /// </summary>
-        protected override IEnumerator TransitionRoutine(int targetIndex, int info)
+        protected override async UniTaskVoid TransitionAsync(int targetIndex, int info, CancellationToken token)
         {
             isTransitioning = true;
-            GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
-            
-            if (targetIndex < 0 || targetIndex >= pages.Length)
+            try
+            {
+                GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
+                
+                if (targetIndex < 0 || targetIndex >= pages.Length) return;
+                
+                TryPreloadCamera(targetIndex);
+
+                GamePage next = pages[targetIndex];
+                
+                // 특수 전환에 매칭되지 않으면 기본 전환 수행
+                bool handledSpecially = await TrySpecialTransitionAsync(current, next, currentPageIndex, targetIndex, info, token);
+
+                if (!handledSpecially)
+                {
+                    await DefaultTransitionAsync(current, next, info, token);
+                }
+
+                currentPageIndex = targetIndex;
+            }
+            catch (OperationCanceledException) { }
+            finally
             {
                 isTransitioning = false;
-                yield break;
+            }
+        }
+        
+        /// <summary>
+        /// 대상 인덱스에 따라 카메라 페이지를 미리 로드함.
+        /// </summary>
+        private void TryPreloadCamera(int targetIndex)
+        {
+            if (targetIndex == 2 && pages.Length > 3)
+            {
+                Page_Camera camPage = pages[3] as Page_Camera;
+                if (camPage)
+                {
+                    camPage.PreloadCamera();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 현재와 다음 인덱스에 맞는 특수 전환 비동기 루틴을 수행함.
+        /// </summary>
+        private async UniTask<bool> TrySpecialTransitionAsync(GamePage current, GamePage next, int currIdx, int targetIdx, int info, CancellationToken token)
+        {
+            if (currIdx == 0 && targetIdx == 1) 
+            {
+                await CoverTransitionAsync(current, next, info, token);
+                return true;
+            }
+            if (currIdx == 1 && targetIdx == 2) 
+            {
+                await RevealTransitionAsync(current, next, info, token);
+                return true;
+            }
+            if (currIdx == 2 && targetIdx == 3) 
+            {
+                await AmjeonTransitionAsync(current, next, info, _isTutorialMode, token);
+                return true;
+            }
+            if (_isTutorialMode && currIdx == 3 && targetIdx == 4) 
+            {
+                await SequenceTransitionAsync(current, next, globalWhiteBackground, info, 0.5f, token);
+                return true;
+            }
+            return false;
+        }
+        
+        private async UniTask DefaultTransitionAsync(GamePage current, GamePage next, int info, CancellationToken token)
+        {
+            if (current)
+            {
+                await FadePageAsync(current, 1f, 0f, 0.5f, token);
+                current.OnExit();
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
+            }
+
+            if (next)
+            {
+                next.OnEnter();
+                HandleTrigger(next, info);
+                
+                if (currentPageIndex == -1 && next is Page_Grid) 
+                {
+                    next.SetAlpha(1f);
+                }
+                else
+                {
+                    next.SetAlpha(0f);
+                    await FadePageAsync(next, 0f, 1f, 0.5f, token);
+                }
+            }
+        }
+        
+        private async UniTask CoverTransitionAsync(GamePage current, GamePage next, int info, CancellationToken token)
+        {
+            if (globalBlackCanvasGroup) await UIFadeUtility.FadeCanvasGroupAsync(globalBlackCanvasGroup, 0f, 1f, 0.5f, token);
+            await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
+            if (current) current.OnExit();
+            if (next) 
+            { 
+                next.OnEnter(); 
+                next.SetAlpha(0f); 
+                HandleTrigger(next, info); 
+            }
+            if (next) await FadePageAsync(next, 0f, 1f, 0.5f, token);
+            if (globalBlackCanvasGroup) await UIFadeUtility.FadeCanvasGroupAsync(globalBlackCanvasGroup, 1f, 0f, 0.5f, token);
+        }
+        
+        private async UniTask RevealTransitionAsync(GamePage current, GamePage next, int info, CancellationToken token)
+        {
+            if (globalBlackCanvasGroup) globalBlackCanvasGroup.alpha = 1f;
+            if (current) 
+            { 
+                await FadePageAsync(current, 1f, 0f, 0.5f, token); 
+                current.OnExit(); 
+            }
+            if (next) 
+            { 
+                next.OnEnter(); 
+                next.SetAlpha(0f); 
+                HandleTrigger(next, info); 
+                await FadePageAsync(next, 0f, 1f, 0.5f, token); 
+            }
+            if (globalBlackCanvasGroup) await UIFadeUtility.FadeCanvasGroupAsync(globalBlackCanvasGroup, 1f, 0f, 0.5f, token);
+        }
+
+        private async UniTask AmjeonTransitionAsync(GamePage current, GamePage next, int info, bool enableWhiteBg, CancellationToken token)
+        {
+            if (FadeManager.Instance)
+            {
+                bool d = false;
+                FadeManager.Instance.FadeOut(0.25f, () => d = true);
+                await UniTask.WaitUntil(() => d, cancellationToken: token);
+            }
+            else await UniTask.Delay(TimeSpan.FromSeconds(0.25), cancellationToken: token);
+
+            if (current) current.OnExit();
+            
+            if (enableWhiteBg && globalWhiteBackground)
+            {
+                globalWhiteBackground.gameObject.SetActive(true);
+                Color c = globalWhiteBackground.color; 
+                c.a = 1f; 
+                globalWhiteBackground.color = c;
             }
             
-            if (targetIndex == 2 && pages.Length > 3 && pages[3] is Page_Camera camPage)
-            {
-                camPage.PreloadCamera(); 
+            if (next) 
+            { 
+                next.OnEnter(); 
+                next.SetAlpha(1f); 
+                HandleTrigger(next, info); 
             }
+            
+            if (FadeManager.Instance) FadeManager.Instance.FadeIn(0.25f);
+        }
 
-            GamePage next = pages[targetIndex];
-            bool handled = false;
-
-            if (_isTutorialMode)
-            {
-                if (currentPageIndex == 0 && targetIndex == 1) 
-                { 
-                    yield return StartCoroutine(CoverTransition(current, next, info)); 
-                    handled = true; 
-                } 
-                else if (currentPageIndex == 1 && targetIndex == 2) 
-                { 
-                    yield return StartCoroutine(RevealTransition(current, next, info)); 
-                    handled = true; 
-                } 
-                else if (currentPageIndex == 2 && targetIndex == 3) 
-                { 
-                    yield return StartCoroutine(AmjeonTransition(current, next, info, true)); 
-                    handled = true; 
-                } 
-                else if (currentPageIndex == 3 && targetIndex == 4) 
-                { 
-                    yield return StartCoroutine(SequenceTransition(current, next, globalWhiteBackground, info, 0.5f)); 
-                    handled = true; 
-                } 
+        private async UniTask SequenceTransitionAsync(GamePage current, GamePage next, Image background, int info, float waitTime, CancellationToken token)
+        {
+            if (background) background.gameObject.SetActive(true);
+            if (current) 
+            { 
+                await FadePageAsync(current, 1f, 0f, 0.5f, token); 
+                current.OnExit(); 
             }
-            else
-            {
-                if (currentPageIndex == 0 && targetIndex == 1) 
-                { 
-                    yield return StartCoroutine(CoverTransition(current, next, info)); 
-                    handled = true; 
-                } 
-                else if (currentPageIndex == 1 && targetIndex == 2) 
-                { 
-                    yield return StartCoroutine(RevealTransition(current, next, info)); 
-                    handled = true; 
-                } 
-                else if (currentPageIndex == 2 && targetIndex == 3) 
-                { 
-                    yield return StartCoroutine(AmjeonTransition(current, next, info)); 
-                    handled = true; 
-                }
+            if (waitTime > 0f) await UniTask.Delay(TimeSpan.FromSeconds(waitTime), cancellationToken: token);
+            if (next) 
+            { 
+                next.OnEnter(); 
+                next.SetAlpha(0f); 
+                HandleTrigger(next, info); 
+                await FadePageAsync(next, 0f, 1f, 0.5f, token); 
             }
-
-            if (!handled)
-            {
-                if (current)
-                {
-                    yield return StartCoroutine(FadePage(current, 1f, 0f));
-                    current.OnExit();
-                    yield return CoroutineData.GetWaitForSeconds(0.5f);
-                }
-
-                if (next)
-                {
-                    next.OnEnter();
-                    HandleTrigger(next, info);
-                    
-                    if (currentPageIndex == -1 && next is Page_Grid) 
-                    {
-                        next.SetAlpha(1f);
-                    }
-                    else
-                    {
-                        next.SetAlpha(0f);
-                        yield return StartCoroutine(FadePage(next, 0f, 1f));
-                    }
-                }
-            }
-
-            currentPageIndex = targetIndex;
-            isTransitioning = false;
         }
 
         /// <summary>
@@ -430,116 +541,6 @@ namespace My.Scripts.Core
             {
                 receiver.ReceiveTrigger(info);
             }
-        }
-
-        /// <summary>
-        /// 글로벌 블랙 캔버스를 덮은 상태에서 페이지를 전환함.
-        /// </summary>
-        private IEnumerator CoverTransition(GamePage current, GamePage next, int info)
-        {
-            if (globalBlackCanvasGroup) yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 0f, 1f, 0.5f));
-            yield return CoroutineData.GetWaitForSeconds(0.5f);
-            if (current) current.OnExit();
-            if (next) 
-            { 
-                next.OnEnter(); 
-                next.SetAlpha(0f); 
-                HandleTrigger(next, info); 
-            }
-            if (next) yield return StartCoroutine(FadePage(next, 0f, 1f));
-            if (globalBlackCanvasGroup) yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
-        }
-
-        /// <summary>
-        /// 글로벌 블랙 캔버스가 덮여 있는 상태에서 시작하여 페이지를 노출함.
-        /// </summary>
-        private IEnumerator RevealTransition(GamePage current, GamePage next, int info)
-        {
-            if (globalBlackCanvasGroup) globalBlackCanvasGroup.alpha = 1f;
-            if (current) 
-            { 
-                yield return StartCoroutine(FadePage(current, 1f, 0f)); 
-                current.OnExit(); 
-            }
-            if (next) 
-            { 
-                next.OnEnter(); 
-                next.SetAlpha(0f); 
-                HandleTrigger(next, info); 
-                yield return StartCoroutine(FadePage(next, 0f, 1f)); 
-            }
-            if (globalBlackCanvasGroup) yield return StartCoroutine(FadeCanvasGroup(globalBlackCanvasGroup, 1f, 0f, 0.5f));
-        }
-
-        /// <summary>
-        /// 전체 화면 암전(FadeManager)을 활용하여 페이지를 전환함.
-        /// </summary>
-        private IEnumerator AmjeonTransition(GamePage current, GamePage next, int info, bool enableWhiteBg = false)
-        {
-            if (FadeManager.Instance)
-            {
-                bool d = false;
-                FadeManager.Instance.FadeOut(0.25f, () => d = true);
-                while (!d) yield return null;
-            }
-            else yield return CoroutineData.GetWaitForSeconds(0.25f);
-
-            if (current) current.OnExit();
-            
-            if (enableWhiteBg && globalWhiteBackground)
-            {
-                globalWhiteBackground.gameObject.SetActive(true);
-                Color c = globalWhiteBackground.color; 
-                c.a = 1f; 
-                globalWhiteBackground.color = c;
-            }
-            
-            if (next) 
-            { 
-                next.OnEnter(); 
-                next.SetAlpha(1f); 
-                HandleTrigger(next, info); 
-            }
-            
-            if (FadeManager.Instance) FadeManager.Instance.FadeIn(0.25f);
-        }
-
-        /// <summary>
-        /// 백그라운드 이미지를 활성화한 상태에서 순차적인 페이드 교차를 수행함.
-        /// </summary>
-        private IEnumerator SequenceTransition(GamePage current, GamePage next, Image background, int info, float waitTime = 0f)
-        {
-            if (background) background.gameObject.SetActive(true);
-            if (current) 
-            { 
-                yield return StartCoroutine(FadePage(current, 1f, 0f)); 
-                current.OnExit(); 
-            }
-            if (waitTime > 0f) yield return CoroutineData.GetWaitForSeconds(waitTime);
-            if (next) 
-            { 
-                next.OnEnter(); 
-                next.SetAlpha(0f); 
-                HandleTrigger(next, info); 
-                yield return StartCoroutine(FadePage(next, 0f, 1f)); 
-            }
-        }
-
-        /// <summary>
-        /// 대상 캔버스 그룹의 알파값을 설정된 시간 동안 선형 보간함.
-        /// </summary>
-        private IEnumerator FadeCanvasGroup(CanvasGroup cg, float s, float e, float d)
-        {
-            if (!cg) yield break;
-            float t = 0f; 
-            cg.alpha = s;
-            while (t < d) 
-            { 
-                t += Time.deltaTime; 
-                cg.alpha = Mathf.Lerp(s, e, t / d); 
-                yield return null; 
-            }
-            cg.alpha = e;
         }
     }
 }

@@ -61,34 +61,49 @@ namespace My.Scripts.Utils
             if (!Directory.Exists(targetPath)) return;
 
             DirectoryInfo dirInfo = new DirectoryInfo(targetPath);
-            // "yyyy-MM-dd" 형식으로 생성된 하위 날짜 폴더들을 가져옵니다.
             DirectoryInfo[] subDirs = dirInfo.GetDirectories(); 
 
             foreach (DirectoryInfo subDir in subDirs)
             {
-                // 폴더 명칭이 날짜 형식이 아닌 경우(예: 임시 폴더) 무시하여 데이터 손실 방지
-                if (DateTime.TryParseExact(subDir.Name, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime folderDate))
-                {
-                    // 기준 날짜보다 이전(과거)인 폴더만 선별 삭제
-                    if (folderDate.Date < thresholdDate)
-                    {
-                        try
-                        {
-                            // 내부 파일 및 하위 디렉토리를 포함하여 강제 삭제
-                            subDir.Delete(true); 
-                            Debug.Log($"[StorageCleaner] 오래된 폴더 삭제 완료: {subDir.FullName}");
-                        }
-                        catch (IOException)
-                        {
-                            // 파일이 다른 프로세스(FFmpeg 등)에 의해 사용 중일 때 발생하는 충돌 무시
-                            Debug.LogWarning($"[StorageCleaner] 폴더가 사용 중임: {subDir.Name}");
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogWarning($"[StorageCleaner] 폴더 삭제 실패 ({subDir.Name}): {e.Message}");
-                        }
-                    }
-                }
+                TryDeleteIfOld(subDir, thresholdDate);
+            }
+        }
+        
+        /// <summary>
+        /// 폴더명을 날짜로 파싱하여 보관 기한이 지난 폴더인지 식별함.
+        /// </summary>
+        private static void TryDeleteIfOld(DirectoryInfo subDir, DateTime thresholdDate)
+        {
+            if (!DateTime.TryParseExact(subDir.Name, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime folderDate))
+            {
+                return;
+            }
+
+            if (folderDate.Date >= thresholdDate)
+            {
+                return;
+            }
+
+            DeleteDirectorySafe(subDir);
+        }
+
+        /// <summary>
+        /// 파일 잠금(Lock) 등 런타임 환경에서 발생할 수 있는 삭제 실패 예외를 로깅 및 캡슐화함.
+        /// </summary>
+        private static void DeleteDirectorySafe(DirectoryInfo subDir)
+        {
+            try
+            {
+                subDir.Delete(true); 
+                Debug.Log($"[StorageCleaner] 오래된 폴더 삭제 완료: {subDir.FullName}");
+            }
+            catch (IOException)
+            {
+                Debug.LogWarning($"[StorageCleaner] 폴더가 사용 중임: {subDir.Name}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[StorageCleaner] 폴더 삭제 실패 ({subDir.Name}): {e.Message}");
             }
         }
     }

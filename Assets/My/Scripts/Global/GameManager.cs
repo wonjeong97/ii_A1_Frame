@@ -1,17 +1,20 @@
 using System;
-using System.Collections;
 using System.IO;
-using Cysharp.Threading.Tasks; 
+using Cysharp.Threading.Tasks;
 using My.Scripts.Core;
 using My.Scripts.Core.Data;
 using My.Scripts.Hardware;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
-using Wonjeong.Core; 
+using Wonjeong.Core;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace My.Scripts.Global
 {
@@ -22,9 +25,9 @@ namespace My.Scripts.Global
     public class GameManager : GameManagerBase<GameManager>
     {
         public bool isDebugMode;
-        
+
         private bool _isTransitioning;
-        private float _fadeTime = 0.5f;
+        private float _fadeTime;
         private bool _isQuitting;
         private bool _isQuitSafe;
         private Coroutine _transitionRoutine;
@@ -32,16 +35,17 @@ namespace My.Scripts.Global
 
         [Header("Player Color Sprites")]
         public Sprite[] playerColorSprites;
-        
+
         [Header("API Retry Settings")]
-        [SerializeField] private int maxRetries = 10;
-        [SerializeField] private float retryDelay = 1.0f;
+        [SerializeField] private int maxRetries;
+
+        [SerializeField] private float retryDelay;
 
         /// <summary>
         /// 부모 객체의 싱글톤 및 로깅 설정을 상속받고 세션 매니저를 구성함.
         /// </summary>
         protected override void Awake()
-        {   
+        {
             base.Awake();
 
             if (Instance != this) return;
@@ -53,6 +57,7 @@ namespace My.Scripts.Global
             }
 
             Application.wantsToQuit += WantsToQuit;
+            _fadeTime = 0.5f;
         }
 
         /// <summary>
@@ -82,10 +87,12 @@ namespace My.Scripts.Global
         public Sprite GetColorSprite(ColorData color)
         {
             int index = (int)color;
-            if (index >= 0 && playerColorSprites != null && index < playerColorSprites.Length)
+            if (index >= 0 && playerColorSprites != null && playerColorSprites.Length > index)
             {
-                return playerColorSprites[index];
+                Sprite targetSprite = playerColorSprites[index];
+                if (targetSprite) return targetSprite;
             }
+
             return null;
         }
 
@@ -95,13 +102,13 @@ namespace My.Scripts.Global
         protected override void LoadSettings()
         {
             settings = JsonLoader.Load<Settings>(GameConstants.Path.JsonSetting);
-    
+
             if (settings == null)
             {
                 Debug.LogWarning($"{GameConstants.Path.JsonSetting} 설정 파일 로드 실패. 기본값으로 대체함.");
                 settings = new Settings();
             }
-    
+
             _fadeTime = settings.fadeTime;
 
             string apiPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.ApiSetting);
@@ -137,42 +144,60 @@ namespace My.Scripts.Global
             if (_isTransitioning) return;
 
             string currentScene = SceneManager.GetActiveScene().name;
-            string nextScene = "";
+            string nextScene = DetermineNextDebugScene(currentScene);
 
-            if (currentScene == GameConstants.Scene.Title) nextScene = GameConstants.Scene.Tutorial;
-            else if (currentScene == GameConstants.Scene.Tutorial) nextScene = GameConstants.Scene.PlayTutorial;
-            else if (currentScene == GameConstants.Scene.PlayTutorial) nextScene = "Play_Q1";
-            else if (currentScene.StartsWith("Play_Q"))
+            if (string.IsNullOrEmpty(nextScene)) return;
+
+            Debug.Log($"디버그 즉시 스킵: {currentScene} -> {nextScene}");
+
+            if (_transitionRoutine != null)
             {
-                int qIdx = currentScene.IndexOf('Q') + 1;
-                if (int.TryParse(currentScene.Substring(qIdx), out int currentQ))
-                {
-                    if (currentQ >= 15) nextScene = GameConstants.Scene.Ending;
-                    else nextScene = $"Play_Q{currentQ + 1}";
-                }
-            }
-            else if (currentScene == GameConstants.Scene.Ending)
-            {
-                ReturnToTitle(); 
-                return;
+                StopCoroutine(_transitionRoutine);
+                _transitionRoutine = null;
             }
 
-            if (!string.IsNullOrEmpty(nextScene))
-            {
-                Debug.Log($"디버그 즉시 스킵: {currentScene} -> {nextScene}");
-                
-                if (_transitionRoutine != null)
-                {
-                    StopCoroutine(_transitionRoutine);
-                    _transitionRoutine = null;
-                }
-                
-                _isTransitioning = false; 
+            _isTransitioning = false;
 
-                if (FadeManager.Instance) FadeManager.Instance.FadeIn(0f);
-                
-                SceneLoader.LoadAsync(nextScene).Forget();
+            if (FadeManager.Instance) FadeManager.Instance.FadeIn(0f);
+
+            SceneLoader.LoadAsync(nextScene).Forget();
+        }
+
+        /// <summary>
+        /// 현재 씬의 이름을 기반으로 다음에 이동할 씬의 이름을 결정함.
+        /// </summary>
+        private string DetermineNextDebugScene(string currentScene)
+        {
+            if (currentScene == GameConstants.Scene.Title) return GameConstants.Scene.Tutorial;
+            if (currentScene == GameConstants.Scene.Tutorial) return GameConstants.Scene.PlayTutorial;
+            if (currentScene == GameConstants.Scene.PlayTutorial) return "Play_Q1";
+
+            if (currentScene == GameConstants.Scene.Ending)
+            {
+                ReturnToTitle();
+                return null;
             }
+
+            if (currentScene.StartsWith("Play_Q"))
+            {
+                return GetNextQuestionScene(currentScene);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 현재 문항 번호를 파싱하여 다음 문항 또는 엔딩 씬 이름을 반환함.
+        /// </summary>
+        private string GetNextQuestionScene(string currentScene)
+        {
+            int qIdx = currentScene.IndexOf('Q') + 1;
+            if (int.TryParse(currentScene.Substring(qIdx), out int currentQ))
+            {
+                return currentQ >= 15 ? GameConstants.Scene.Ending : $"Play_Q{currentQ + 1}";
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -182,28 +207,64 @@ namespace My.Scripts.Global
         {
             if (_isTransitioning) return;
 
-            _isTransitioning = true;
-            Debug.Log($"Scene Transition Requested: {sceneName}");
-            _transitionRoutine = StartCoroutine(ChangeSceneRoutine(sceneName));
+            ChangeSceneAsync(sceneName).Forget(); // Forget()으로 비동기 호출
         }
 
-        private IEnumerator ChangeSceneRoutine(string sceneName)
+        /// <summary> 페이드 연출과 함께 씬을 비동기로 로드함. </summary>
+        private async UniTaskVoid ChangeSceneAsync(string sceneName)
         {
-            if (!FadeManager.Instance)
+            _isTransitioning = true;
+
+            try
             {
-                yield return SceneLoader.LoadAsync(sceneName).ToCoroutine();
-                _isTransitioning = false;
-                yield break;
+                if (!FadeManager.Instance)
+                {
+                    await SceneLoader.LoadAsync(sceneName);
+                    return;
+                }
+
+                UniTaskCompletionSource fadeTcs = new UniTaskCompletionSource();
+                FadeManager.Instance.FadeOut(_fadeTime, () => fadeTcs.TrySetResult());
+                await fadeTcs.Task;
+
+                await SceneLoader.LoadAsync(sceneName);
+                FadeManager.Instance.FadeIn(_fadeTime);
             }
+            finally
+            {
+                _isTransitioning = false;
+            }
+        }
 
-            bool fadeDone = false;
-            FadeManager.Instance.FadeOut(_fadeTime, () => { fadeDone = true; });
-            while (!fadeDone) yield return null;
+        /// <summary> 앱 종료 요청 시 하드웨어 정리 및 임시 파일을 삭제한 후 안전하게 종료함. </summary>
+        private async UniTaskVoid QuitAsync()
+        {
+            // 하드웨어 소등 대기
+            await TurnOffAllHardwareOutputsAsync();
 
-            yield return SceneLoader.LoadAsync(sceneName).ToCoroutine();
+#if !UNITY_EDITOR
+            if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
+            {
+                int uid = SessionManager.Instance.CurrentUserId;
+                string moduleCode = GameConstants.Module.Code.ToLower();
 
-            FadeManager.Instance.FadeIn(_fadeTime);
-            _isTransitioning = false;
+                // 종료 시점의 마지막 API 상태 동기화
+                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={moduleCode}";
+                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={moduleCode}&idx_user={uid}";
+
+                await UniTask.WhenAll(SendGetRequestAsync(resetUrl), SendGetRequestAsync(exitUrl));
+            }
+#endif
+            // 임시 소스 파일 정리 후 종료 확정
+            await ClearSourceFoldersAsync();
+
+            _isQuitSafe = true;
+
+#if UNITY_EDITOR
+            EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         /// <summary>
@@ -212,6 +273,7 @@ namespace My.Scripts.Global
         public void ReturnToTitle()
         {
             if (_isTransitioning) return;
+
             ReturnToTitleAsync().Forget();
         }
 
@@ -227,7 +289,7 @@ namespace My.Scripts.Global
 
             if (SessionManager.Instance) SessionManager.Instance.ClearSession();
 
-            _isTransitioning = false; 
+            _isTransitioning = false;
             ChangeScene(GameConstants.Scene.Title);
         }
 
@@ -270,34 +332,27 @@ namespace My.Scripts.Global
         #region API 호출 로직
 
         /// <summary>
-        /// GET 방식의 API 요청을 수행하고 실패 시 설정된 횟수만큼 재시도함.
+        /// API 요청을 비동기로 수행하며 실패 시 재시도함.
+        /// 호출 측에서 응답을 기다리지 않도록 Forget()과 조합하여 사용 권장.
         /// </summary>
-        private IEnumerator SendGetRequestRoutine(string url)
+        private async UniTask SendGetRequestAsync(string url)
         {
 #if UNITY_EDITOR
-            yield break;
+            return;
 #endif
-
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 using (UnityWebRequest req = UnityWebRequest.Get(url))
                 {
-                    req.timeout = 10; 
-                    yield return req.SendWebRequest();
+                    req.timeout = 10;
+                    await req.SendWebRequest().ToUniTask();
 
-                    if (req.result == UnityWebRequest.Result.Success)
-                    {
-                        yield break;
-                    }
+                    if (req.result == UnityWebRequest.Result.Success) return;
 
+                    // 재시도 간 지연 시간 부여
                     if (attempt < maxRetries - 1)
                     {
-                        Debug.LogWarning($"API 전송 실패 ({attempt + 1}/{maxRetries}): {req.error}. {retryDelay}초 후 재시도.");
-                        yield return CoroutineData.GetWaitForSeconds(retryDelay);
-                    }
-                    else
-                    {
-                        Debug.LogError($"API 전송 최종 실패 (URL: {url}) - {req.error}");
+                        await UniTask.Delay(TimeSpan.FromSeconds(retryDelay));
                     }
                 }
             }
@@ -306,36 +361,47 @@ namespace My.Scripts.Global
         public void SendResetStartAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.ResetStartUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}";
-            StartCoroutine(SendGetRequestRoutine(url));
+
+            string url =
+                $"{ApiConfig.ResetStartUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}";
+            SendGetRequestAsync(url).Forget();
         }
 
         public void SendExitRoomAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={SessionManager.Instance.CurrentUserId}";
-            StartCoroutine(SendGetRequestRoutine(url));
+
+            string url =
+                $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={SessionManager.Instance.CurrentUserId}";
+            SendGetRequestAsync(url).Forget();
         }
 
         public void SendTimeUpdateAPI()
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdateTimeUrl}?idx_user={SessionManager.Instance.CurrentUserId}&option=end&code={GameConstants.Module.Code.ToLower()}";
-            StartCoroutine(SendGetRequestRoutine(url));
+
+            string url =
+                $"{ApiConfig.UpdateTimeUrl}?idx_user={SessionManager.Instance.CurrentUserId}&option=end&code={GameConstants.Module.Code.ToLower()}";
+            SendGetRequestAsync(url).Forget();
         }
 
         public void SendValueUpdateAPI(int qNo, string side, int value)
         {
             if (!SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdateValueUrl}?idx_user={SessionManager.Instance.CurrentUserId}&q_no={qNo}&side={side}&code={GameConstants.Module.Code.ToLower()}&value={value}";
-            StartCoroutine(SendGetRequestRoutine(url));
+
+            string url =
+                $"{ApiConfig.UpdateValueUrl}?idx_user={SessionManager.Instance.CurrentUserId}&q_no={qNo}&side={side}&code={GameConstants.Module.Code.ToLower()}&value={value}";
+            SendGetRequestAsync(url).Forget();
         }
 
         public void SendPieceUpdateAPI(int value)
         {
-            if (value < 0 || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 || ApiConfig == null) return;
-            string url = $"{ApiConfig.UpdatePieceUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}&value={value}";
-            StartCoroutine(SendGetRequestRoutine(url));
+            if (value < 0 || !SessionManager.Instance || SessionManager.Instance.CurrentUserId == 0 ||
+                ApiConfig == null) return;
+
+            string url =
+                $"{ApiConfig.UpdatePieceUrl}?idx_user={SessionManager.Instance.CurrentUserId}&code={GameConstants.Module.Code.ToLower()}&value={value}";
+            SendGetRequestAsync(url).Forget();
         }
 
         #endregion
@@ -352,55 +418,16 @@ namespace My.Scripts.Global
             if (!_isQuitting)
             {
                 _isQuitting = true;
-                StartCoroutine(QuitRoutine());
+                QuitAsync().Forget();
             }
 
             return false;
         }
 
-        /// <summary>
-        /// 앱 종료 전 유저 세션을 닫고 하드웨어 장치를 초기화함.
-        /// </summary>
-        private IEnumerator QuitRoutine()
-        {
-            yield return TurnOffAllHardwareOutputsAsync().ToCoroutine();
-
-#if !UNITY_EDITOR
-            if (SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0 && ApiConfig != null)
-            {
-                int uid = SessionManager.Instance.CurrentUserId;
-
-                string resetUrl = $"{ApiConfig.ResetStartUrl}?idx_user={uid}&code={GameConstants.Module.Code.ToLower()}";
-                using (UnityWebRequest req = UnityWebRequest.Get(resetUrl))
-                {
-                    req.timeout = 2; 
-                    yield return req.SendWebRequest();
-                }
-
-                string exitUrl = $"{ApiConfig.ExitRoomUrl}?code={GameConstants.Module.Code.ToLower()}&idx_user={uid}";
-                using (UnityWebRequest req = UnityWebRequest.Get(exitUrl))
-                {
-                    req.timeout = 2;
-                    yield return req.SendWebRequest();
-                }
-            }
-#endif
-
-            yield return ClearSourceFoldersAsync().ToCoroutine();
-
-            _isQuitSafe = true;
-
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
-        }
-
 #if UNITY_EDITOR
         private void OnApplicationQuit()
         {
-            if (_isQuitSafe) return; 
+            if (_isQuitSafe) return;
 
             TurnOffAllHardwareOutputsAsync().Forget();
             ClearSourceFoldersAsync().Forget();
@@ -425,30 +452,34 @@ namespace My.Scripts.Global
                     string timelapseSource = Path.Combine(rootPath, "Timelapse", "Timelapse_Source", dateFolder);
                     string realtimeSource = Path.Combine(rootPath, "Timelapse", "Realtime_Source", dateFolder);
 
-                    if (Directory.Exists(timelapseSource))
-                    {
-                        string[] tFiles = Directory.GetFiles(timelapseSource);
-                        foreach (string file in tFiles)
-                        {
-                            try { File.Delete(file); }
-                            catch (Exception ex) { Debug.LogWarning($"타임랩스 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
-                        }
-                    }
-
-                    if (Directory.Exists(realtimeSource))
-                    {
-                        string[] rFiles = Directory.GetFiles(realtimeSource);
-                        foreach (string file in rFiles)
-                        {
-                            try { File.Delete(file); }
-                            catch (Exception ex) { Debug.LogWarning($"리얼타임 소스 파일 삭제 실패 ({file}): {ex.Message}"); }
-                        }
-                    }
+                    DeleteFilesInDirectory(timelapseSource, "타임랩스");
+                    DeleteFilesInDirectory(realtimeSource, "리얼타임");
                 });
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"비동기 소스 폴더 접근 오류: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 지정된 디렉토리 내의 모든 파일을 안전하게 삭제함.
+        /// </summary>
+        private void DeleteFilesInDirectory(string directoryPath, string logPrefix)
+        {
+            if (!Directory.Exists(directoryPath)) return;
+
+            string[] files = Directory.GetFiles(directoryPath);
+            foreach (string file in files)
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"{logPrefix} 소스 파일 삭제 실패 ({file}): {ex.Message}");
+                }
             }
         }
 

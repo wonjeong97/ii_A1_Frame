@@ -5,7 +5,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using My.Scripts.Global;
-using Wonjeong.Utils;
 
 namespace My.Scripts.Hardware
 {
@@ -14,22 +13,168 @@ namespace My.Scripts.Hardware
     /// </summary>
     public class ArduinoManager : MonoBehaviour
     {
+        /// <summary>
+        /// ReadLine()으로 인한 가비지(GC) 생성을 막기 위한 커스텀 바이트 버퍼.
+        /// 바이트 단위로 직접 파싱하여 알려진 하드웨어 명령어 상수로 즉시 반환함.
+        /// </summary>
+        private class SerialBuffer
+        {
+            private readonly byte[] _data = new byte[256];
+            private int _position;
+
+            public void ReadFromPort(SerialPort port, ConcurrentQueue<(string, bool)> queue, bool isLeft, bool enqueue)
+            {
+                int bytesToRead = port.BytesToRead;
+                if (bytesToRead <= 0) return;
+
+                int readCount = port.Read(_data, _position, Math.Min(bytesToRead, _data.Length - _position));
+                _position += readCount;
+
+                while (TryExtractLine(out string line))
+                {
+                    if (enqueue && !string.IsNullOrEmpty(line))
+                    {
+                        queue.Enqueue((line, isLeft));
+                    }
+                }
+            }
+
+            /// <summary> 버퍼 데이터에서 한 줄(\n 기준)을 찾아 명령어로 추출함. </summary>
+            private bool TryExtractLine(out string line)
+            {
+                line = null;
+                int newLineIndex = FindNewLineIndex();
+            
+                if (newLineIndex == -1)
+                {
+                    return HandleBufferOverflow();
+                }
+
+                // 개행 문자를 제외한 실제 데이터 길이 계산
+                int dataLength = (newLineIndex > 0 && _data[newLineIndex - 1] == '\r') 
+                    ? newLineIndex - 1 
+                    : newLineIndex;
+
+                line = ConvertBytesToCommand(dataLength);
+            
+                // 처리한 데이터만큼 버퍼를 앞으로 밀어 다음 데이터 수신 준비
+                ShiftBuffer(newLineIndex + 1);
+                return true;
+            }
+            
+            /// <summary> 버퍼 내에서 개행 문자(\n)의 인덱스를 탐색함. </summary>
+            private int FindNewLineIndex()
+            {
+                for (int i = 0; i < _position; i++)
+                {
+                    if (_data[i] == '\n') return i;
+                }
+                return -1;
+            }
+            
+            /// <summary> 추출된 바이트를 미리 정의된 상수 명령어와 비교하거나 문자열로 변환함. </summary>
+            private string ConvertBytesToCommand(int length)
+            {
+                // 가비지 생성을 막기 위해 하드웨어 상수를 우선 매칭
+                string command = MatchKnownCommand(_data, length);
+            
+                if (string.IsNullOrEmpty(command))
+                {
+                    command = System.Text.Encoding.ASCII.GetString(_data, 0, length);
+                }
+            
+                return command;
+            }
+            
+            /// <summary> 처리 완료된 바이트를 제거하고 남은 데이터를 버퍼의 시작점으로 이동시킴. </summary>
+            private void ShiftBuffer(int skipCount)
+            {
+                int remaining = _position - skipCount;
+            
+                if (remaining > 0)
+                {
+                    Array.Copy(_data, skipCount, _data, 0, remaining);
+                }
+            
+                _position = remaining;
+            }
+            
+            /// <summary> 버퍼가 꽉 찼음에도 개행 문자가 없는 비정상 상황을 처리함. </summary>
+            private bool HandleBufferOverflow()
+            {
+                if (_position >= _data.Length)
+                {
+                    _position = 0;
+                }
+                return false;
+            }
+
+            /// <summary> 바이트 패턴을 분석하여 캐싱된 명령어 상수를 반환함. </summary>
+            private string MatchKnownCommand(byte[] buffer, int len)
+            {
+                // 명령어 길이에 따라 조기 필터링하여 불필요한 비교 연산 제거
+                return len switch
+                {
+                    3 => MatchThreeCharCommand(buffer),
+                    6 => MatchSixCharCommand(buffer),
+                    _ => null
+                };
+            }
+            
+            /// <summary> 3글자 명령어(예: 1On)를 바이트 단위로 비교하여 상수 반환. </summary>
+            private string MatchThreeCharCommand(byte[] buffer)
+            {
+                // 공통 접미사 'On' 확인 (ASCII: O=79, n=110)
+                if (buffer[1] != 79 || buffer[2] != 110) return null;
+
+                return buffer[0] switch
+                {
+                    49 => GameConstants.Hardware.Input1On, // '1'
+                    50 => GameConstants.Hardware.Input2On, // '2'
+                    51 => GameConstants.Hardware.Input3On, // '3'
+                    52 => GameConstants.Hardware.Input4On, // '4'
+                    53 => GameConstants.Hardware.Input5On, // '5'
+                    _ => null
+                };
+            }
+            
+            /// <summary> 6글자 명령어(ShotOn)를 바이트 단위로 비교하여 상수 반환. </summary>
+            private string MatchSixCharCommand(byte[] buffer)
+            {
+                // "ShotOn" 문자열의 각 바이트를 순차 비교하여 동적 할당 회피
+                // 예시: S(83), h(104), o(111), t(116), O(79), n(110)
+                bool isShotOn = buffer[0] == 83 && buffer[1] == 104 && buffer[2] == 111 && 
+                                buffer[3] == 116 && buffer[4] == 79 && buffer[5] == 110;
+
+                return isShotOn ? GameConstants.Hardware.InputShotOn : null;
+            }
+                    
+            public void Reset()
+            {
+                _position = 0;
+            }
+        }
+
         public static ArduinoManager Instance;
 
-        public Action<string, bool> OnHardwareInput;
+        public Action<string, bool> onHardwareInput;
 
         private SerialPort _leftPort;
         private SerialPort _rightPort;
         private SerialPort _lightPort;
+        
+        private readonly SerialBuffer _leftBuffer = new SerialBuffer();
+        private readonly SerialBuffer _rightBuffer = new SerialBuffer();
+        private readonly SerialBuffer _lightBuffer = new SerialBuffer();
 
         private ConcurrentQueue<(string input, bool isLeft)> _inputQueue = new ConcurrentQueue<(string input, bool isLeft)>();
 
         private Thread _readThread;
-        private volatile bool _isRunning = false;
+        private volatile bool _isRunning;
 
-        private DateTime _leftLastWarnTime = DateTime.MinValue;
-        private DateTime _rightLastWarnTime = DateTime.MinValue;
-        private DateTime _lightLastWarnTime = DateTime.MinValue;
+        private DateTime _leftLastWarnTime;
+        private DateTime _rightLastWarnTime;
+        private DateTime _lightLastWarnTime;
         private readonly TimeSpan warnThrottle = TimeSpan.FromSeconds(5);
 
         public bool IsLeftConnected => _leftPort != null && _leftPort.IsOpen;
@@ -37,7 +182,7 @@ namespace My.Scripts.Hardware
         public bool IsLightConnected => _lightPort != null && _lightPort.IsOpen;
         public bool AreAllConnected => IsLeftConnected && IsRightConnected && IsLightConnected;
 
-        private bool _isReconnecting = false;
+        private bool _isReconnecting;
 
         /// <summary>
         /// 싱글톤 인스턴스를 초기화하고 씬 전환 시 파괴되지 않도록 설정함.
@@ -52,7 +197,6 @@ namespace My.Scripts.Hardware
             else
             {
                 Destroy(gameObject);
-                return;
             }
         }
 
@@ -70,7 +214,6 @@ namespace My.Scripts.Hardware
         /// </summary>
         private void Update()
         {
-            // # TODO: 매 프레임 TryDequeue 호출 및 구조체 할당 비용이 발생하므로 프레임당 처리 개수 제한 고려
             while (_inputQueue.TryDequeue(out (string input, bool isLeft) result))
             {
                 ProcessHardwareInput(result.input, result.isLeft);
@@ -84,13 +227,12 @@ namespace My.Scripts.Hardware
         /// <param name="isLeft">좌측 장치 여부</param>
         private void ProcessHardwareInput(string input, bool isLeft)
         {
-            // ex: isLeft=true -> sideName="Left"
             string sideName = isLeft ? "Left" : "Right";
             Debug.Log($"[{sideName} 아두이노]>> {input}");
 
-            if (OnHardwareInput != null)
+            if (onHardwareInput != null)
             {
-                OnHardwareInput.Invoke(input, isLeft);
+                onHardwareInput.Invoke(input, isLeft);
             }
         }
 
@@ -105,26 +247,9 @@ namespace My.Scripts.Hardware
             try
             {
                 Debug.Log("<color=blue>[ArduinoManager] 3개의 아두이노 강제 재부팅 및 재연결 시작...</color>");
-                _isRunning = false;
                 
-                if (_readThread != null && _readThread.IsAlive)
-                {
-                    await UniTask.RunOnThreadPool(() => _readThread.Join(500));
-                }
-
-                if (_leftPort != null) { try { _leftPort.Close(); _leftPort.Dispose(); } catch { } }
-                if (_rightPort != null) { try { _rightPort.Close(); _rightPort.Dispose(); } catch { } }
-                if (_lightPort != null) { try { _lightPort.Close(); _lightPort.Dispose(); } catch { } } 
-
-                _leftPort = null;
-                _rightPort = null;
-                _lightPort = null;
-
-                // 하드웨어 포트 반환 대기 시간 확보
-                await UniTask.Delay(TimeSpan.FromSeconds(1.0f));
+                await StopAndCleanupPortsAsync();
                 
-                while (_inputQueue.TryDequeue(out _)) { }
-
                 _isRunning = true;
                 await AutoConnectAsync();
 
@@ -133,6 +258,43 @@ namespace My.Scripts.Hardware
             finally
             {
                 _isReconnecting = false;
+            }
+        }
+        
+        /// <summary>
+        /// 연결 재시작을 위해 스레드를 종료하고 모든 포트를 닫은 후 큐를 정리함.
+        /// </summary>
+        private async UniTask StopAndCleanupPortsAsync()
+        {
+            _isRunning = false;
+                
+            if (_readThread != null && _readThread.IsAlive)
+            {
+                await UniTask.RunOnThreadPool(() => _readThread.Join(500));
+            }
+
+            CloseAndDisposePort(ref _leftPort);
+            CloseAndDisposePort(ref _rightPort);
+            CloseAndDisposePort(ref _lightPort);
+            _leftBuffer.Reset();
+            _rightBuffer.Reset();
+            _lightBuffer.Reset();
+
+            // 하드웨어 포트 반환 대기 시간 확보
+            await UniTask.Delay(TimeSpan.FromSeconds(1.0f));
+            
+            while (_inputQueue.TryDequeue(out _)) { }
+        }
+        
+        /// <summary>
+        /// 시리얼 포트를 안전하게 닫고 리소스를 해제한 뒤 null로 초기화함.
+        /// </summary>
+        private void CloseAndDisposePort(ref SerialPort port)
+        {
+            if (port != null)
+            {
+                try { port.Close(); port.Dispose(); } catch { }
+                port = null;
             }
         }
 
@@ -169,87 +331,114 @@ namespace My.Scripts.Hardware
         {
             await UniTask.RunOnThreadPool(async () =>
             {
-                SerialPort tempPort = new SerialPort(portName, 9600);
-                tempPort.ReadTimeout = 2000;
-                tempPort.DtrEnable = true;
-
-                try
-                {
-                    tempPort.Open();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"포트 열기 실패 ({portName}): {e.Message}");
-                    tempPort.Dispose(); 
-                    return;
-                }
+                SerialPort tempPort = OpenSerialPort(portName);
+                if (tempPort == null) return;
 
                 // 아두이노 리셋 후 부트로더 진입 및 초기화 대기
                 await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
 
-                string response = string.Empty;
-                float maxWaitTime = 10.0f; 
-                float elapsedTime = 1.5f;
-
-                // 식별 문자열 수신 시까지 반복 대기
-                while (elapsedTime < maxWaitTime)
-                {
-                    try
-                    {
-                        if (tempPort.BytesToRead > 0)
-                        {
-                            response += tempPort.ReadExisting();
-                            if (response.Contains("Arduino") || response.Contains(GameConstants.Hardware.LightArduino))
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    catch (TimeoutException) { }
-                    catch (Exception) { }
-
-                    await UniTask.Delay(TimeSpan.FromSeconds(1.0f)); 
-                    elapsedTime += 1.0f;
-                }
+                string response = await WaitForDeviceResponseAsync(tempPort);
 
                 await UniTask.SwitchToMainThread();
-
-                if (response.Contains(GameConstants.Hardware.LeftArduino))
-                {
-                    tempPort.ReadTimeout = 10;
-                    if (_leftPort != null && _leftPort != tempPort)
-                    {
-                        try { _leftPort.Close(); _leftPort.Dispose(); } catch { }
-                    }
-                    _leftPort = tempPort;
-                    Debug.Log($"Left 아두이노 연결 성공: {portName}");
-                }
-                else if (response.Contains(GameConstants.Hardware.RightArduino))
-                {
-                    tempPort.ReadTimeout = 10;
-                    if (_rightPort != null && _rightPort != tempPort)
-                    {
-                        try { _rightPort.Close(); _rightPort.Dispose(); } catch { }
-                    }
-                    _rightPort = tempPort;
-                    Debug.Log($"Right 아두이노 연결 성공: {portName}");
-                }
-                else if (response.Contains(GameConstants.Hardware.LightArduino))
-                {
-                    tempPort.ReadTimeout = 10;
-                    if (_lightPort != null && _lightPort != tempPort)
-                    {
-                        try { _lightPort.Close(); _lightPort.Dispose(); } catch { }
-                    }
-                    _lightPort = tempPort;
-                    Debug.Log($"Light 아두이노 연결 성공: {portName}");
-                }
-                else
-                {
-                    tempPort.Close();
-                    tempPort.Dispose();
-                }
+                AssignPortByResponse(response, tempPort, portName);
             });
+        }
+        
+        /// <summary>
+        /// 시리얼 포트 인스턴스를 생성하고 연결을 시도함.
+        /// </summary>
+        private SerialPort OpenSerialPort(string portName)
+        {
+            SerialPort port = new SerialPort(portName, 9600);
+            port.ReadTimeout = 2000;
+            port.DtrEnable = true;
+
+            try
+            {
+                port.Open();
+                return port;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"포트 열기 실패 ({portName}): {e.Message}");
+                port.Dispose(); 
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// 포트 개방 후 아두이노 장치의 고유 식별 문자열이 수신될 때까지 대기함.
+        /// </summary>
+        private async UniTask<string> WaitForDeviceResponseAsync(SerialPort port)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            float maxWaitTime = 10.0f; 
+            float elapsedTime = 1.5f;
+
+            while (elapsedTime < maxWaitTime)
+            {
+                if (TryReadDeviceIdentifier(port, sb))
+                {
+                    break;
+                }
+
+                await UniTask.Delay(TimeSpan.FromSeconds(1.0f)); 
+                elapsedTime += 1.0f;
+            }
+
+            return sb.ToString();
+        }
+        
+        /// <summary>
+        /// 버퍼의 문자열을 읽고 아두이노 장치 식별자가 포함되어 있는지 확인함.
+        /// </summary>
+        private bool TryReadDeviceIdentifier(SerialPort port, System.Text.StringBuilder sb)
+        {
+            try
+            {
+                if (port.BytesToRead > 0)
+                {
+                    sb.Append(port.ReadExisting());
+                    string currentResponse = sb.ToString();
+                    
+                    return currentResponse.Contains("Arduino") || 
+                           currentResponse.Contains(GameConstants.Hardware.LightArduino);
+                }
+            }
+            catch (Exception) { } 
+
+            return false;
+        }
+        
+        /// <summary>
+        /// 수신된 응답 문자열을 바탕으로 적절한 장치(Left, Right, Light)에 포트를 할당함.
+        /// </summary>
+        private void AssignPortByResponse(string response, SerialPort newPort, string portName)
+        {
+            newPort.ReadTimeout = 10;
+
+            if (response.Contains(GameConstants.Hardware.LeftArduino))
+            {
+                CloseAndDisposePort(ref _leftPort);
+                _leftPort = newPort;
+                Debug.Log($"Left 아두이노 연결 성공: {portName}");
+            }
+            else if (response.Contains(GameConstants.Hardware.RightArduino))
+            {
+                CloseAndDisposePort(ref _rightPort);
+                _rightPort = newPort;
+                Debug.Log($"Right 아두이노 연결 성공: {portName}");
+            }
+            else if (response.Contains(GameConstants.Hardware.LightArduino))
+            {
+                CloseAndDisposePort(ref _lightPort);
+                _lightPort = newPort;
+                Debug.Log($"Light 아두이노 연결 성공: {portName}");
+            }
+            else
+            {
+                CloseAndDisposePort(ref newPort);
+            }
         }
 
         /// <summary>
@@ -271,128 +460,98 @@ namespace My.Scripts.Hardware
         /// </summary>
         private void ReadPortLoop()
         {
-            // # TODO: ReadLine() 호출은 매번 새로운 문자열을 동적 할당하여 GC 스파이크를 유발함. 
-            // 바이트 버퍼 기반의 풀링(Pooling) 방식으로 구조 변경을 고려할 것.
             while (_isRunning)
             {
-                if (IsLeftConnected)
-                {
-                    try
-                    {
-                        if (_leftPort.BytesToRead > 0)
-                        {
-                            string leftInput = _leftPort.ReadLine().Trim();
-                            if (!string.IsNullOrEmpty(leftInput))
-                                _inputQueue.Enqueue((leftInput, true));
-                        }
-                    }
-                    catch (TimeoutException) { }
-                    catch (Exception e)
-                    {
-                        DateTime now = DateTime.UtcNow;
-                        if (now - _leftLastWarnTime > warnThrottle)
-                        {
-                            _leftLastWarnTime = now;
-                            Debug.LogWarning($"Left 아두이노 수신 예외: {e.Message}");
-                        }
-                    }
-                }
-
-                if (IsRightConnected)
-                {
-                    try
-                    {
-                        if (_rightPort.BytesToRead > 0)
-                        {
-                            string rightInput = _rightPort.ReadLine().Trim();
-                            if (!string.IsNullOrEmpty(rightInput))
-                                _inputQueue.Enqueue((rightInput, false));
-                        }
-                    }
-                    catch (TimeoutException) { }
-                    catch (Exception e)
-                    {
-                        DateTime now = DateTime.UtcNow;
-                        if (now - _rightLastWarnTime > warnThrottle)
-                        {
-                            _rightLastWarnTime = now;
-                            Debug.LogWarning($"Right 아두이노 수신 예외: {e.Message}");
-                        }
-                    }
-                }
-                
-                if (IsLightConnected)
-                {
-                    try
-                    {
-                        if (_lightPort.BytesToRead > 0)
-                        {
-                            string lightInput = _lightPort.ReadLine().Trim();
-                        }
-                    }
-                    catch (TimeoutException) { }
-                    catch (Exception e)
-                    {
-                        DateTime now = DateTime.UtcNow;
-                        if (now - _lightLastWarnTime > warnThrottle)
-                        {
-                            _lightLastWarnTime = now;
-                            Debug.LogWarning($"Light 아두이노 수신 예외: {e.Message}");
-                        }
-                    }
-                }
+                ReadSinglePort(IsLeftConnected, _leftPort, _leftBuffer, true, true, ref _leftLastWarnTime, "Left");
+                ReadSinglePort(IsRightConnected, _rightPort, _rightBuffer, false, true, ref _rightLastWarnTime, "Right");
+                ReadSinglePort(IsLightConnected, _lightPort, _lightBuffer, false, false, ref _lightLastWarnTime, "Light"); 
 
                 // CPU 점유율 제어를 위해 짧은 휴지기를 가짐
                 Thread.Sleep(10);
+            }
+        }
+        
+        /// <summary>
+        /// 단일 포트의 데이터를 읽고 조건에 따라 큐에 적재하거나 예외를 로깅함.
+        /// 커스텀 버퍼를 활용하여 GC 할당을 방지함.
+        /// </summary>
+        private void ReadSinglePort(bool isConnected, SerialPort port, SerialBuffer buffer, bool isLeft, bool enqueue, ref DateTime lastWarnTime, string logPrefix)
+        {
+            if (!isConnected || port == null) return;
+
+            try
+            {
+                buffer.ReadFromPort(port, _inputQueue, isLeft, enqueue);
+            }
+            catch (TimeoutException) { }
+            catch (Exception e)
+            {
+                HandleReadException(e, ref lastWarnTime, logPrefix);
+            }
+        }
+        
+        /// <summary>
+        /// 연속적인 에러 로그 스파이크를 막기 위해 시간 기반으로 스로틀링(Throttling)하여 예외를 로깅함.
+        /// </summary>
+        private void HandleReadException(Exception e, ref DateTime lastWarnTime, string logPrefix)
+        {
+            DateTime now = DateTime.UtcNow;
+            if (now - lastWarnTime > warnThrottle)
+            {
+                lastWarnTime = now;
+                Debug.LogWarning($"{logPrefix} 아두이노 수신 예외: {e.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 포트 개방 유무 확인 및 예외 처리를 통합하여 시리얼 명령어 송신 코드의 중복을 제거함.
+        /// </summary>
+        private bool SendCommandInternal(SerialPort port, string command, string portName)
+        {
+            if (port == null || !port.IsOpen)
+            {
+                return false;
+            }
+
+            try 
+            { 
+                port.WriteLine(command); 
+                return true; 
+            }
+            catch (Exception e) 
+            { 
+                Debug.LogError($"{portName} 전송 오류: {e.Message}"); 
+                return false; 
             }
         }
 
         /// <summary>
         /// 우측 하드웨어로 제어 명령 문자열을 전송함.
         /// </summary>
-        /// <param name="command">전송할 명령어</param>
         public bool SendCommandToRight(string command)
         {
-            if (IsRightConnected)
-            {
-                try { _rightPort.WriteLine(command); return true; }
-                catch (Exception e) { Debug.LogError($"Right 전송 오류: {e.Message}"); return false; }
-            }
-            return false;
+            return SendCommandInternal(_rightPort, command, "Right");
         }
 
         /// <summary>
         /// 좌측 하드웨어로 제어 명령 문자열을 전송함.
         /// </summary>
-        /// <param name="command">전송할 명령어</param>
         public bool SendCommandToLeft(string command)
         {
-            if (IsLeftConnected)
-            {
-                try { _leftPort.WriteLine(command); return true; }
-                catch (Exception e) { Debug.LogError($"Left 전송 오류: {e.Message}"); return false; }
-            }
-            return false;
+            return SendCommandInternal(_leftPort, command, "Left");
         }
 
         /// <summary>
         /// 조명 하드웨어로 제어 명령 문자열을 전송함.
         /// </summary>
-        /// <param name="command">전송할 명령어</param>
         public bool SendCommandToLight(string command)
         {
-            if (IsLightConnected)
-            {
-                try { _lightPort.WriteLine(command); return true; }
-                catch (Exception e) { Debug.LogError($"Light 전송 오류: {e.Message}"); return false; }
-            }
-            return false;
+            return SendCommandInternal(_lightPort, command, "Light");
         }
 
         /// <summary>
         /// 좌/우 하드웨어 모두에 동일한 제어 명령을 전송함.
         /// </summary>
-        /// <param name="command">전송할 명령어</param>
         public bool SendCommandToBoth(string command)
         {
             bool leftResult = SendCommandToLeft(command);
