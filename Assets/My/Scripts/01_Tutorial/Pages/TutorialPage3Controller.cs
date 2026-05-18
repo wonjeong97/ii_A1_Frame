@@ -1,16 +1,18 @@
 using System;
-using System.Text;
+using Cysharp.Text; 
+using Microsoft.Extensions.Logging; 
 using My.Scripts.Core;
-using UnityEngine;
-using UnityEngine.UI;
 using My.Scripts.Global;
 using My.Scripts.Utils;
+using UnityEngine;
+using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
-    /// <summary> 튜토리얼 3페이지용 데이터 구조체 </summary>
     [Serializable]
     public class TutorialPage3Data
     {
@@ -35,30 +37,31 @@ namespace My.Scripts._01_Tutorial.Pages
         private TutorialPage3Data _data; 
 
         private const int StepsForFullRotation = 4;
-        private const float FastInputThreshold = 0.2f; 
 
         private PlayerWheelState _p1State;
         private PlayerWheelState _p2State;
+        
+        private bool _isCompleted; 
 
-        // 문자열 치환 시 발생하는 메모리 할당을 줄이기 위한 정적 버퍼.
-        private readonly static StringBuilder StringBuilder = new StringBuilder(128);
+        // --- 의존성 주입 (DI) 변수 ---
+        private SessionManager _sessionManager;
+        private new ILogger<TutorialPage3Controller> _logger;
+
+        [Inject]
+        public void Construct(SessionManager sessionManager, SoundManager soundManager, ILogger<TutorialPage3Controller> logger)
+        {
+            _sessionManager = sessionManager;
+            
+            // 주입받은 인스턴스를 부모 클래스의 protected 변수에 그대로 쏙 넣어줍니다.
+            _soundManager = soundManager; 
+            
+            _logger = logger;
+        }
 
         protected override void SetupData(TutorialPage3Data data)
         {
             _data = data;
-            if (descriptionText)
-            {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            }
-            if (nicknameA)
-            {
-                UIManager.Instance.SetText(nicknameA.gameObject, data.nicknamePlayerA);
-            }
-            if (nicknameB)
-            {
-                UIManager.Instance.SetText(nicknameB.gameObject, data.nicknamePlayerB);
-            }
-            SetupPopupMessage(data.warningMessage, data.resetMessage);
+            SetupPopupMessage(data?.warningMessage ?? string.Empty, data?.resetMessage ?? string.Empty);
         }
 
         public override object ExtractCurrentData()
@@ -73,13 +76,16 @@ namespace My.Scripts._01_Tutorial.Pages
             };
         }
 
-        /// <summary>
-        /// 활성화 시 상태 초기화 수행.
-        /// 잔여 입력으로 인한 오작동을 막기 위함.
-        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
+
+            _isCompleted = false; 
+
+            if (descriptionText && _data?.descriptionText != null && _uiManager != null)
+            {
+                _uiManager.SetText(descriptionText.gameObject, _data.descriptionText);
+            }
 
             SetupPlayerInfo();
             ResetIdleState(true);
@@ -88,38 +94,40 @@ namespace My.Scripts._01_Tutorial.Pages
             _p2State = PlayerWheelState.Default;
         }
 
-        /// <summary>
-        /// 세션 정보를 바탕으로 플레이어들의 닉네임을 UI에 반영함.
-        /// </summary>
         private void SetupPlayerInfo()
         {
-            if (!SessionManager.Instance || _data == null) return;
+            if (!_sessionManager || _data == null) return;
 
-            string nameA = SessionManager.Instance.PlayerAFirstName;
-            string nameB = SessionManager.Instance.PlayerBFirstName;
+            string nameA = _sessionManager.PlayerAFirstName;
+            string nameB = _sessionManager.PlayerBFirstName;
 
             ApplyPlayerNickname(nicknameA, _data.nicknamePlayerA, nameA, nameB);
             ApplyPlayerNickname(nicknameB, _data.nicknamePlayerB, nameA, nameB);
         }
 
-        /// <summary>
-        /// StringBuilder를 사용하여 가비지 생성 없이 텍스트 내 태그를 치환함.
-        /// </summary>
         private void ApplyPlayerNickname(Text textComp, TextSetting setting, string nameA, string nameB)
         {
-            if (!textComp) return;
-            if (setting == null || string.IsNullOrEmpty(setting.text)) return;
+            if (!textComp || setting == null || string.IsNullOrEmpty(setting.text)) return;
+            
+            if (_uiManager)
+            {
+                _uiManager.SetText(textComp.gameObject, setting);
+            }
 
-            StringBuilder.Clear();
-            StringBuilder.Append(setting.text);
-            StringBuilder.Replace("{nameA}", nameA);
-            StringBuilder.Replace("{nameB}", nameB);
+            using (Utf16ValueStringBuilder sb = ZString.CreateStringBuilder())
+            {
+                sb.Append(setting.text);
+                sb.Replace("{nameA}", nameA ?? string.Empty);
+                sb.Replace("{nameB}", nameB ?? string.Empty);
 
-            textComp.text = StringBuilder.ToString();
+                textComp.text = sb.ToString(); 
+            }
         }
 
         private void Update()
         {
+            if (_isCompleted) return;
+
             HandleWheelInput();
 
             if (Input.anyKey || Input.touchCount > 0)
@@ -132,10 +140,6 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary>
-        /// 다이얼 입력을 감지하고 유틸리티를 통해 방향을 판별함.
-        /// 중복 코드 제거를 위해 WheelInputUtility 호출.
-        /// </summary>
         private void HandleWheelInput()
         {
             int p1Key = WheelInputUtility.GetPressedKeyIndex(1, 4);
@@ -151,40 +155,26 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary>
-        /// 개별 플레이어의 입력 상태를 갱신하고 임계치 도달 여부 확인.
-        /// 방향 보정 로직을 공통화하기 위함.
-        /// </summary>
         private void ProcessPlayerInput(ref PlayerWheelState state, int currentKey, int playerNumber)
         {
-            if (state.lastKey == -1)
-            {
-                state.lastKey = currentKey;
-                return;
-            }
+            if (_isCompleted) return; 
 
-            float now = Time.time;
-            int diff = (currentKey - state.lastKey + 4) % 4;
-            int currentDir = WheelInputUtility.ResolveDirection(diff, now, ref state);
+            int previousDir = state.lastDir;
+
+            int currentDir = WheelInputUtility.ResolveDirection(currentKey, 4, ref state);
 
             if (currentDir != 0)
             {
-                state.stepCount = (currentDir == state.lastDir) ? state.stepCount + 1 : 1;
-                state.lastDir = currentDir;
-                state.lastTime = now;
+                state.stepCount = (currentDir == previousDir) ? state.stepCount + 1 : 1;
 
                 if (state.stepCount >= StepsForFullRotation)
                 {
-                    if (SoundManager.Instance)
-                    {
-                        SoundManager.Instance.PlaySFX("카메라_1");
-                    }
+                    _isCompleted = true; 
+                    
                     CompleteStep(playerNumber);
                     state.stepCount = 0;
                 }
             }
-
-            state.lastKey = currentKey;
         }
     }
 }

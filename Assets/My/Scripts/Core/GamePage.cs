@@ -1,56 +1,75 @@
-using System;
 using UnityEngine;
+using VContainer;      
+using Wonjeong.UI;  
 
 namespace My.Scripts.Core
 {
-    /// <summary> 모든 페이지 컨트롤러의 최상위 부모 </summary>
+    public interface IPageFlowListener
+    {
+        void OnPageStepComplete(GamePage page, int triggerInfo);
+    }
+
     public abstract class GamePage : MonoBehaviour
     {
-        public Action<int> onStepComplete; // 단계 완료 이벤트 (int: 트리거 정보)
-        protected CanvasGroup canvasGroup; // 투명도 조절 컴포넌트
+        private IPageFlowListener _flowListener; 
+        protected CanvasGroup canvasGroup; 
+        protected UIManager _uiManager; 
+
+        // [최적화 완료] VContainer가 상속 구조를 따라 최상위 부모인 이 메서드를 최우선 자동 실행합니다.
+        [Inject]
+        public void InjectUIManager(UIManager uiManager)
+        {
+            _uiManager = uiManager;
+        }
 
         protected virtual void Awake()
         {
-            canvasGroup = GetComponent<CanvasGroup>();
-            if (!canvasGroup) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            if (!TryGetComponent(out canvasGroup))
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
         }
 
-        /// <summary> 데이터 설정 (타입 미정) </summary>
         public abstract void SetupData(object data);
 
-        /// <summary> 진입 (활성화) </summary>
         public virtual void OnEnter() 
         { 
             gameObject.SetActive(true);
             SetAlpha(1f);
         }
 
-        /// <summary> 퇴장 (비활성화) </summary>
         public virtual void OnExit() 
         { 
             gameObject.SetActive(false); 
         }
 
-        /// <summary> 투명도 설정 </summary>
         public void SetAlpha(float alpha)
         {
             if (canvasGroup) canvasGroup.alpha = alpha;
         }
 
-        /// <summary> 완료 신호 전송 </summary>
-        protected void CompleteStep(int triggerInfo = 0)
+        public void SetFlowListener(IPageFlowListener listener)
         {
-            onStepComplete?.Invoke(triggerInfo);
+            _flowListener = listener;
         }
 
-        /// <summary> 현재 UI 상태를 데이터 객체로 반환 (JSON 저장용) </summary>
+        protected void CompleteStep(int triggerInfo = 0)
+        {
+            if (_flowListener != null)
+            {
+                _flowListener.OnPageStepComplete(this, triggerInfo);
+            }
+        }
+
         public virtual object ExtractCurrentData() => null;
+        
+        protected virtual void OnDestroy()
+        {
+        }
     }
 
-    /// <summary> 제네릭 데이터 페이지 부모 (타입 안전) </summary>
     public abstract class GamePage<T> : GamePage where T : class
     {
-        /// <summary> 타입 안전 데이터 주입 (매니저 호출용) </summary>
         public sealed override void SetupData(object data)
         {
             if (data is T typedData)
@@ -59,7 +78,6 @@ namespace My.Scripts.Core
             }
         }
 
-        /// <summary> 실제 데이터 설정 구현 (자식용) </summary>
         protected abstract void SetupData(T data);
     }
 }

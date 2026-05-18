@@ -1,16 +1,17 @@
 using System;
-using System.Collections;
-using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Cysharp.Text;
+using Microsoft.Extensions.Logging;
+using UnityEngine;
+using UnityEngine.UI;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using My.Scripts.Utils;
-using UnityEngine;
-using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
-using Wonjeong.Utils;
+using ZLogger;
 
 namespace My.Scripts._18_Ending.Pages
 {
@@ -39,20 +40,30 @@ namespace My.Scripts._18_Ending.Pages
         private const int PagePieceReward = 5; 
         private EndingPage4Data _data; 
         private bool _hasSentPieceUpdate;
+        private CancellationTokenSource _sequenceCts;
 
-        private readonly static StringBuilder StringBuilder = new StringBuilder(128);
+        // --- 의존성 주입 (DI) 변수 ---
+        private GameManager _gameManager;
+        private SessionManager _sessionManager;
+        private SoundManager _soundManager;
+        private ILogger<EndingPage4Controller> _logger;
+
+        [Inject]
+        public void Construct(
+            GameManager gameManager, 
+            SessionManager sessionManager, 
+            SoundManager soundManager, 
+            ILogger<EndingPage4Controller> logger)
+        {
+            _gameManager = gameManager;
+            _sessionManager = sessionManager;
+            _soundManager = soundManager;
+            _logger = logger;
+        }
 
         protected override void SetupData(EndingPage4Data data)
         {
             _data = data;
-            if (text1 && UIManager.Instance)
-            {
-                UIManager.Instance.SetText(text1.gameObject, data.descriptionText1);
-            }
-            if (text2 && UIManager.Instance)
-            {
-                UIManager.Instance.SetText(text2.gameObject, data.descriptionText2);
-            }
         }
 
         public override void OnEnter()
@@ -63,77 +74,88 @@ namespace My.Scripts._18_Ending.Pages
             
             if (CanSendPieceUpdate())
             {
-                GameManager.Instance.SendPieceUpdateAPI(PagePieceReward);
+                _gameManager.SendPieceUpdateAPI(PagePieceReward);
                 _hasSentPieceUpdate = true; 
             }
 
             UpdateTotalPiecesText();
-            SequenceAsync(this.GetCancellationTokenOnDestroy()).Forget();
+            
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = new CancellationTokenSource();
+
+            SequenceAsync(_sequenceCts.Token).Forget();
         }
 
-        /// <summary>
-        /// 진입 시 UI 요소들의 투명도 및 활성 상태를 초기화함.
-        /// </summary>
+        public override void OnExit()
+        {
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+
+            base.OnExit();
+        }
+
         private void ResetUIStates()
         {
+            if (text1 && _data?.descriptionText1 != null && _uiManager)
+            {
+                _uiManager.SetText(text1.gameObject, _data.descriptionText1);
+            }
+
             if (textCanvasGroup) textCanvasGroup.alpha = 0f;
             if (imageCanvasGroup) imageCanvasGroup.alpha = 1f;
             
             if (pieceImages != null)
             {
-                foreach (Image img in pieceImages)
+                for (int i = 0; i < pieceImages.Length; i++)
                 {
-                    SetImageAlpha(img, 0f);
+                    if (pieceImages[i]) pieceImages[i].SetAlpha(0f);
                 }
             }
         }
 
-        /// <summary>
-        /// API 전송이 가능한 상태인지 확인함.
-        /// </summary>
         private bool CanSendPieceUpdate()
         {
-            return GameManager.Instance && SessionManager.Instance && 
-                   SessionManager.Instance.CurrentUserId != 0 && !_hasSentPieceUpdate;
+            return _gameManager && _sessionManager && 
+                   _sessionManager.CurrentUserId != 0 && !_hasSentPieceUpdate;
         }
 
-        /// <summary>
-        /// StringBuilder를 사용하여 가비지 생성 없이 최종 조각 개수를 UI에 반영함.
-        /// </summary>
         private void UpdateTotalPiecesText()
         {
             if (!text2 || _data?.descriptionText2 == null) return;
-            if (!GameManager.Instance || !SessionManager.Instance) return;
+            if (!_gameManager || !_sessionManager) return;
+            if (_uiManager) _uiManager.SetText(text2.gameObject, _data.descriptionText2);
             
-            int existingPieces = SessionManager.Instance.TotalPieces;
+            int existingPieces = _sessionManager.TotalPieces;
             int pendingReward = _hasSentPieceUpdate ? PagePieceReward : 0;
             int totalPieces = existingPieces + pendingReward;
 
             string template = _data.descriptionText2.text;
             if (string.IsNullOrEmpty(template)) return;
 
-            StringBuilder.Clear();
-            StringBuilder.Append(template);
-            StringBuilder.Replace("{0}", totalPieces.ToString());
-
-            text2.text = StringBuilder.ToString();
+            text2.text = ZString.Format(template, totalPieces);
         }
 
         private async UniTaskVoid SequenceAsync(CancellationToken token)
         {
-            await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
-            await PlayPieceAnimationsAsync(token);
-            
-            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
-            await ShowResultTextAsync(token);
+            try
+            {
+                await UniTask.Delay(500, ignoreTimeScale: true, cancellationToken: token);
+                await PlayPieceAnimationsAsync(token);
+                
+                await UniTask.Delay(2000, ignoreTimeScale: true, cancellationToken: token);
+                await ShowResultTextAsync(token);
 
-            await UniTask.Delay(TimeSpan.FromSeconds(3.0), cancellationToken: token);
-            CompleteStep();
+                await UniTask.Delay(3000, ignoreTimeScale: true, cancellationToken: token);
+                CompleteStep();
+            }
+            catch (OperationCanceledException)
+            {
+                // 취소 예외 무음 억제
+            }
         }
 
-        /// <summary>
-        /// 할당된 조각 이미지들을 순차적으로 페이드인함.
-        /// </summary>
         private async UniTask PlayPieceAnimationsAsync(CancellationToken token)
         {
             if (pieceImages == null || pieceImages.Length == 0)
@@ -142,50 +164,37 @@ namespace My.Scripts._18_Ending.Pages
                 return;
             }
 
-            foreach (Image pieceImg in pieceImages)
+            for (int i = 0; i < pieceImages.Length; i++)
             {
-                if (!pieceImg)
-                {
-                    continue;
-                }
+                if (!pieceImages[i]) continue;
 
                 PlayRewardSFX();
-                await UIFadeUtility.FadeGraphicAsync(pieceImg, 0f, 1f, 0.8f, token);
+                await pieceImages[i].FadeAsync(0f, 1f, 0.8f, token);
             }
         }
 
-        /// <summary>
-        /// 보상 획득 시 사용되는 공통 효과음을 재생함.
-        /// </summary>
         private void PlayRewardSFX()
         {
-            if (SoundManager.Instance)
+            if (_soundManager)
             {
-                SoundManager.Instance.PlaySFX("공통_6");
+                _soundManager.PlaySFX("공통_6");
             }
         }
 
-        /// <summary>
-        /// 결과 텍스트 그룹을 화면에 노출함.
-        /// </summary>
         private async UniTask ShowResultTextAsync(CancellationToken token)
         {
-            if (!textCanvasGroup)
-            {
-                return;
-            }
+            if (!textCanvasGroup) return;
 
-            await UIFadeUtility.FadeCanvasGroupAsync(textCanvasGroup, 0f, 1f, 0.5f, token);
+            await textCanvasGroup.FadeAsync(0f, 1f, 0.5f, token);
         }
 
-        private void SetImageAlpha(Image img, float a)
+        protected override void OnDestroy()
         {
-            if (img)
-            {
-                Color c = img.color;
-                c.a = a;
-                img.color = c;
-            }
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+
+            base.OnDestroy();
         }
     }
 }

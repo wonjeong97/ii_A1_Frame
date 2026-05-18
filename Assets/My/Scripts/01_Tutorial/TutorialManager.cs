@@ -1,18 +1,20 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using My.Scripts._01_Tutorial.Pages;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
 using Wonjeong.Utils;
+using ZLogger;
 
 namespace My.Scripts._01_Tutorial
 {
-    /// <summary> JSON 파싱용 튜토리얼 전체 설정 데이터 컨테이너 </summary>
     [Serializable]
     public class TutorialSetting
     {
@@ -25,38 +27,86 @@ namespace My.Scripts._01_Tutorial
         public TutorialPage7Data page7;
     }
 
-    /// <summary>
-    /// 튜토리얼 씬의 전반적인 페이지 흐름(1~7)을 제어하고 데이터를 분배하는 매니저입니다.
-    /// </summary>
     public class TutorialManager : BaseFlowManager
     {
+        // --- 의존성 주입 (DI) 변수 ---
+        private IObjectResolver _resolver; // [추가] 수동 주입을 위한 리졸버
+        private GameManager _gameManager;
+        private SessionManager _sessionManager;
+        private FadeManager _fadeManager;
+        private ILogger<TutorialManager> _logger;
+
+        [Inject]
+        public void ConstructTutorial(
+            IObjectResolver resolver, // [추가] VContainer로부터 주입 권한 수령
+            GameManager gameManager, 
+            SessionManager sessionManager, 
+            FadeManager fadeManager,
+            ILogger<TutorialManager> logger)
+        {
+            _resolver = resolver;
+            _gameManager = gameManager;
+            _sessionManager = sessionManager;
+            _fadeManager = fadeManager;
+            _logger = logger;
+        }
+
+        // BaseFlowManager의 InitializePages를 오버라이드하여 
+        // 매니저가 직접 배열에 있는 모든 비활성 페이지들에 의존성(_uiManager 등)을 강제로 꽂아넣습니다.
+        protected override void InitializePages()
+        {
+            if (_resolver != null)
+            {
+                foreach (GamePage page in pages)
+                {
+                    if (page)
+                    {
+                        _resolver.Inject(page); // _uiManager 등 모든 의존성이 완벽하게 채워짐
+                    }
+                }
+                if (_logger != null) _logger.ZLogInformation($"[TutorialManager] 하위 UI 페이지들에 의존성 강제 주입 완료.");
+            }
+            else
+            {
+                Debug.LogError("[TutorialManager] IObjectResolver가 없습니다. 씬에 TutorialLifetimeScope가 있는지 확인하세요!");
+            }
+
+            base.InitializePages();
+        }
+
         protected override void Start()
         {
             base.Start();
-            if (GameManager.Instance)
-                GameManager.Instance.OnInspectorClosed += SaveCurrentSettings;
             
-            if (SessionManager.Instance)
-                SessionManager.Instance.OnLanguageChanged += HandleLanguageChanged;
+            if (_sessionManager != null)
+                _sessionManager.OnLanguageChanged += HandleLanguageChanged;
         }
 
         protected override void OnDestroy()
         {   
+            if (_sessionManager != null)
+                _sessionManager.OnLanguageChanged -= HandleLanguageChanged;
+
             base.OnDestroy();
-            if (GameManager.Instance)
-                GameManager.Instance.OnInspectorClosed -= SaveCurrentSettings;
-            
-            if (SessionManager.Instance)
-                SessionManager.Instance.OnLanguageChanged -= HandleLanguageChanged;
         }
         
         private void HandleLanguageChanged(string newLanguage)
         {
-            Debug.Log($"[TutorialManager] 언어 변경 감지됨: {newLanguage}. JSON 설정을 다시 로드합니다.");
-            LoadSettings(); // 변경된 언어 경로의 JSON으로 재로드 및 각 페이지 SetupData 재실행
+            _logger?.ZLogInformation($"[TutorialManager] 언어 변경 감지됨: {newLanguage}. JSON 설정을 다시 로드합니다.");
+            
+            LoadSettings(); 
+
+            if (currentPageIndex >= 0 && currentPageIndex < pages.Length)
+            {
+                GamePage currentPage = pages[currentPageIndex];
+                if (currentPage && currentPage.gameObject.activeSelf)
+                {
+                    currentPage.OnEnter();
+                }
+            }
         }
 
-        private void SaveCurrentSettings()
+        public void SaveCurrentSettings()
         {
             TutorialSetting setting = new TutorialSetting
             {
@@ -68,81 +118,72 @@ namespace My.Scripts._01_Tutorial
                 page6 = pages.Length > 5 && pages[5] ? pages[5].ExtractCurrentData() as TutorialPage6Data : null,
                 page7 = pages.Length > 6 && pages[6] ? pages[6].ExtractCurrentData() as TutorialPage7Data : null,
             };
-            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial);
-            JsonLoader.Save(setting, path);
+            
+            string lang = _sessionManager != null ? _sessionManager.CurrentLanguage : "ko";
+            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial, lang);
+            
+            JsonLoader.SaveAsync(path, setting).Forget();
         }
 
-        /// <summary>
-        /// JSON 설정 파일을 로드하여 각 튜토리얼 페이지에 데이터를 주입함.
-        /// 데이터를 배열로 래핑하여 루프로 처리함으로써 코드 중복을 제거함.
-        /// </summary>
         protected override void LoadSettings()
         {
-            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial);
+            string lang = _sessionManager ? _sessionManager.CurrentLanguage : "ko";
+            string path = GameConstants.Path.GetLocalizedPath(GameConstants.Path.Tutorial, lang);
             TutorialSetting setting = JsonLoader.Load<TutorialSetting>(path);
 
             if (setting == null)
             {
-                Debug.LogError("[TutorialManager] JSON 데이터 로드 실패. 경로: " + path);
+                _logger?.ZLogError($"[TutorialManager] JSON 데이터 로드 실패. 경로: {path}");
                 return;
             }
 
-            // 개별 필드로 구성된 페이지 데이터를 배열로 묶어 반복 처리가 가능하도록 함.
-            object[] pageDataArray = new object[]
+            AssignPageDataDirect(setting);
+        }
+
+        private void AssignPageDataDirect(TutorialSetting setting)
+        {
+            if (pages == null || pages.Length == 0) return;
+
+            TrySetupPage(0, setting.page1);
+            TrySetupPage(1, setting.page2);
+            TrySetupPage(2, setting.page3);
+            TrySetupPage(3, setting.page4);
+            TrySetupPage(4, setting.page5);
+            TrySetupPage(5, setting.page6);
+            TrySetupPage(6, setting.page7);
+        }
+
+        private void TrySetupPage(int index, object pageData)
+        {
+            if (index >= pages.Length) return;
+
+            if (pages[index] && pageData != null)
             {
-                setting.page1, setting.page2, setting.page3,
-                setting.page4, setting.page5, setting.page6, setting.page7
-            };
-
-            // 할당된 페이지 수와 데이터 구조체의 필드 수 중 작은 값을 기준으로 순회함.
-            int maxCount = Mathf.Min(pages.Length, pageDataArray.Length);
-
-            for (int i = 0; i < maxCount; i++)
-            {
-                GamePage page = pages[i];
-                object data = pageDataArray[i];
-
-                if (page)
-                {
-                    if (data != null)
-                    {
-                        page.SetupData(data);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[TutorialManager] " + (i + 1) + "번 페이지 데이터가 JSON에 누락됨.");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("[TutorialManager] " + i + "번 인덱스의 페이지 컴포넌트가 인스펙터에서 누락됨.");
-                }
+                pages[index].SetupData(pageData);
             }
         }
 
-        /// <summary> 모든 튜토리얼 과정이 완료되면 본 게임(PlayTutorial) 씬으로 부드럽게 전환합니다. </summary>
         protected override void OnAllFinished()
         {
-            if (FadeManager.Instance)
+            if (_fadeManager)
             {
-                if (GameManager.Instance)
+                if (_gameManager)
                 {
-                    GameManager.Instance.ChangeScene(GameConstants.Scene.PlayTutorial);
+                    _gameManager.ChangeScene(GameConstants.Scene.PlayTutorial);
                 }
                 else
                 {
-                    Debug.LogWarning("GameManager Missing. Force loading.");
+                    _logger?.ZLogWarning($"[TutorialManager] GameManager Missing. Force loading.");
                     SceneLoader.LoadAsync(GameConstants.Scene.PlayTutorial).Forget();
                 }
             }
             else
             {
-                Debug.LogWarning("FadeManager Missing. Force loading.");
+                _logger?.ZLogWarning($"[TutorialManager] FadeManager Missing. Force loading.");
                 SceneLoader.LoadAsync(GameConstants.Scene.PlayTutorial).Forget();
             }
         }
 
-        /// <summary> 현재 페이지를 페이드아웃하고 다음 페이지를 페이드인하는 시각적 전환 연출을 수행합니다. </summary>
         protected override async UniTaskVoid TransitionAsync(int targetIndex, int info, CancellationToken token)
         {
             isTransitioning = true;
@@ -150,11 +191,8 @@ namespace My.Scripts._01_Tutorial
             {
                 GamePage current = (currentPageIndex >= 0 && currentPageIndex < pages.Length) ? pages[currentPageIndex] : null;
                 
-                if (targetIndex < 0 || targetIndex >= pages.Length)
-                {
-                    Debug.LogWarning($"[TutorialManager] Invalid targetIndex: {targetIndex}");
-                    return;
-                }
+                if (targetIndex < 0 || targetIndex >= pages.Length) return;
+                
                 GamePage next = pages[targetIndex];
 
                 if (current)
@@ -187,12 +225,10 @@ namespace My.Scripts._01_Tutorial
             }
         }
 
-        /// <summary> 이전 페이지의 특정 조작 결과(info)를 다음 페이지의 초기 상태에 반영합니다. </summary>
         private void HandleTriggerInfo(GamePage page, int triggerInfo)
         {
             if (triggerInfo == 0) return;
 
-            // 공용 인터페이스를 통해 강한 결합도(Coupling) 없이 안전하게 트리거 전달
             if (page is ITriggerReceiver receiver)
             {
                 receiver.ReceiveTrigger(triggerInfo);
@@ -200,19 +236,14 @@ namespace My.Scripts._01_Tutorial
         }
     }
 
-    /// <summary> 튜토리얼 페이지 컨트롤러가 UI 컴포넌트에서 TextSetting을 추출할 때 사용하는 공용 헬퍼 </summary>
     public static class TutorialPageUtils
     {
-        /// <summary>
-        /// Text 컴포넌트와 RectTransform의 현재 런타임 값을 읽어 TextSetting을 구성한다.
-        /// fontName, isBold처럼 역추적이 불가한 필드는 original에서 그대로 유지한다.
-        /// overrideText를 지정하면 text 필드를 컴포넌트 값 대신 해당 값으로 고정한다
-        /// ({nameA} 등 템플릿 변수가 런타임에 치환된 경우 원본 템플릿 보존용).
-        /// </summary>
         public static TextSetting BuildTextSetting(Text txt, TextSetting original, string overrideText = null)
         {
             if (txt == null) return original;
-            RectTransform rt = txt.GetComponent<RectTransform>();
+            
+            RectTransform rt = txt.rectTransform;
+            
             return new TextSetting
             {
                 name      = original?.name ?? txt.gameObject.name,

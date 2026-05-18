@@ -1,20 +1,21 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Threading;
+using Cysharp.Text;
 using Cysharp.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using My.Scripts.Core;
 using My.Scripts.Global;
 using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
+using VContainer;
 using Wonjeong.Data;
-using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts._18_Ending.Pages
 {
-    /// <summary> 엔딩 3페이지용 데이터 구조체 </summary>
     [Serializable]
     public class EndingPage3Data
     {
@@ -24,9 +25,8 @@ namespace My.Scripts._18_Ending.Pages
     /// <summary> 
     /// 엔딩 3페이지 컨트롤러.
     /// 녹화된 '리얼타임' 영상을 재생하며 15초 카운트다운을 시각적으로 동기화합니다.
-    /// 영상이 15초보다 짧을 경우 반복 재생하여 연출 시간을 유지합니다.
     /// </summary>
-   public class EndingPage3Controller : GamePage<EndingPage3Data>
+    public class EndingPage3Controller : GamePage<EndingPage3Data>
     {
         [Header("UI References")]
         [SerializeField] private RawImage videoDisplay; 
@@ -34,14 +34,27 @@ namespace My.Scripts._18_Ending.Pages
         [SerializeField] private Text descriptionText; 
         
         private const float FixedDuration = 15f; 
-        private readonly static StringBuilder TimerBuilder = new StringBuilder(16);
         private CancellationTokenSource _presentationCts;
+
+        private int _lastSeconds = -1;
+        private int _lastMilliseconds = -1;
+
+        // --- 의존성 주입 (DI) 변수 ---
+        private SessionManager _sessionManager;
+        private ILogger<EndingPage3Controller> _logger;
+
+        [Inject]
+        public void Construct(SessionManager sessionManager, ILogger<EndingPage3Controller> logger)
+        {
+            _sessionManager = sessionManager;
+            _logger = logger;
+        }
 
         protected override void SetupData(EndingPage3Data data)
         {
-            if (descriptionText && data.descriptionText != null)
+            if (descriptionText && data?.descriptionText != null && _uiManager != null)
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
+                _uiManager.SetText(descriptionText.gameObject, data.descriptionText);
                 descriptionText.text = "00:00";
             }
         }
@@ -49,18 +62,16 @@ namespace My.Scripts._18_Ending.Pages
         public override void OnEnter()
         {
             base.OnEnter();
-            UIFadeUtility.SetAlpha(videoDisplay, 0f);
             
-            if (descriptionText) 
-            {
-                Color c = descriptionText.color;
-                c.a = 0f;
-                descriptionText.color = c;
-            }
+            _lastSeconds = -1;
+            _lastMilliseconds = -1;
+
+            if (videoDisplay) videoDisplay.SetAlpha(0f);
+            if (descriptionText) descriptionText.SetAlpha(0f);
             
             _presentationCts?.Cancel();
             _presentationCts?.Dispose();
-            _presentationCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _presentationCts = new CancellationTokenSource();
 
             PresentationAsync(_presentationCts.Token).Forget();
         }
@@ -70,55 +81,92 @@ namespace My.Scripts._18_Ending.Pages
             _presentationCts?.Cancel();
             _presentationCts?.Dispose();
             _presentationCts = null;
+
+            if (videoPlayer && videoPlayer.isPlaying)
+            {
+                videoPlayer.Stop();
+            }
+
             base.OnExit();
         }
 
         /// <summary>
-        /// 영상 준비부터 재생, 타이머 업데이트 및 퇴장 연출까지의 전체 시퀀스를 제어함.
+        /// 세부 구현을 헬퍼 메서드로 위임하여, 메인 연출 흐름이 목차처럼 직관적으로 읽히게 구성함.
         /// </summary>
-    private async UniTaskVoid PresentationAsync(CancellationToken token)
+        private async UniTaskVoid PresentationAsync(CancellationToken token)
         {
-            if (!videoPlayer || !videoDisplay)
+            try
             {
-                CompleteStep();
-                return;
+                // 1. 영상 준비 및 파일 검증
+                bool isReady = await TryInitializeVideoAsync(token);
+                if (!isReady)
+                {
+                    CompleteStep();
+                    return;
+                }
+
+                // 2. 영상 재생 및 등장 연출 시작
+                StartVideoPlayback(token);
+
+                // 3. 타이머 연출 대기
+                await RunDisplayTimerAsync(token);
+
+                // 4. 영상 종료 및 퇴장 연출
+                await FinishPresentationAsync(token);
             }
+            catch (OperationCanceledException)
+            {
+                // 취소 시 에디터 콘솔 에러 방어
+            }
+        }
+
+        private async UniTask<bool> TryInitializeVideoAsync(CancellationToken token)
+        {
+            if (!videoPlayer || !videoDisplay) return false;
 
             string filePath = GetVideoPath();
             if (!File.Exists(filePath))
             {
-                Debug.LogError($"[EndingPage3] 영상 누락: {filePath}");
-                CompleteStep();
-                return;
+                _logger?.ZLogError($"[EndingPage3] 영상 누락: {filePath}");
+                return false;
             }
 
             try
             {
                 await PrepareVideoAsync(filePath, token);
+                return true;
             }
-            catch (Exception e)
+            catch (TimeoutException)
             {
-                Debug.LogWarning($"[EndingPage3] 비디오 준비 예외 발생: {e.Message}");
-                CompleteStep();
-                return;
+                _logger?.ZLogWarning($"[EndingPage3] 비디오 준비 타임아웃 발생");
+                return false;
             }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                _logger?.ZLogWarning($"[EndingPage3] 비디오 준비 예외 발생: {0}", e.Message);
+                return false;
+            }
+        }
 
+        private void StartVideoPlayback(CancellationToken token)
+        {
             videoPlayer.isLooping = true;
             videoDisplay.texture = videoPlayer.texture;
             videoPlayer.Play();
 
-            // 등장 연출
-            UIFadeUtility.FadeGraphicAsync(videoDisplay, 0f, 1f, 1f, token).Forget();
-            UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, 1f, token).Forget();
+            if (videoDisplay) videoDisplay.FadeAsync(0f, 1f, 1f, token).Forget();
+            if (descriptionText) descriptionText.FadeAsync(0f, 1f, 1f, token).Forget();
+        }
 
-            await RunDisplayTimerAsync(token);
+        private async UniTask FinishPresentationAsync(CancellationToken token)
+        {
+            if (videoPlayer && videoPlayer.isPlaying) videoPlayer.Pause();
+            
+            await UniTask.Delay(1500, ignoreTimeScale: true, cancellationToken: token);
 
-            if (videoPlayer.isPlaying) videoPlayer.Pause();
-            await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
-
-            // 퇴장 연출
-            var f1 = UIFadeUtility.FadeGraphicAsync(videoDisplay, 1f, 0f, 1f, token);
-            var f2 = UIFadeUtility.FadeGraphicAsync(descriptionText, 1f, 0f, 1f, token);
+            UniTask f1 = videoDisplay ? videoDisplay.FadeAsync(1f, 0f, 1f, token) : UniTask.CompletedTask;
+            UniTask f2 = descriptionText ? descriptionText.FadeAsync(1f, 0f, 1f, token) : UniTask.CompletedTask;
+            
             await UniTask.WhenAll(f1, f2);
 
             CompleteStep();
@@ -130,10 +178,16 @@ namespace My.Scripts._18_Ending.Pages
             videoPlayer.url = new Uri(path).AbsoluteUri;
             videoPlayer.Prepare();
             
-            using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token))
+            bool isTimeout = await UniTask.WaitUntil(
+                videoPlayer,                                 // 1. 상태(State)로 videoPlayer를 직접 넘겨줌
+                vp => vp.isPrepared && vp.texture,        // 2. 외부 변수 대신 매개변수 vp를 받아서 검사함
+                PlayerLoopTiming.Update, 
+                token
+            ).TimeoutWithoutException(TimeSpan.FromSeconds(10));
+
+            if (isTimeout)
             {
-                timeoutCts.CancelAfterSlim(TimeSpan.FromSeconds(10));
-                await UniTask.WaitUntil(videoPlayer, v => v.isPrepared && v.texture, PlayerLoopTiming.Update, timeoutCts.Token);
+                throw new TimeoutException("Video preparation timed out.");
             }
         }
 
@@ -142,7 +196,7 @@ namespace My.Scripts._18_Ending.Pages
             float currentTimer = 0f;
             while (currentTimer < FixedDuration)
             {
-                currentTimer += Time.deltaTime;
+                currentTimer += Time.unscaledDeltaTime;
                 UpdateTimerUI(Mathf.Min(currentTimer, FixedDuration));
                 await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
@@ -156,17 +210,33 @@ namespace My.Scripts._18_Ending.Pages
             int seconds = Mathf.FloorToInt(time);
             int milliseconds = Mathf.FloorToInt((time * 100) % 100);
 
-            TimerBuilder.Clear();
-            TimerBuilder.Append(seconds.ToString("D2")).Append(":").Append(milliseconds.ToString("D2"));
-            descriptionText.text = TimerBuilder.ToString();
+            if (_lastSeconds == seconds && _lastMilliseconds == milliseconds) return;
+
+            _lastSeconds = seconds;
+            _lastMilliseconds = milliseconds;
+
+            descriptionText.text = ZString.Format("{0:D2}:{1:D2}", seconds, milliseconds);
         }
 
         private string GetVideoPath()
         {   
             string root = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            string userIdStr = (SessionManager.Instance) ? SessionManager.Instance.CurrentUserId.ToString() : "0";
-            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, $"{userIdStr}_Realtime.mp4");
+            
+            string userIdStr = (_sessionManager && _sessionManager.CurrentUserId != 0) 
+                ? _sessionManager.CurrentUserId.ToString() 
+                : "0";
+                
+            return Path.Combine(root, "Timelapse", "Realtime_Video", dateFolder, ZString.Format("{0}_Realtime.mp4", userIdStr));
+        }
+
+        protected override void OnDestroy()
+        {
+            _presentationCts?.Cancel();
+            _presentationCts?.Dispose();
+            _presentationCts = null;
+
+            base.OnDestroy();
         }
     }
 }
