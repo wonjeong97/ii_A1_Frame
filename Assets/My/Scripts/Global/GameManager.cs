@@ -100,7 +100,7 @@ namespace My.Scripts.Global
         protected override async UniTaskVoid LoadSettingsAsync()
         {
             // 1. 부모의 셋팅 템플릿 로드 결합 (ZString 활용 및 상수화)
-            string settingPath = ZString.Format("{0}.json", GameConstants.Path.JsonSetting);
+            string settingPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.JsonSetting);
             settings = await JsonLoader.LoadAsync<Settings>(settingPath, this.GetCancellationTokenOnDestroy());
             
             if (settings == null)

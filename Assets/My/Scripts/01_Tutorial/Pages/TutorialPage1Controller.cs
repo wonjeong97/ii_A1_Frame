@@ -47,9 +47,7 @@ namespace My.Scripts._01_Tutorial.Pages
         private bool _isFetchingData;
 
         // --- 의존성 주입 (DI) 변수 ---
-        private new GameManager _gameManager;
         private SessionManager _sessionManager;
-        private new ILogger<TutorialPage1Controller> _logger;
 
         [Inject]
         public void Construct(GameManager gameManager, SessionManager sessionManager, ILogger<TutorialPage1Controller> logger)

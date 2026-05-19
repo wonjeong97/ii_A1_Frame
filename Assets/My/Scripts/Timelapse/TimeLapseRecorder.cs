@@ -454,7 +454,7 @@ namespace My.Scripts.Timelapse
             }
             catch (Exception e)
             {
-                _logger.ZLogError(e, $"TimeLapseRecorder: 파일 쓰기 중 예외 발생 - {e.Message}");
+                _logger?.ZLogError(e, $"TimeLapseRecorder: 파일 쓰기 중 예외 발생 - {e.Message}");
             }
             finally
             {
@@ -472,13 +472,11 @@ namespace My.Scripts.Timelapse
 
         public void ConvertToVideo()
         {
-            if (IsTimelapseProcessing) return;
+            if (IsProcessing) return;
 
             IsTimelapseProcessing = true;
 
-            float fps = (_globalFrameIndex > 0 && timelapseDuration > 0)
-                ? _globalFrameIndex / timelapseDuration
-                : 30f;
+            float fps = (_globalFrameIndex > 0 && timelapseDuration > 0) ? _globalFrameIndex / timelapseDuration : 30f;
 
             string fileName = ZString.Format("{0}_Timelapse", GetUserIdString());
             ConversionSequence(_sourceImageFolderPath, _outputVideoFolderPath, fileName, fps, false, this.GetCancellationTokenOnDestroy()).Forget();
@@ -486,14 +484,12 @@ namespace My.Scripts.Timelapse
 
         public void ConvertToRealtimeVideo()
         {
-            if (IsRealtimeProcessing) return;
+            if (IsProcessing) return;
 
             IsRealtimeProcessing = true;
             RealtimeProgress = 0f;
 
-            float fps = (_realtimeFrameIndex > 0 && realtimeDuration > 0)
-                ? _realtimeFrameIndex / realtimeDuration
-                : 30f;
+            float fps = (_realtimeFrameIndex > 0 && realtimeDuration > 0) ? _realtimeFrameIndex / realtimeDuration : 30f;
 
             string fileName = ZString.Format("{0}_Realtime", GetUserIdString());
             ConversionSequence(_realtimeSourcePath, _realtimeVideoPath, fileName, fps, true, this.GetCancellationTokenOnDestroy()).Forget();

@@ -70,8 +70,7 @@ namespace My.Scripts.Core.Data
         /// <summary> 일반 레벨 데이터를 JSON에서 로드하고 병합함. </summary>
         public StandardLevelSetting LoadStandardLevel(string levelID, UserType levelType)
         {
-            string lang = _sessionManager != null ? _sessionManager.CurrentLanguage : "ko";
-
+            string lang = string.IsNullOrWhiteSpace(_sessionManager?.CurrentLanguage) ? "ko" : _sessionManager.CurrentLanguage.Trim();
             string commonPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.PlayCommon, lang);
             StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>(commonPath);
 
@@ -103,8 +102,7 @@ namespace My.Scripts.Core.Data
         public TutorialLevelSetting LoadTutorialLevel()
         {
             // 세션 매니저로부터 현재 국가 코드를 실시간 추출하여 적용
-            string lang = _sessionManager != null ? _sessionManager.CurrentLanguage : "ko";
-
+            string lang = string.IsNullOrWhiteSpace(_sessionManager?.CurrentLanguage) ? "ko" : _sessionManager.CurrentLanguage.Trim();
             string commonPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.PlayCommon, lang);
             StandardLevelSetting commonData = JsonLoader.Load<StandardLevelSetting>(commonPath);
 

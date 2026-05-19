@@ -88,11 +88,11 @@ namespace My.Scripts.Hardware
 
             if (Config == null)
             {
-                _logger.ZLogError($"{huePath}.json 파일을 찾을 수 없음.");
+                _logger?.ZLogError($"{huePath}.json 파일을 찾을 수 없음.");
                 return;
             }
 
-            _logger.ZLogInformation($"휴 설정 로드 완료 (IP: {Config.bridgeIp})");
+            _logger?.ZLogInformation($"휴 설정 로드 완료 (IP: {Config.bridgeIp})");
             _cachedBaseUrl = ZString.Format("http://{0}/api/{1}/lights", Config.bridgeIp, Config.apiKey);
             
             EnsureLightIdsFetchedAsync(this.GetCancellationTokenOnDestroy()).Forget();

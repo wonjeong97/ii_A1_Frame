@@ -82,19 +82,21 @@ namespace My.Scripts.Core.Pages
             string nameA = string.IsNullOrWhiteSpace(_sessionManager.PlayerAFirstName) ? "PlayerA" : _sessionManager.PlayerAFirstName;
             string nameB = string.IsNullOrWhiteSpace(_sessionManager.PlayerBFirstName) ? "PlayerB" : _sessionManager.PlayerBFirstName;
 
+            string formattedText;
             using (Utf16ValueStringBuilder sb = ZString.CreateStringBuilder())
             {
                 sb.Append(setting.text);
                 sb.Replace("{nameA}", nameA);
                 sb.Replace("{nameB}", nameB);
 
-                setting.text = sb.ToString();
+                formattedText = sb.ToString();
             }
     
             if (_uiManager)
             {
                 _uiManager.SetText(uiText.gameObject, setting);
             }
+            uiText.text = formattedText;
         }
 
         public override void OnEnter()

@@ -53,6 +53,11 @@ namespace My.Scripts.Utils
         /// <returns>회전 방향 (-1: 역회전, 0: 무효/정지, 1: 정회전)</returns>
         public static int ResolveDirection(int currentKey, int totalSteps, ref PlayerWheelState state)
         {
+            if (totalSteps <= 1)
+            {
+                return 0;
+            }
+            
             // 최초 입력인 경우 기준점만 잡고 회전(방향)은 무시
             if (state.lastKey == -1)
             {

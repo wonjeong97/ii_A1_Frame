@@ -1,3 +1,4 @@
+using System;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
@@ -32,15 +33,25 @@ namespace My.Scripts.App
             base.Configure(builder);
 
             // 2. 핵심 매니저를 컨테이너에 등록 (싱글톤 수명)
-            if (gameManager) builder.RegisterComponent(gameManager);
-            if (sessionManager) builder.RegisterComponent(sessionManager);
-            if (arduinoManager) builder.RegisterComponent(arduinoManager);
-            if (hueManager) builder.RegisterComponent(hueManager);
-            if (timeLapseRecorder) builder.RegisterComponent(timeLapseRecorder);
-            if (soundManager) builder.RegisterComponent(soundManager);
-            if (fadeManager) builder.RegisterComponent(fadeManager);
-            if (uiManager) builder.RegisterComponent(uiManager);
-            if (videoManager) builder.RegisterComponent(videoManager);
+            if (!gameManager) throw new InvalidOperationException("GameLifetimeScope.gameManager is required.");
+            if (!sessionManager) throw new InvalidOperationException("GameLifetimeScope.sessionManager is required.");
+            if (!arduinoManager) throw new InvalidOperationException("GameLifetimeScope.arduinoManager is required.");
+            if (!hueManager) throw new InvalidOperationException("GameLifetimeScope.hueManager is required.");
+            if (!timeLapseRecorder) throw new InvalidOperationException("GameLifetimeScope.timeLapseRecorder is required.");
+            if (!soundManager) throw new InvalidOperationException("GameLifetimeScope.soundManager is required.");
+            if (!fadeManager) throw new InvalidOperationException("GameLifetimeScope.fadeManager is required.");
+            if (!uiManager) throw new InvalidOperationException("GameLifetimeScope.uiManager is required.");
+            if (!videoManager) throw new InvalidOperationException("GameLifetimeScope.videoManager is required.");
+            
+            builder.RegisterComponent(gameManager);
+            builder.RegisterComponent(sessionManager);
+            builder.RegisterComponent(arduinoManager);
+            builder.RegisterComponent(hueManager);
+            builder.RegisterComponent(timeLapseRecorder);
+            builder.RegisterComponent(soundManager);
+            builder.RegisterComponent(fadeManager);
+            builder.RegisterComponent(uiManager);
+            builder.RegisterComponent(videoManager);
         }
     }
 }

@@ -39,6 +39,7 @@ namespace My.Scripts.Core
 
         private bool _isTutorialMode; 
         private int _currentQuestionNumber;
+        private bool _settingsLoaded;
         
         public int CurrentQuestionNumber => _currentQuestionNumber;
         
@@ -94,10 +95,19 @@ namespace My.Scripts.Core
                 }
             }
 
-            base.Start();
+            LoadSettings();
+            if (!_settingsLoaded) return;
+
+            if (pages == null || pages.Length == 0)
+            {
+                Debug.LogWarning("[BaseFlowManager] pages 비어있음");
+                return;
+            }
+            InitializePages();
+            StartFlow();
         }
         
-        protected override void OnDestroy() 
+        protected override void OnDestroy()
         { 
             base.OnDestroy();
             if (Instance == this) Instance = null; 
@@ -110,19 +120,23 @@ namespace My.Scripts.Core
 
             if (_isTutorialMode)
             {
-                LoadTutorialSettings();
+                _settingsLoaded = LoadTutorialSettings();
             }
             else
             {
-                LoadStandardSettings();
+                _settingsLoaded = LoadStandardSettings();
             }
         }
         
-        private void LoadTutorialSettings()
+        private bool LoadTutorialSettings()
         {
             // [에러 해결] 정적 호출을 지우고 주입받은 _levelDataLoader 인스턴스 필드를 통해 호출합니다.
             TutorialLevelSetting tSetting = _levelDataLoader.LoadTutorialLevel();
-            if (tSetting == null) return;
+            if (tSetting == null)
+            {
+                Debug.LogError("[LevelManager] _levelDataLoader.LoadTutorialLevel() returned null.");
+                return false;
+            }
 
             string nameA = GetPlayerNameOrDefault(true);
             string nameB = GetPlayerNameOrDefault(false);
@@ -140,15 +154,21 @@ namespace My.Scripts.Core
             SetupPageData(2, tSetting.Page4);
             SetupPageData(3, tSetting.Page7); 
             SetupPageData(4, tSetting.Page8); 
+            
+            return true;
         }
         
-        private void LoadStandardSettings()
+        private bool LoadStandardSettings()
         {
             UserType uType = HasActiveSession ? _sessionManager.CurrentUserType : levelType;
             // [에러 해결] 정적 호출을 지우고 주입받은 _levelDataLoader 인스턴스 필드를 통해 호출합니다.
             StandardLevelSetting sSetting = _levelDataLoader.LoadStandardLevel(levelID, uType);
             
-            if (sSetting == null) return;
+            if (sSetting == null)
+            {
+                Debug.LogError("[LevelManager] _levelDataLoader.LoadStandardLevel() returned null.");
+                return false;
+            }
 
             string nameA = GetPlayerNameOrDefault(true);
             string nameB = GetPlayerNameOrDefault(false);
@@ -168,6 +188,8 @@ namespace My.Scripts.Core
             {
                 _hueManager.InitRandomColors();
             }
+            
+            return true;
         }
         
         private void PrepareCameraPage(bool save)
@@ -470,7 +492,7 @@ namespace My.Scripts.Core
             
             if (_fadeManager) 
             {
-                _fadeManager.FadeInAsync(0.25f, token).Forget();
+                await _fadeManager.FadeInAsync(0.25f, token);
             }
         }
 

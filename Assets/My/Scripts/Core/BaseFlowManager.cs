@@ -79,7 +79,7 @@ namespace My.Scripts.Core
         {
             // 현재 페이지의 배열 인덱스를 고속 역추적하여 안전하게 다음 단계 연산
             int currentIndex = Array.IndexOf(pages, page);
-            if (currentIndex == -1) return;
+            if (currentIndex == -1 || currentIndex != currentPageIndex) return;
 
             int nextIndex = currentIndex + 1;
             OnPageComplete(currentIndex, nextIndex, triggerInfo);

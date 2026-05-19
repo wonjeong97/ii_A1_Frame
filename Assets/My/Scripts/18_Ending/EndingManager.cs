@@ -58,6 +58,7 @@ namespace My.Scripts._18_Ending
 
         protected override void Start()
         {
+            // 1. Ending Page에 의존성 주입
             if (_resolver != null && pages != null)
             {
                 foreach (GamePage page in pages)
@@ -69,11 +70,16 @@ namespace My.Scripts._18_Ending
             {
                 _logger?.ZLogError($"[EndingManager] IObjectResolver가 없습니다. EndingLifetimeScope 세팅을 확인하세요!");
             }
+            
+            // 2. 데이터 로드 & 텍스트 바인딩
+            base.Start();
 
-            // 의존성 주입이 완료되었으므로 이제 안전하게 데이터를 로드하고 텍스트를 바인딩합니다.
-            base.Start(); 
+            // 3. PhotoCompositor를 통한 사진 합성
+            ProcessPhotoCompositor();
+        }
 
-            // 기존 Compositor 실행 로직 (그대로 유지)
+        private void ProcessPhotoCompositor()
+        {
             if (compositors != null && compositors.Length > 0)
             {
                 string userIdStr = GetUserIdString();
@@ -87,6 +93,7 @@ namespace My.Scripts._18_Ending
                 }
             }
         }
+        
         private string GetUserIdString()
         {
             if (_sessionManager != null && _sessionManager.CurrentUserId != 0)
@@ -152,27 +159,34 @@ namespace My.Scripts._18_Ending
 
         private async UniTaskVoid WaitAndReturnToTitleAsync(CancellationToken token)
         {
-            const float timeoutSeconds = 300.0f;
-            float elapsed = 0f;
-            const int pollingIntervalMs = 500; 
-
-            while (elapsed < timeoutSeconds)
+            try
             {
-                if (!IsAnyProcessBusy())
+                const float timeoutSeconds = 300.0f;
+                float elapsed = 0f;
+                const int pollingIntervalMs = 500; 
+
+                while (elapsed < timeoutSeconds)
                 {
-                    break;
+                    if (!IsAnyProcessBusy())
+                    {
+                        break;
+                    }
+
+                    await UniTask.Delay(pollingIntervalMs, ignoreTimeScale: true, cancellationToken: token);
+                    elapsed += (pollingIntervalMs / 1000f);
                 }
 
-                await UniTask.Delay(pollingIntervalMs, ignoreTimeScale: true, cancellationToken: token);
-                elapsed += (pollingIntervalMs / 1000f);
-            }
+                if (elapsed >= timeoutSeconds)
+                {
+                    _logger?.ZLogWarning($"[EndingManager] 작업 완료 대기 타임아웃 발생. 강제 복귀 진행.");
+                }
 
-            if (elapsed >= timeoutSeconds)
+                FinalizeAndReturn();
+            }
+            catch (OperationCanceledException)
             {
-                _logger?.ZLogWarning($"[EndingManager] 작업 완료 대기 타임아웃 발생. 강제 복귀 진행.");
+                // 씬 전환/파괴 시 발생하는 정상적인 비동기 취소 예외 처리
             }
-
-            FinalizeAndReturn();
         }
 
         private bool IsAnyProcessBusy()
