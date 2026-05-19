@@ -49,7 +49,7 @@ namespace My.Scripts.Core.Pages
 
         // --- 의존성 주입 (DI) 변수 ---
         private SessionManager _sessionManager;
-        private LevelManager _levelManager; // [에러 해결] 정적 Instance 대신 VContainer 다이렉트 바인딩 전환
+        private LevelManager _levelManager; 
 
         /// <summary> 부모들의 수령 체인 외에 본 페이지 내부 닉네임 및 문항 식별 처리를 위한 의존성 주입 </summary>
         [Inject]
@@ -63,7 +63,6 @@ namespace My.Scripts.Core.Pages
         {
             if (data == null) return;
 
-            // [최적화 핵심] 구형 세팅 후 텍스트 역추출 치환 방식을 파괴하고, 선제적 가비지 프리 조립 매핑으로 전면 대개편
             ApplyAndFormatText(descriptionText, data.descriptionText);
             ApplyAndFormatText(playerAName, data.playerAName);
             ApplyAndFormatText(playerBName, data.playerBName);
@@ -72,8 +71,7 @@ namespace My.Scripts.Core.Pages
         }
         
         /// <summary> 
-        /// 텍스트 컴포넌트에 안전하게 데이터를 가포맷팅하여 바인딩합니다. 
-        /// UIManager 폰트 서식 유실 버그를 완벽히 해결합니다.
+        /// 텍스트 컴포넌트에 안전하게 데이터를 가포맷팅하여 바인딩
         /// </summary>
         private void ApplyAndFormatText(Text uiText, TextSetting setting)
         {
@@ -103,12 +101,11 @@ namespace My.Scripts.Core.Pages
         {
             base.OnEnter();
             _isCompleted = false;
-            _enterTime = Time.unscaledTime; // 키오스크 시스템 정지 방어 독립 시간축 적용
+            _enterTime = Time.unscaledTime;
 
             ResetIdleState(true);
 
-            // [안정성] 인젝션 필드 참조 구조로 안전 이식 완료
-            bool isTutorial = _levelManager != null && _levelManager.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
 
             if (isTutorial && waitForShotButton)
             {
@@ -134,11 +131,7 @@ namespace My.Scripts.Core.Pages
             _sequenceCts?.Dispose();
             _sequenceCts = null;
 
-            bool isQ15Page6 = _levelManager != null && 
-                              _levelManager.CurrentQuestionNumber == 15 && 
-                              gameObject.name.Contains("Page6");
-
-            // [복잡도 해결 완료] 반전 가드 패턴을 부여하여 불필요한 중첩 구조(else 블록) 삭제
+            bool isQ15Page6 = _levelManager && _levelManager.CurrentQuestionNumber == 15 && gameObject.name.Contains("Page6");
             if (!isQ15Page6)
             {
                 base.OnExit();
@@ -147,13 +140,14 @@ namespace My.Scripts.Core.Pages
 
             StopResetSequence(true);
             UnsubscribeHardwareInput();
+            base.OnExit();
         }
 
         protected override void OnHardwareInput(string input, bool isLeft)
         {
             if (_isCompleted) return;
 
-            bool isTutorial = _levelManager != null && _levelManager.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             if (isTutorial && waitForShotButton) return;
 
             if (waitForShotButton && input == GameConstants.Hardware.InputShotOn)
@@ -170,7 +164,6 @@ namespace My.Scripts.Core.Pages
         {
             if (!_soundManager) return;
             
-            // [복잡도 해결 완료] 지저분한 if 분기를 단일 가독성 매핑 식으로 변경
             string sfxName = gameObject.name.Contains("Page4") ? "공통_9" : gameObject.name.Contains("Page6") ? "공통_12" : null;
             if (sfxName != null)
             {
@@ -211,7 +204,7 @@ namespace My.Scripts.Core.Pages
         
         private bool IsInputBlockedByTutorial()
         {
-            bool isTutorial = _levelManager != null && _levelManager.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             return isTutorial && waitForShotButton;
         }
 
