@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Text;
+using Microsoft.Extensions.Logging;
 using Unity.Collections;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
@@ -11,6 +12,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts.Core.Pages
 {
@@ -60,18 +62,21 @@ namespace My.Scripts.Core.Pages
         private TimeLapseRecorder _timeLapseRecorder;
         private SoundManager _soundManager;
         private LevelManager _levelManager;
+        private ILogger<Page_Camera> _logger;
 
         [Inject]
         public void Construct(
             HueManager hueManager,
             TimeLapseRecorder timeLapseRecorder,
             SoundManager soundManager,
-            LevelManager levelManager)
+            LevelManager levelManager,
+            ILogger<Page_Camera> logger)
         {
             _hueManager = hueManager;
             _timeLapseRecorder = timeLapseRecorder;
             _soundManager = soundManager;
             _levelManager = levelManager;
+            _logger = logger;
         }
 
         protected override void Awake()
@@ -246,15 +251,21 @@ namespace My.Scripts.Core.Pages
             }
 
             await cameraDisplay.FadeAsync(0f, 1f, cameraFadeDuration, token);
-
             await UniTask.Delay(TimeSpan.FromSeconds(1.0), cancellationToken: token);
-            if (_shouldSavePhoto && _timeLapseRecorder)
+
+            bool isWebCamReady = _webCamTexture && _webCamTexture.isPlaying;
+            if (_shouldSavePhoto && _timeLapseRecorder && isWebCamReady)
             {
                 _timeLapseRecorder.SetCurrentLevel(_levelID);
                 int qNum = _levelManager ? _levelManager.CurrentQuestionNumber : 0;
                 _timeLapseRecorder.EnableTimelapseCapture = true;
                 _timeLapseRecorder.EnableRealtimeCapture = (qNum >= 11 && qNum <= 15);
                 _timeLapseRecorder.StartCapture(_webCamTexture);
+            }
+            else if (_shouldSavePhoto && _timeLapseRecorder)
+            {
+                _logger?.ZLogWarning(
+                    $"[Page_Camera] 웹캠 준비 실패 혹은 재생 중이지 않아 캡처 시작 불가 (WebCam: {_webCamTexture != null}, IsPlaying: {isWebCamReady})");
             }
 
             if (_soundManager) _soundManager.PlaySFX("공통_10_3초");
@@ -392,7 +403,11 @@ namespace My.Scripts.Core.Pages
             if (_webCamTexture) return;
 
             WebCamDevice[] devices = WebCamTexture.devices;
-            if (devices.Length == 0) return;
+            if (devices.Length == 0)
+            {
+                _logger?.ZLogWarning($"[Page_Camera] 연결된 웹캠 장치를 찾을 수 없습니다.");
+                return;
+            }
 
             _selectedDevice = GetPreferredDevice(devices);
             try
@@ -403,7 +418,7 @@ namespace My.Scripts.Core.Pages
             }
             catch (Exception e)
             {
-                Debug.LogError($"웹캠 예외: {e.Message}");
+                _logger?.ZLogError(e, $"[Page_Camera] 웹캠 구동 예외: {e.Message}");
             }
         }
 

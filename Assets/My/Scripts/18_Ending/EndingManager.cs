@@ -33,6 +33,8 @@ namespace My.Scripts._18_Ending
     {
         [Header("Compositor")]
         [SerializeField] private PhotoCompositor[] compositors;
+        
+        private bool _settingsLoaded;
 
         // --- 의존성 주입 (DI) 변수 ---
         private IObjectResolver _resolver;
@@ -58,6 +60,12 @@ namespace My.Scripts._18_Ending
 
         protected override void Start()
         {
+            if (_resolver == null)
+            {
+                _logger?.ZLogError($"[EndingManager] IObjectResolver가 없습니다. EndingLifetimeScope 세팅을 확인하세요!");
+                return;
+            }
+            
             // 1. Ending Page에 의존성 주입
             if (_resolver != null && pages != null)
             {
@@ -66,13 +74,10 @@ namespace My.Scripts._18_Ending
                     if (page) _resolver.Inject(page);
                 }
             }
-            else
-            {
-                _logger?.ZLogError($"[EndingManager] IObjectResolver가 없습니다. EndingLifetimeScope 세팅을 확인하세요!");
-            }
-            
+
             // 2. 데이터 로드 & 텍스트 바인딩
             base.Start();
+            if (!_settingsLoaded) return;
 
             // 3. PhotoCompositor를 통한 사진 합성
             ProcessPhotoCompositor();
@@ -110,12 +115,14 @@ namespace My.Scripts._18_Ending
             EndingLevelSetting setting = JsonLoader.Load<EndingLevelSetting>(path);
 
             if (setting == null)
-            {
+            {   
+                _settingsLoaded = false;
                 _logger?.ZLogError($"[EndingManager] 설정 로드 실패: {path}");
                 return;
             }
 
             AssignPageDataDirect(setting);
+            _settingsLoaded = true;
         }
 
         /// <summary> 런타임 배열 생성이 전혀 없는 초고속 평탄화 데이터 셋 </summary>

@@ -75,17 +75,20 @@ namespace My.Scripts.Core
         
         protected override void Start()
         {
-            if (_resolver != null && pages != null)
+            if (_resolver == null)
+            {
+                Debug.LogError("[LevelManager] IObjectResolver is required.");
+                return;
+            }
+            if (pages != null)
             {
                 foreach (GamePage page in pages)
                 {
                     if (page) _resolver.Inject(page);
                 }
             }
-
             LoadSettings();
             if (!_settingsLoaded) return;
-
             if (pages == null || pages.Length == 0)
             {
                 Debug.LogWarning("[BaseFlowManager] pages 비어있음");
