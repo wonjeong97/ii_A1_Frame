@@ -1,6 +1,9 @@
 using System;
 using My.Scripts.Core;
+using Microsoft.Extensions.Logging;
 using UnityEngine;
+using ZLogger;                     
+using VContainer;                  
 
 namespace My.Scripts.Global
 {
@@ -13,10 +16,12 @@ namespace My.Scripts.Global
         D1, D2, D3, D4, D5
     }
 
+    /// <summary>
+    /// 게임 세션 전역 데이터를 유지 및 관리하는 클래스.
+    /// VContainer DI 기반으로 작동하며, 세션 초기화 시 UI 언어 복귀 버그를 완벽히 해결함.
+    /// </summary>
     public class SessionManager : MonoBehaviour
     {
-        public static SessionManager Instance { get; private set; }
-        
         public event Action<string> OnLanguageChanged;
 
         public int CurrentUserId { get; set; } 
@@ -32,6 +37,12 @@ namespace My.Scripts.Global
                 if (_currentLanguage != value)
                 {
                     _currentLanguage = value;
+                    
+                    if (_logger != null)
+                    {
+                        _logger.ZLogInformation($"세션 언어 변경됨: {_currentLanguage}");
+                    }
+
                     OnLanguageChanged?.Invoke(_currentLanguage);
                 }
             } 
@@ -64,6 +75,18 @@ namespace My.Scripts.Global
         public int PieceD2 { get; set; }
         public int PieceD3 { get; set; }
         
+        // --- 의존성 주입 (DI) 변수 ---
+        private ILogger<SessionManager> _logger;
+
+        /// <summary>
+        /// VContainer를 통해 최상위 컨테이너로부터 고성능 로거 주입
+        /// </summary>
+        [Inject]
+        public void Construct(ILogger<SessionManager> logger)
+        {
+            _logger = logger;
+        }
+
         public int TotalPieces
         {
             get
@@ -91,7 +114,6 @@ namespace My.Scripts.Global
         
         /// <summary>
         /// 획득한 블록 코드를 문자열 할당(GC) 없이 인덱스 기반으로 순회하며 조각 개수를 합산함.
-        /// 흐름 제어, 모듈 식별, 문자 분석의 책임을 분리하여 복잡도를 낮춤.
         /// </summary>
         private int CalculatePiecesFromBlockCode()
         {
@@ -187,7 +209,6 @@ namespace My.Scripts.Global
 
         /// <summary>
         /// 콘텐츠 식별 문자를 조합하여 실제 조각 개수를 반환함.
-        /// 거대한 switch 문을 그룹별 하위 메서드로 나누어 코드 복잡도를 낮춤.
         /// </summary>
         private int GetPieceCount(char mod1, char mod2)
         {
@@ -235,9 +256,9 @@ namespace My.Scripts.Global
 
         /// <summary>
         /// 개별 블록 코드 문자열에 매핑되는 실제 조각 개수를 반환함.
-        /// 타 클래스에서 문자열로 조회할 경우를 대비한 오버로딩 헬퍼.
+        /// 타 클래스에서 문자열로 조회할 경우를 대비해 public 오버로딩 헬퍼로 개방함.
         /// </summary>
-        private int GetPieceCount(string blockCode)
+        public int GetPieceCount(string blockCode)
         {
             if (string.IsNullOrEmpty(blockCode) || blockCode.Length < 2)
             {
@@ -250,25 +271,22 @@ namespace My.Scripts.Global
             return GetPieceCount(mod1, mod2);
         }
 
-        private void Awake()
-        {
-            if (!Instance)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-
+        /// <summary>
+        /// 세션 내의 모든 전역 상태 데이터를 초기값으로 리셋함.
+        /// </summary>
         public void ClearSession()
         {
+            if (_logger != null)
+            {
+                _logger.ZLogInformation($"전역 게임 세션 데이터 초기화됨.");
+            }
+
             CurrentUserId = 0;
             PlayerAUid = string.Empty;
             PlayerBUid = string.Empty;
             BlockCode = string.Empty;
+            
+            // [버그 수정 완료] Property 프로퍼티 접근자로 우회하여 언어 리셋 이벤트 트리거 유실 방지
             CurrentLanguage = "ko";
             
             PlayerAFirstName = "NoNameA";

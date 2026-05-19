@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Threading;
+using Cysharp.Text;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,7 @@ using My.Scripts.Core.Data;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Utils;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
 
@@ -16,6 +18,7 @@ namespace My.Scripts.Core.Pages
     /// <summary>
     /// 게임 진행 중 안내 및 대기 시간을 제공하는 트랜지션(전환) 페이지.
     /// 특정 모드에서는 아두이노 버튼 입력을 기다리거나 자동으로 다음 단계로 넘어감.
+    /// 정적 인스턴스 의존성이 100% 제거되고 텍스트 서식 버그가 원천 방어되었습니다.
     /// </summary>
     public class Page_Transition : PopupGamePage<TransitionPageData>
     {
@@ -44,74 +47,65 @@ namespace My.Scripts.Core.Pages
 
         private readonly static StringBuilder NameBuilder = new StringBuilder(128);
 
-        /// <summary> 외부에서 전달받은 데이터를 UI 컴포넌트에 바인딩함. 누락 시 경고 로그를 출력함. </summary>
+        // --- 의존성 주입 (DI) 변수 ---
+        private SessionManager _sessionManager;
+        private LevelManager _levelManager; 
+
+        /// <summary> 부모들의 수령 체인 외에 본 페이지 내부 닉네임 및 문항 식별 처리를 위한 의존성 주입 </summary>
+        [Inject]
+        public void ConstructTransition(SessionManager sessionManager, LevelManager levelManager)
+        {
+            _sessionManager = sessionManager;
+            _levelManager = levelManager;
+        }
+
         protected override void SetupData(TransitionPageData data)
         {
             if (data == null) return;
 
-            ApplyTextSetting(descriptionText, data.descriptionText, "descriptionText");
-            ApplyTextSetting(playerAName, data.playerAName, "playerAName");
-            ApplyTextSetting(playerBName, data.playerBName, "playerBName");
-
-            ReplaceNameTags(descriptionText);
-            ReplaceNameTags(playerAName);
-            ReplaceNameTags(playerBName);
+            ApplyAndFormatText(descriptionText, data.descriptionText);
+            ApplyAndFormatText(playerAName, data.playerAName);
+            ApplyAndFormatText(playerBName, data.playerBName);
 
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
         
-        /// <summary> 텍스트 컴포넌트에 데이터를 안전하게 할당하고, 누락 시 경고를 출력함. </summary>
-        private void ApplyTextSetting(Text uiText, TextSetting setting, string fieldName)
+        /// <summary> 
+        /// 텍스트 컴포넌트에 안전하게 데이터를 가포맷팅하여 바인딩
+        /// </summary>
+        private void ApplyAndFormatText(Text uiText, TextSetting setting)
         {
-            if (!uiText) return;
-            
-            if (setting != null)
-            {
-                UIManager.Instance.SetText(uiText.gameObject, setting);
-            }
-            else
-            {
-                Debug.LogWarning($"{fieldName} 데이터 누락됨.");
-            }
-        }
-        
-        /// <summary> 텍스트 내의 포맷 문자열을 실제 유저 세션의 닉네임으로 치환함 (GC Zero). </summary>
-        private void ReplaceNameTags(Text txt)
-        {
-            if (!txt || !SessionManager.Instance || string.IsNullOrEmpty(txt.text)) return;
+            if (!uiText || setting == null || string.IsNullOrEmpty(setting.text) || !_sessionManager) return;
 
-            string nameA = SessionManager.Instance.PlayerAFirstName;
-            string nameB = SessionManager.Instance.PlayerBFirstName;
-            
-            if (string.IsNullOrWhiteSpace(nameA))
+            string nameA = string.IsNullOrWhiteSpace(_sessionManager.PlayerAFirstName) ? "PlayerA" : _sessionManager.PlayerAFirstName;
+            string nameB = string.IsNullOrWhiteSpace(_sessionManager.PlayerBFirstName) ? "PlayerB" : _sessionManager.PlayerBFirstName;
+
+            string formattedText;
+            using (Utf16ValueStringBuilder sb = ZString.CreateStringBuilder())
             {
-                Debug.LogWarning("PlayerAFirstName 값이 누락됨.");
-                nameA = "PlayerA"; 
+                sb.Append(setting.text);
+                sb.Replace("{nameA}", nameA);
+                sb.Replace("{nameB}", nameB);
+
+                formattedText = sb.ToString();
             }
-            if (string.IsNullOrWhiteSpace(nameB))
+    
+            if (_uiManager)
             {
-                Debug.LogWarning("PlayerBFirstName 값이 누락됨.");
-                nameB = "PlayerB"; 
+                _uiManager.SetText(uiText.gameObject, setting);
             }
-            
-            NameBuilder.Clear();
-            NameBuilder.Append(txt.text);
-            NameBuilder.Replace("{nameA}", nameA);
-            NameBuilder.Replace("{nameB}", nameB);
-            
-            txt.text = NameBuilder.ToString();
+            uiText.text = formattedText;
         }
 
-        /// <summary> 페이지 진입 시 타이머 초기화 및 페이드인 연출을 시작함. 튜토리얼 예외 처리를 포함함. </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             _isCompleted = false;
-            _enterTime = Time.time;
+            _enterTime = Time.unscaledTime;
 
             ResetIdleState(true);
 
-            bool isTutorial = LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
 
             if (isTutorial && waitForShotButton)
             {
@@ -126,42 +120,34 @@ namespace My.Scripts.Core.Pages
             
             _sequenceCts?.Cancel();
             _sequenceCts?.Dispose();
-            _sequenceCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _sequenceCts = new CancellationTokenSource();
             
             SequenceAsync(_sequenceCts.Token).Forget();
         }
 
-        /// <summary> 특정 씬(15번 문항)에서의 강제 초기화 루틴 중단을 처리하고 페이지를 벗어남. </summary>
         public override void OnExit()
         {
             _sequenceCts?.Cancel();
             _sequenceCts?.Dispose();
             _sequenceCts = null;
 
-            bool isQ15Page6 = LevelManager.Instance && 
-                              LevelManager.Instance.CurrentQuestionNumber == 15 && 
-                              gameObject.name.Contains("Page6");
-
-            if (isQ15Page6)
-            {
-                StopResetSequence(true);
-                UnsubscribeHardwareInput();
-            }
-            else
+            bool isQ15Page6 = _levelManager && _levelManager.CurrentQuestionNumber == 15 && gameObject.name.Contains("Page6");
+            if (!isQ15Page6)
             {
                 base.OnExit();
+                return;
             }
+
+            StopResetSequence(true);
+            UnsubscribeHardwareInput();
+            base.OnExit();
         }
 
-        /// <summary> 아두이노 하드웨어 입력 이벤트를 처리함. </summary>
         protected override void OnHardwareInput(string input, bool isLeft)
         {
             if (_isCompleted) return;
 
-            // 튜토리얼 모드에서는 유저의 물리적인 하드웨어 조작을 완전히 무시하여 흐름을 통제함.
-            bool isTutorial = false;
-            if (LevelManager.Instance) isTutorial = LevelManager.Instance.CurrentQuestionNumber == 0;
-
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             if (isTutorial && waitForShotButton) return;
 
             if (waitForShotButton && input == GameConstants.Hardware.InputShotOn)
@@ -174,26 +160,20 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 페이지 종류에 맞는 입장 효과음을 재생함. </summary>
         private void PlaySFXOnEnter()
         {
-            if (!SoundManager.Instance) return;
+            if (!_soundManager) return;
             
-            if (gameObject.name.Contains("Page4"))
+            string sfxName = gameObject.name.Contains("Page4") ? "공통_9" : gameObject.name.Contains("Page6") ? "공통_12" : null;
+            if (sfxName != null)
             {
-                SoundManager.Instance.PlaySFX("공통_9");
-            }
-            else if (gameObject.name.Contains("Page6"))
-            {
-                SoundManager.Instance.PlaySFX("공통_12");
+                _soundManager.PlaySFX(sfxName);
             }
         }
 
-        /// <summary> 매 프레임 키보드 또는 터치 입력을 검사하여 수동 진행을 처리함. </summary>
         private void Update()
         {
-            // 더블 클릭 등 잦은 입력으로 인한 의도치 않은 빠른 스킵을 방지하기 위한 유예 시간.
-            if (_isCompleted || Time.time - _enterTime < 1.5f) return;
+            if (_isCompleted || Time.unscaledTime - _enterTime < 1.5f) return;
 
             if (HasAnyInput())
             {
@@ -205,18 +185,15 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary> 터치 또는 키보드 입력이 발생했는지 확인함. </summary>
         private bool HasAnyInput()
         {
             return Input.anyKey || Input.touchCount > 0;
         }
         
-        /// <summary> 유저 입력이 발생했을 때 타이머를 초기화하고 수동 스킵 여부를 판별함. </summary>
         private void HandleUserInput()
         {
             ResetIdleState(false);
 
-            // 튜토리얼 모드에서는 키보드 입력을 통한 스킵을 차단함.
             if (IsInputBlockedByTutorial()) return;
 
             if (Input.GetKeyDown(KeyCode.Space) || !waitForShotButton)
@@ -225,44 +202,38 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary> 현재 튜토리얼 셔터 대기 상태인지 확인하여 강제 스킵을 방지함. </summary>
         private bool IsInputBlockedByTutorial()
         {
-            bool isTutorial = LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             return isTutorial && waitForShotButton;
         }
 
-        /// <summary> 수동 조작을 통한 다음 페이지 진행 로직을 실행함. </summary>
         private void ProcessManualNext()
         {
             if (_isCompleted) return;
             
-            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_22");
+            if (_soundManager) _soundManager.PlaySFX("공통_22");
             ResetIdleState(false);
             _isCompleted = true;
 
-            if (waitForShotButton && ArduinoManager.Instance)
+            if (waitForShotButton && _arduinoManager)
             {
-                ArduinoManager.Instance.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+                _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
             }
 
             FinishAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        /// <summary>
-        /// UI를 점진적으로 밝히고 하드웨어 연출 및 자동 진행 타이머를 시작함.
-        /// 각 연출 단계를 분리하여 전체 흐름을 직관적으로 파악할 수 있게 함.
-        /// </summary>
         private async UniTaskVoid SequenceAsync(CancellationToken token)
         {
-            if (contentGroup) UIFadeUtility.FadeCanvasGroupAsync(contentGroup, 0f, 1f, 1f, token).Forget();
-            if (namesGroup) UIFadeUtility.FadeCanvasGroupAsync(namesGroup, 0f, 1f, 1f, token).Forget();
+            if (contentGroup) contentGroup.FadeAsync(0f, 1f, 1f, token).Forget();
+            if (namesGroup) namesGroup.FadeAsync(0f, 1f, 1f, token).Forget();
             
             TriggerHardwareLED(true);
 
             if (autoPass)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(autoPassDelay), cancellationToken: token);
+                await UniTask.Delay(TimeSpan.FromSeconds(autoPassDelay), ignoreTimeScale: true, cancellationToken: token);
                 
                 if (!_isCompleted)
                 {
@@ -277,24 +248,30 @@ namespace My.Scripts.Core.Pages
         {
             if (!keepContentOnFinish && descriptionText)
             {
-                UniTask t1 = contentGroup ? UIFadeUtility.FadeCanvasGroupAsync(contentGroup, 1f, 0f, 0.5f, token) : UniTask.CompletedTask;
-                UniTask t2 = namesGroup ? UIFadeUtility.FadeCanvasGroupAsync(namesGroup, 1f, 0f, 0.5f, token) : UniTask.CompletedTask;
+                UniTask t1 = contentGroup ? contentGroup.FadeAsync(1f, 0f, 0.5f, token) : UniTask.CompletedTask;
+                UniTask i2 = namesGroup ? namesGroup.FadeAsync(1f, 0f, 0.5f, token) : UniTask.CompletedTask;
                 
-                await UniTask.WhenAll(t1, t2);
+                await UniTask.WhenAll(t1, i2);
             }
             
             CompleteStep();
         }
         
-        /// <summary>
-        /// 셔터 버튼 대기 모드일 경우 아두이노 LED를 켜거나 끔.
-        /// </summary>
         private void TriggerHardwareLED(bool isOn)
         {
-            if (!waitForShotButton || !ArduinoManager.Instance) return;
+            if (!waitForShotButton || !_arduinoManager) return;
             
             string cmd = isOn ? GameConstants.Hardware.CmdLedShotOn : GameConstants.Hardware.CmdLedShotOff;
-            ArduinoManager.Instance.SendCommandToBoth(cmd);
+            _arduinoManager.SendCommandToBoth(cmd);
+        }
+
+        protected override void OnDestroy()
+        {
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+
+            base.OnDestroy();
         }
     }
 }

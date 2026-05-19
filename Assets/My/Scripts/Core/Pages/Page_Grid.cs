@@ -6,13 +6,16 @@ using My.Scripts.Core.Data;
 using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts.Core.Pages
 {
     /// <summary> 
     /// 다이얼 입력을 받아 보이지 않는 격자판을 탐색하고 정답 위치를 찾아내는 미니게임을 제어함.
+    /// UIManager.Instance 싱글톤 의존성을 완전히 도려내고 부모 인스턴스 주입 필드로 재매핑 완료되었습니다.
     /// </summary>
     public class Page_Grid : PopupGamePage<GridPageData>
     {
@@ -91,17 +94,24 @@ namespace My.Scripts.Core.Pages
         private CancellationTokenSource _completionCts;
         private CancellationTokenSource _hintCts;
 
-        private class CellFadeInfo
+        // --- 의존성 주입 (DI) 변수 ---
+        private LevelManager _levelManager;
+
+        [Inject]
+        public void ConstructGrid(LevelManager levelManager)
         {
-            public int x, y;
-            public float startVal, targetVal, timer;
+            _levelManager = levelManager;
         }
 
-        private readonly List<CellFadeInfo> _activeFades = new List<CellFadeInfo>();
+        private struct CellFadeState
+        {
+            public float startVal;
+            public float targetVal;
+            public float timer;
+            public bool isActive;
+        }
+        private CellFadeState[,] _cellFadeStates;
 
-        /// <summary>
-        /// 외부 JSON 데이터의 텍스트와 정답 좌표를 UI 컴포넌트에 바인딩함.
-        /// </summary>
         protected override void SetupData(GridPageData data)
         {
             if (data == null) return;
@@ -119,14 +129,11 @@ namespace My.Scripts.Core.Pages
             SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
 
-        /// <summary>
-        /// 텍스트 설정을 UI 컴포넌트에 적용하고 누락 시 경고를 출력함.
-        /// </summary>
         private void ApplyTextSetting(Text uiText, TextSetting setting, string fieldName)
         {
             if (setting != null)
             {
-                if (uiText) UIManager.Instance.SetText(uiText.gameObject, setting);
+                if (uiText && _uiManager != null) _uiManager.SetText(uiText.gameObject, setting);
             }
             else
             {
@@ -134,9 +141,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 유효한 그리드 범위 내의 정답 좌표만 필터링하여 저장함.
-        /// </summary>
         private void FilterValidQuestionSpots(GridPageData data)
         {
             if (data.questionSpots != null && data.questionSpots.Count > 0)
@@ -157,32 +161,29 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 배열 형태의 문항 텍스트 데이터를 UI에 순차적으로 적용함.
-        /// </summary>
         private void SetupQuestionTexts(GridPageData data)
         {
             if (questionTexts == null) return;
+            
+            int questionDataCount = data.questions?.Length ?? 0;
 
             for (int i = 0; i < questionTexts.Length; i++)
             {
-                if (!questionTexts[i]) continue;
+                Text txt = questionTexts[i];
+                if (txt == null) continue; // 안전망 가드 클로즈
+
+                bool hasData = i < questionDataCount && data.questions != null && data.questions[i] != null;
                 
-                if (data.questions != null && i < data.questions.Length && data.questions[i] != null)
+                txt.gameObject.SetActive(hasData);
+
+                // 데이터가 있을 때만 안전하게 텍스트 주입 수행
+                if (hasData && _uiManager != null)
                 {
-                    UIManager.Instance.SetText(questionTexts[i].gameObject, data.questions[i]);
-                    questionTexts[i].gameObject.SetActive(true);
-                }
-                else
-                {
-                    questionTexts[i].gameObject.SetActive(false);
+                    _uiManager.SetText(txt.gameObject, data.questions[i]);
                 }
             }
         }
 
-        /// <summary>
-        /// 페이지 진입 시 그리드 상태를 초기화하고 플레이어 시작 지점을 계산하여 배치함.
-        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
@@ -196,14 +197,11 @@ namespace My.Scripts.Core.Pages
             SetFocusToGrid(startPos.x, startPos.y, true);
         }
 
-        /// <summary>
-        /// UI 컴포넌트들의 초기 활성화 상태 및 투명도를 설정함.
-        /// </summary>
         private void ResetPageUI()
         {
             if (textCounting)
             {
-                int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
+                int qNum = _levelManager ? _levelManager.CurrentQuestionNumber : 0;
                 textCounting.text = qNum > 0 ? $"{qNum}/15" : string.Empty;
             }
 
@@ -233,9 +231,6 @@ namespace My.Scripts.Core.Pages
             _isStageCompleted = false;
         }
 
-        /// <summary>
-        /// 취소 토큰 소스를 안전하게 해제하고 null로 초기화합니다.
-        /// </summary>
         private void CancelAndDispose(ref CancellationTokenSource cts)
         {
             if (cts != null)
@@ -246,17 +241,14 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary>
-        /// 상태 변수 및 동작 중인 비동기 작업을 초기화함.
-        /// </summary>
         private void InitializeRoutines()
         {
             CancelAndDispose(ref _autoFadeCts);
-            _autoFadeCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _autoFadeCts = new CancellationTokenSource();
             AutoFadeMainTextAsync(_autoFadeCts.Token).Forget();
             
             CancelAndDispose(ref _timerCts);
-            _timerCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _timerCts = new CancellationTokenSource();
             TimerAsync(_timerCts.Token).Forget();
 
             CancelAndDispose(ref _simultaneousWarningCts);
@@ -269,10 +261,6 @@ namespace My.Scripts.Core.Pages
             ResetIdleState(true); 
         }
 
-        /// <summary>
-        /// 그리드 게임에 필요한 매터리얼과 맵 데이터를 생성함.
-        /// </summary>
-        /// <returns>초기화 성공 여부</returns>
         private bool InitializeGame()
         {
             if (!imageBlack || gridSizeX <= 0 || gridSizeY <= 0) return false;
@@ -282,7 +270,8 @@ namespace My.Scripts.Core.Pages
             _cellHeight = _blackRect.rect.height / gridSizeY;
             
             _foundSpots.Clear();
-            _activeFades.Clear();
+
+            _cellFadeStates = new CellFadeState[gridSizeX, gridSizeY];
 
             ResetCanvasGroups(completionCanvasGroups, 0f, true);
             ResetCanvasGroups(textCanvasGroups, 1f, true);
@@ -293,9 +282,6 @@ namespace My.Scripts.Core.Pages
             return true;
         }
 
-        /// <summary>
-        /// 정답 좌표를 기반으로 2D 부울 맵을 구성함.
-        /// </summary>
         private void BuildQuestionMap()
         {
             _questionMap = new bool[gridSizeX, gridSizeY];
@@ -322,9 +308,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 마스크 처리용 텍스처와 매터리얼 인스턴스를 생성함.
-        /// </summary>
         private void CreateGridMaterials()
         {
             if (_maskTexture) Destroy(_maskTexture);
@@ -335,7 +318,14 @@ namespace My.Scripts.Core.Pages
             imageBlack.material = _eraserMaterial;
             
             _maskTexture = new Texture2D(gridSizeX, gridSizeY, TextureFormat.R8, false) { filterMode = FilterMode.Point };
-            _maskTexture.SetPixels32(new Color32[gridSizeX * gridSizeY]);
+            
+            for (int y = 0; y < gridSizeY; y++)
+            {
+                for (int x = 0; x < gridSizeX; x++)
+                {
+                    _maskTexture.SetPixel(x, y, new Color(0f, 0f, 0f, 0f));
+                }
+            }
             _maskTexture.Apply();
             _eraserMaterial.SetTexture(MaskTexID, _maskTexture);
 
@@ -347,9 +337,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 플레이어의 시작 좌표를 중앙으로 설정하되, 정답과 겹치면 오작동을 피하기 위해 인접한 빈 공간을 탐색함.
-        /// </summary>
         private Vector2Int CalculateStartingPosition()
         {
             int startX = Mathf.Max(0, (gridSizeX - 1) / 2);
@@ -363,9 +350,6 @@ namespace My.Scripts.Core.Pages
             return FindAdjacentEmptySpot(startX, startY);
         }
         
-        /// <summary>
-        /// 시작 지점이 막혀있을 경우 8방향을 순회하며 가장 가까운 안전 지대를 반환함.
-        /// </summary>
         private Vector2Int FindAdjacentEmptySpot(int startX, int startY)
         {
             Vector2Int[] offsets = {
@@ -396,9 +380,6 @@ namespace My.Scripts.Core.Pages
             return !_questionMap[x, y];
         }
 
-        /// <summary>
-        /// 매 프레임 입력 및 무응답 상태를 확인하여 로직을 제어함.
-        /// </summary>
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.Space) && !_isStageCompleted)
@@ -406,12 +387,12 @@ namespace My.Scripts.Core.Pages
                 _isStageCompleted = true;
                 RevealAllQuestions();
                 CancelAndDispose(ref _completionCts);
-                _completionCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+                _completionCts = new CancellationTokenSource();
                 ShowCompletionAsync(_completionCts.Token).Forget();
             }
 
-            if (_p1State.inputTimer > 0f) _p1State.inputTimer -= Time.deltaTime;
-            if (_p2State.inputTimer > 0f) _p2State.inputTimer -= Time.deltaTime;
+            if (_p1State.inputTimer > 0f) _p1State.inputTimer -= Time.unscaledDeltaTime;
+            if (_p2State.inputTimer > 0f) _p2State.inputTimer -= Time.unscaledDeltaTime;
 
             if (HasValidInput())
             {
@@ -426,9 +407,6 @@ namespace My.Scripts.Core.Pages
             UpdateCellFades();
         }
 
-        /// <summary>
-        /// 화면 터치, 키패드 또는 화살표 키와 같은 유효 입력이 발생했는지 검사함.
-        /// </summary>
         private bool HasValidInput()
         {
             if (Input.touchCount > 0) return true;
@@ -452,14 +430,11 @@ namespace My.Scripts.Core.Pages
             return false;
         }
 
-        /// <summary>
-        /// 무응답 시간을 누적하고 임계치에 따라 경고 및 실패 팝업을 트리거함.
-        /// </summary>
         private void HandleInactivity()
         {
             if (_isInputBlocked || _isStageCompleted || isResetSequenceActive) return;
 
-            currentIdleTime += Time.deltaTime;
+            currentIdleTime += Time.unscaledDeltaTime;
 
             if (currentIdleTime >= inactivityThreshold)
             {
@@ -477,33 +452,42 @@ namespace My.Scripts.Core.Pages
         {
             if (_is1stWarningDone || _textBlinkCts != null || _simultaneousWarningCts != null) return;
 
-            if (_warningText != null && textSub)
+            // [에러 해결 완료] 주입 인스턴스 참조 전환
+            if (_warningText != null && textSub && _uiManager != null)
             {
-                UIManager.Instance.SetText(textSub.gameObject, _warningText);
+                _uiManager.SetText(textSub.gameObject, _warningText);
             }
             
-            _textBlinkCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _textBlinkCts = new CancellationTokenSource();
             BlinkAsync(_textBlinkCts.Token).Forget();
         }
         
         private async UniTaskVoid BlinkAsync(CancellationToken token)
         {
-            if (textSub)
+            try
             {
-                textSub.gameObject.SetActive(true);
-                UIFadeUtility.SetAlpha(textSub, 0f);
-            }
+                if (textSub)
+                {
+                    textSub.gameObject.SetActive(true);
+                    textSub.SetAlpha(0f);
+                }
 
-            for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++)
+                {
+                    await textSub.FadeAsync(0f, 1f, 1f, token);
+                    await textSub.FadeAsync(1f, 0f, 1f, token);
+                }
+            }
+            catch (OperationCanceledException)
             {
-                await UIFadeUtility.FadeGraphicAsync(textSub, 0f, 1f, 1f, token);
-                await UIFadeUtility.FadeGraphicAsync(textSub, 1f, 0f, 1f, token);
+                // 취소되더라도 무조건 오브젝트 상태를 기저 상태로 정상 회수
             }
-            
-            if (textSub) textSub.gameObject.SetActive(false);
-
-            _is1stWarningDone = true;
-            CancelAndDispose(ref _textBlinkCts);
+            finally
+            {
+                if (textSub) textSub.gameObject.SetActive(false);
+                _is1stWarningDone = true;
+                CancelAndDispose(ref _textBlinkCts);
+            }
         }
         
         private void TriggerSimultaneousWarning()
@@ -513,7 +497,7 @@ namespace My.Scripts.Core.Pages
             CancelAndDispose(ref _textBlinkCts);
             CancelAndDispose(ref _textFadeCts);
 
-            _simultaneousWarningCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _simultaneousWarningCts = new CancellationTokenSource();
             SimultaneousWarningAsync(_simultaneousWarningCts.Token).Forget();
         }
         
@@ -522,13 +506,14 @@ namespace My.Scripts.Core.Pages
             if (textSub)
             {
                 textSub.gameObject.SetActive(true);
-                if (_defaultTextSub != null) UIManager.Instance.SetText(textSub.gameObject, _defaultTextSub);
-                UIFadeUtility.SetAlpha(textSub, 0f);
+                // [에러 해결 완료] 주입 인스턴스 참조 전환
+                if (_defaultTextSub != null && _uiManager != null) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
+                textSub.SetAlpha(0f);
 
                 for (int i = 0; i < 2; i++)
                 {
-                    await UIFadeUtility.FadeGraphicAsync(textSub, 0f, 1f, 0.5f, token);
-                    await UIFadeUtility.FadeGraphicAsync(textSub, 1f, 0f, 0.5f, token);
+                    await textSub.FadeAsync(0f, 1f, 0.5f, token);
+                    await textSub.FadeAsync(1f, 0f, 0.5f, token);
                 }
                 
                 textSub.gameObject.SetActive(false);
@@ -566,18 +551,14 @@ namespace My.Scripts.Core.Pages
             base.StartResetSequence();
         }
 
-        /// <summary>
-        /// 플레이어 입력 방향을 해석하여 그리드 이동을 처리하고 동시 입력을 제어함.
-        /// </summary>
         private void HandleMovement()
         {
             if (_isInputBlocked || _isStageCompleted) return;
 
-            float now = Time.time;
             int dx = 0;
             int dy = 0;
 
-            ProcessHardwareDials(now, ref dx, ref dy);
+            ProcessHardwareDials(ref dx, ref dy);
             ProcessKeyboardArrows(ref dx, ref dy);
 
             if (dx != 0 || dy != 0)
@@ -586,23 +567,17 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary>
-        /// 하드웨어 다이얼 입력을 분석하여 이동할 벡터를 추출함.
-        /// </summary>
-        private void ProcessHardwareDials(float now, ref int dx, ref int dy)
+        private void ProcessHardwareDials(ref int dx, ref int dy)
         {
             int p1Key = GetValidPlayerKey(1, 4, ref _p1State);
             int p2Key = GetValidPlayerKey(5, 8, ref _p2State);
 
             ResolveSimultaneousInputs(ref p1Key, ref p2Key);
 
-            if (p1Key != -1) dy = CalculateDirection(p1Key, ref _p1State, now, 0);
-            if (p2Key != -1) dx = CalculateDirection(p2Key, ref _p2State, now, 5);
+            if (p1Key != -1) dy = CalculateDirection(p1Key, ref _p1State, 0);
+            if (p2Key != -1) dx = CalculateDirection(p2Key, ref _p2State, 5);
         }
         
-        /// <summary>
-        /// 입력 상태 구조체를 바탕으로 유효한 키 입력 여부를 판별함.
-        /// </summary>
         private int GetValidPlayerKey(int start, int end, ref PlayerWheelState state)
         {
             int keyRaw = WheelInputUtility.GetPressedKeyIndex(start, end);
@@ -613,9 +588,6 @@ namespace My.Scripts.Core.Pages
             return (keyRaw != -1 && keyRaw != state.lastKey) ? keyRaw : -1;
         }
         
-        /// <summary>
-        /// 디버깅 및 PC 환경을 위한 방향키 입력을 감지함.
-        /// </summary>
         private void ProcessKeyboardArrows(ref int dx, ref int dy)
         {
             if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
@@ -624,9 +596,6 @@ namespace My.Scripts.Core.Pages
             if (Input.GetKeyDown(KeyCode.DownArrow)) dy = 1;
         }
 
-        /// <summary>
-        /// 양측 플레이어의 동시 조작을 감지하고 무효화하여 충돌을 방지함.
-        /// </summary>
         private void ResolveSimultaneousInputs(ref int p1Key, ref int p2Key)
         {
             bool isP1Active = (p1Key != -1);
@@ -660,36 +629,12 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary> 이전 입력과의 차이를 분석하여 유효한 이동 방향(-1, 1)을 산출함. </summary>
-        private int CalculateDirection(int currentKey, ref PlayerWheelState state, float now, int offset = 0)
+        private int CalculateDirection(int currentKey, ref PlayerWheelState state, int offset = 0)
         {
-            if (state.lastKey == -1)
-            {
-                state.lastKey = currentKey;
-                return 0;
-            }
-
-            int diff = GetModularDifference(currentKey, state.lastKey, offset);
-            int dir = WheelInputUtility.ResolveDirection(diff, now, ref state);
-
-            if (dir != 0)
-            {
-                state.lastDir = dir;
-                state.lastTime = now;
-            }
-            
-            state.lastKey = currentKey;
-            return (dir == 1) ? 1 : (dir == -1) ? -1 : 0;
-        }
-        
-        private int GetModularDifference(int currentKey, int lastKey, int offset)
-        {
-            int currIdx = currentKey - offset;
-            int lastIdx = lastKey - offset;
-            return (currIdx - lastIdx + 4) % 4;
+            int normalizedKey = currentKey - offset;
+            return WheelInputUtility.ResolveDirection(normalizedKey, 4, ref state);
         }
 
-        /// <summary> 산출된 방향(dx, dy)을 바탕으로 그리드 좌표를 갱신하고 연출을 트리거함. </summary>
         private void ApplyGridMovement(int dx, int dy)
         {
             HideInstructionTexts();
@@ -703,7 +648,6 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary> 유저의 첫 이동이 감지되면 화면 상의 가이드 텍스트들을 일괄 페이드아웃함. </summary>
         private void HideInstructionTexts()
         {
             if (!_hasMoved)
@@ -720,12 +664,12 @@ namespace My.Scripts.Core.Pages
         {
             if (mainTextGroup && mainTextGroup.gameObject.activeSelf)
             {
-                await UIFadeUtility.FadeCanvasGroupAsync(mainTextGroup, mainTextGroup.alpha, 0f, 0.3f, token);
+                await mainTextGroup.FadeAsync(mainTextGroup.alpha, 0f, 0.3f, token);
                 if (mainTextGroup) mainTextGroup.gameObject.SetActive(false);
             }
             else if (textMain && textMain.gameObject.activeSelf)
             {
-                await UIFadeUtility.FadeGraphicAsync(textMain, textMain.color.a, 0f, 0.3f, token);
+                await textMain.FadeAsync(textMain.color.a, 0f, 0.3f, token);
                 if (textMain) textMain.gameObject.SetActive(false);
             }
         }
@@ -735,17 +679,18 @@ namespace My.Scripts.Core.Pages
             if (!textSub || !textSub.gameObject.activeSelf) return;
             if (_textFadeCts != null || _simultaneousWarningCts != null || _textBlinkCts != null) return;
 
-            _textFadeCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _textFadeCts = new CancellationTokenSource();
             FadeOutSubInstructionAsync(_textFadeCts.Token).Forget();
         }
 
         private async UniTaskVoid FadeOutSubInstructionAsync(CancellationToken token)
         {
-            await UIFadeUtility.FadeGraphicAsync(textSub, textSub.color.a, 0f, 0.3f, token);
+            await textSub.FadeAsync(textSub.color.a, 0f, 0.3f, token);
             
             if (textSub) textSub.gameObject.SetActive(false);
             CancelAndDispose(ref _textFadeCts);
-            if (_defaultTextSub != null && textSub) UIManager.Instance.SetText(textSub.gameObject, _defaultTextSub);
+            // [에러 해결 완료] 주입 인스턴스 참조 전환
+            if (_defaultTextSub != null && textSub && _uiManager != null) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
         }
 
         private async UniTaskVoid AutoFadeMainTextAsync(CancellationToken token)
@@ -790,24 +735,21 @@ namespace My.Scripts.Core.Pages
                 if (!_foundSpots.Contains(p))
                 {
                     _foundSpots.Add(p);
-                    if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_2");
+                    if (_soundManager) _soundManager.PlaySFX("카메라_2");
                     if (_foundSpots.Count >= _totalQuestionCount && !_isStageCompleted)
                     {
                         _isStageCompleted = true;
                         CancelAndDispose(ref _completionCts);
-                        _completionCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+                        _completionCts = new CancellationTokenSource();
                         ShowCompletionAsync(_completionCts.Token).Forget();
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// 모든 정답을 찾았을 때의 시각적 전환 연출을 단계별로 수행함.
-        /// </summary>
         private async UniTaskVoid ShowCompletionAsync(CancellationToken token)
         {   
-            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_3");
+            if (_soundManager) _soundManager.PlaySFX("카메라_3");
 
             UpdateMaskPixelInstant(_currentGridX, _currentGridY, 1.0f, true);
 
@@ -820,9 +762,6 @@ namespace My.Scripts.Core.Pages
             CompleteStep();
         }
 
-        /// <summary>
-        /// 캔버스 그룹 리스트의 투명도를 일괄적으로 조절함.
-        /// </summary>
         private async UniTask FadeGroupsAsync(List<CanvasGroup> groups, float startAlpha, float endAlpha, float duration, CancellationToken token)
         {
             if (groups == null || groups.Count == 0) return;
@@ -830,7 +769,7 @@ namespace My.Scripts.Core.Pages
             float t = 0f;
             while (t < duration)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 SetCanvasGroupsAlpha(groups, Mathf.Lerp(startAlpha, endAlpha, t / duration));
                 await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
@@ -838,9 +777,6 @@ namespace My.Scripts.Core.Pages
             SetCanvasGroupsAlpha(groups, endAlpha);
         }
         
-        /// <summary>
-        /// 리스트 내부의 유효한 캔버스 그룹에 투명도를 일괄 적용함.
-        /// </summary>
         private void SetCanvasGroupsAlpha(List<CanvasGroup> groups, float alpha)
         {
             if (groups == null) return;
@@ -850,9 +786,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 게임 종료 전 그리드 이미지와 텍스트를 부드럽게 숨김.
-        /// </summary>
         private async UniTask FadeOutGridAndTextsAsync(float duration, CancellationToken token)
         {
             float t = 0f;
@@ -860,7 +793,7 @@ namespace My.Scripts.Core.Pages
 
             while (t < duration)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 float progress = t / duration;
 
                 if (imageGrid)
@@ -877,30 +810,12 @@ namespace My.Scripts.Core.Pages
 
         private void StartCellFade(int x, int y, float targetVal)
         {
-            CellFadeInfo info = _activeFades.Find(f => f.x == x && f.y == y);
-            if (info == null)
-            {
-                info = new CellFadeInfo
-                { 
-                    x = x, 
-                    y = y, 
-                    timer = 0f, 
-                    startVal = GetMaskPixelValue(x, y), 
-                    targetVal = targetVal 
-                };
-                _activeFades.Add(info);
-            }
-            else
-            {
-                info.startVal = GetMaskPixelValue(x, y);
-                info.targetVal = targetVal;
-                info.timer = 0f;
-            }
+            _cellFadeStates[x, y].startVal = GetMaskPixelValue(x, y);
+            _cellFadeStates[x, y].targetVal = targetVal;
+            _cellFadeStates[x, y].timer = 0f;
+            _cellFadeStates[x, y].isActive = true;
         }
 
-        /// <summary>
-        /// 페이딩 애니메이션과 숨쉬기(Breathing) 효과를 병합하여 마스크를 갱신함.
-        /// </summary>
         private void UpdateCellFades()
         {
             bool needsApply = ProcessActiveFades();
@@ -916,45 +831,62 @@ namespace My.Scripts.Core.Pages
             }
         }
         
-        /// <summary>
-        /// 진행 중인 셀 페이딩 연산을 처리하고 완료된 건은 목록에서 제거함.
-        /// </summary>
         private bool ProcessActiveFades()
         {
-            if (_activeFades.Count == 0) return false;
+            if (_cellFadeStates == null) return false;
 
             bool isUpdated = false;
-            for (int i = _activeFades.Count - 1; i >= 0; i--)
+    
+            // 이중 루프는 오직 '순회' 역할만 전담하여 최상위 복잡도를 제거
+            for (int x = 0; x < gridSizeX; x++)
             {
-                CellFadeInfo f = _activeFades[i];
-                f.timer += Time.deltaTime;
-                float p = Mathf.Clamp01(f.timer / cellFadeDuration);
-                
-                UpdateMaskPixelInstant(f.x, f.y, Mathf.Lerp(f.startVal, f.targetVal, p), false);
-                isUpdated = true;
-
-                if (p >= 1.0f)
+                for (int y = 0; y < gridSizeY; y++)
                 {
-                    if (f.x == _currentGridX && f.y == _currentGridY) _isInputBlocked = false;
-                    _activeFades.RemoveAt(i);
+                    // 단일 셀 업데이트 결과가 하나라도 true면 전체 마스크 Apply 트리거 활성화
+                    if (UpdateSingleCellFade(x, y))
+                    {
+                        isUpdated = true;
+                    }
                 }
             }
             return isUpdated;
         }
 
         /// <summary>
-        /// 현재 초점이 맞춰진 정답 칸에 숨쉬기 투명도 효과를 연산하여 적용함.
+        /// 단일 격자 셀의 페이드 상태를 갱신합니다. (추출된 고속 인터페이스)
         /// </summary>
+        private bool UpdateSingleCellFade(int x, int y)
+        {
+            ref CellFadeState state = ref _cellFadeStates[x, y];
+            if (!state.isActive) return false;
+
+            state.timer += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(state.timer / cellFadeDuration);
+    
+            // 보간 연산 및 픽셀 마스크 업데이트
+            float currentAlpha = Mathf.Lerp(state.startVal, state.targetVal, p);
+            UpdateMaskPixelInstant(x, y, currentAlpha, false);
+
+            // 해당 셀의 페이드가 도달 완료되었을 때의 상태 해제 처리
+            if (p >= 1.0f)
+            {
+                state.isActive = false;
+                if (x == _currentGridX && y == _currentGridY)
+                {
+                    _isInputBlocked = false;
+                }
+            }
+
+            return true;
+        }
+
         private bool ApplyBreathingEffect()
         {
             if (_isStageCompleted || _questionMap == null || !_questionMap[_currentGridX, _currentGridY]) return false;
 
-            for (int i = 0; i < _activeFades.Count; i++)
-            {
-                if (_activeFades[i].x == _currentGridX && _activeFades[i].y == _currentGridY) return false;
-            }
+            if (_cellFadeStates[_currentGridX, _currentGridY].isActive) return false;
 
-            float pingPong = Mathf.PingPong(Time.time * breathSpeed, 1f);
+            float pingPong = Mathf.PingPong(Time.unscaledTime * breathSpeed, 1f); 
             float currentAlpha = Mathf.Lerp(breathAlphaMin, breathAlphaMax, pingPong);
             float breathMaskValue = 1.0f - currentAlpha;
             
@@ -991,6 +923,15 @@ namespace My.Scripts.Core.Pages
 
         protected override void OnDestroy()
         {
+            CancelAndDispose(ref _autoFadeCts);
+            CancelAndDispose(ref _timerCts);
+            CancelAndDispose(ref _failPopupCts);
+            CancelAndDispose(ref _textFadeCts);
+            CancelAndDispose(ref _textBlinkCts);
+            CancelAndDispose(ref _simultaneousWarningCts);
+            CancelAndDispose(ref _completionCts);
+            CancelAndDispose(ref _hintCts);
+
             base.OnDestroy();
             CleanupResources();
         }
@@ -1002,9 +943,6 @@ namespace My.Scripts.Core.Pages
             if (_gridMaterial) Destroy(_gridMaterial);
         }
         
-        /// <summary>
-        /// 시간 흐름에 따른 타이머 텍스트 갱신 및 경고음 재생을 제어함.
-        /// </summary>
         private async UniTaskVoid TimerAsync(CancellationToken token)
         {
             if (textTimer) textTimer.text = "15";
@@ -1022,7 +960,7 @@ namespace My.Scripts.Core.Pages
 
                 if (!isResetSequenceActive && !_isFailPopupActive)
                 {
-                    currentTime -= Time.deltaTime;
+                    currentTime -= Time.unscaledDeltaTime;
                     int displayTime = Mathf.CeilToInt(currentTime);
 
                     ProcessTimerTick(displayTime, ref lastDisplayTime, ref hasHinted);
@@ -1036,26 +974,23 @@ namespace My.Scripts.Core.Pages
             if (!_isStageCompleted && !isResetSequenceActive && !_isFailPopupActive)
             {
                 CancelAndDispose(ref _failPopupCts);
-                _failPopupCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                _failPopupCts = new CancellationTokenSource();
                 ShowFailPopupAsync(_failPopupCts.Token).Forget();
             }
         }
 
-        /// <summary>
-        /// 매 타이머 틱(초)마다 필요한 UI 갱신과 효과음을 트리거함.
-        /// </summary>
         private void ProcessTimerTick(int displayTime, ref int lastDisplayTime, ref bool hasHinted)
         {
             if (displayTime != lastDisplayTime && displayTime > 0)
             {
-                if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_10_1초");
+                if (_soundManager) _soundManager.PlaySFX("공통_10_1초");
                 lastDisplayTime = displayTime;
                 
                 if (displayTime == 5 && !hasHinted)
                 {
                     hasHinted = true;
                     CancelAndDispose(ref _hintCts);
-                    _hintCts = CancellationTokenSource.CreateLinkedTokenSource(_timerCts.Token);
+                    _hintCts = new CancellationTokenSource();
                     HintAnswerAsync(_hintCts.Token).Forget();
                 }
             }
@@ -1064,9 +999,6 @@ namespace My.Scripts.Core.Pages
             SetTimerColor(displayTime <= 5 && displayTime > 0 ? timerWarningColor : timerNormalColor);
         }
         
-        /// <summary>
-        /// 타임아웃 발생 시 모든 칸을 강제로 노출하고 실패 팝업을 표시함.
-        /// </summary>
         private async UniTaskVoid ShowFailPopupAsync(CancellationToken token)
         {
             _isFailPopupActive = true;
@@ -1080,15 +1012,15 @@ namespace My.Scripts.Core.Pages
             if (failPopupGroup)
             {
                 failPopupGroup.gameObject.SetActive(true);
-                if (SoundManager.Instance) SoundManager.Instance.PlaySFX("공통_7");
-                await UIFadeUtility.FadeCanvasGroupAsync(failPopupGroup, 0f, 1f, 0.3f, token);
+                if (_soundManager) _soundManager.PlaySFX("공통_7");
+                await failPopupGroup.FadeAsync(0f, 1f, 0.3f, token);
             }
 
             await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
 
             if (failPopupGroup)
             {
-                await UIFadeUtility.FadeCanvasGroupAsync(failPopupGroup, 1f, 0f, 0.3f, token);
+                await failPopupGroup.FadeAsync(1f, 0f, 0.3f, token);
                 failPopupGroup.gameObject.SetActive(false);
             }
 
@@ -1096,25 +1028,19 @@ namespace My.Scripts.Core.Pages
             CompleteStep();
         }
         
-        /// <summary>
-        /// 찾지 못한 정답 칸들을 일시적으로 반투명하게 빛내어 힌트를 제공함.
-        /// </summary>
         private async UniTaskVoid HintAnswerAsync(CancellationToken token)
         {
             if (AreAllQuestionsFound()) return;
 
             await FadeHintSpotsAsync(0.0f, 0.3f, 0.1f, token);
             
-            if (SoundManager.Instance) SoundManager.Instance.PlaySFX("카메라_4");
+            if (_soundManager) _soundManager.PlaySFX("카메라_4");
             
             await UniTask.Delay(TimeSpan.FromSeconds(0.2), cancellationToken: token);
 
             await FadeHintSpotsAsync(0.3f, 0.0f, 0.1f, token);
         }
 
-        /// <summary>
-        /// 모든 정답이 발견되었는지 확인함.
-        /// </summary>
         private bool AreAllQuestionsFound()
         {
             if (questionSpots == null) return true;
@@ -1126,15 +1052,12 @@ namespace My.Scripts.Core.Pages
             return true;
         }
 
-        /// <summary>
-        /// 미발견 정답 칸들의 투명도를 일괄 보간함.
-        /// </summary>
         private async UniTask FadeHintSpotsAsync(float startVal, float endVal, float duration, CancellationToken token)
         {
             float t = 0f;
             while (t < duration)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 ApplyHintMaskValue(Mathf.Lerp(startVal, endVal, t / duration));
                 await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
@@ -1142,16 +1065,13 @@ namespace My.Scripts.Core.Pages
             ApplyHintMaskValue(endVal);
         }
         
-        /// <summary>
-        /// 아직 찾지 못한 정답 칸에 동일한 마스크(알파)값을 일괄 적용함.
-        /// </summary>
         private void ApplyHintMaskValue(float val)
         {
             if (questionSpots == null) return;
 
             foreach (Vector2Int spot in questionSpots)
             {
-                if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && spot.y < gridSizeY)
+                if (!_foundSpots.Contains(spot) && spot.x >= 0 && spot.x < gridSizeX && spot.y >= 0 && gridSizeY > spot.y)
                 {
                     UpdateMaskPixelInstant(spot.x, spot.y, val, false);
                 }
@@ -1182,9 +1102,6 @@ namespace My.Scripts.Core.Pages
             }
         }
 
-        /// <summary>
-        /// 캔버스 그룹 목록의 상태를 초기화함.
-        /// </summary>
         private void ResetCanvasGroups(List<CanvasGroup> groups, float alpha, bool activate)
         {
             if (groups == null) return;

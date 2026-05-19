@@ -6,6 +6,10 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking;
 using Cysharp.Threading.Tasks;
+using Cysharp.Text; 
+using Microsoft.Extensions.Logging; 
+using ZLogger; 
+using VContainer; 
 using My.Scripts.Global;
 using Wonjeong.Utils;
 
@@ -41,8 +45,6 @@ namespace My.Scripts.Hardware
     /// </summary>
     public class HueManager : MonoBehaviour
     {
-        public static HueManager Instance;
-
         public HueConfig Config { get; private set; }
 
         private List<RGBColor> _shuffledColors;
@@ -54,50 +56,48 @@ namespace My.Scripts.Hardware
         private bool _isFetchingLights;
         private bool _hasFetchedLights;
 
-        // 정규식 컴파일 오버헤드 방지를 위한 정적 캐싱
-        private static readonly Regex _lightIdRegex = new Regex("\"(\\d+)\":\\s*\\{", RegexOptions.Compiled);
+        private readonly static Regex LightIdRegex = new Regex("\"(\\d+)\":\\s*\\{", RegexOptions.Compiled);
         private string _cachedBaseUrl;
 
-        /// <summary>
-        /// 싱글톤 인스턴스를 초기화하고 환경설정 로드를 트리거함.
-        /// </summary>
-        private void Awake()
+        // --- 의존성 주입 (DI) 변수 ---
+        private ILogger<HueManager> _logger;
+        private SessionManager _sessionManager;
+        private ArduinoManager _arduinoManager;
+
+        [Inject]
+        public void Construct(
+            ILogger<HueManager> logger,
+            SessionManager sessionManager,
+            ArduinoManager arduinoManager)
         {
-            if (!Instance)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-                LoadConfig();
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            _logger = logger;
+            _sessionManager = sessionManager;
+            _arduinoManager = arduinoManager;
         }
 
-        /// <summary>
-        /// Hue 설정 데이터를 JSON에서 로드하고 조명 ID 캐싱을 시작함.
-        /// </summary>
+        private void Awake()
+        {
+            LoadConfig();
+        }
+
         private void LoadConfig()
         {
-            string huePath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.HueConfig);
+            string currentLang = _sessionManager ? _sessionManager.CurrentLanguage : "ko";
+            string huePath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.HueConfig, currentLang);
             Config = JsonLoader.Load<HueConfig>(huePath);
 
             if (Config == null)
             {
-                Debug.LogError($"{huePath}.json 파일을 찾을 수 없음.");
+                _logger?.ZLogError($"{huePath}.json 파일을 찾을 수 없음.");
                 return;
             }
 
-            Debug.Log($"휴 설정 로드 완료 (IP: {Config.bridgeIp})");
-            _cachedBaseUrl = $"http://{Config.bridgeIp}/api/{Config.apiKey}/lights";
-            EnsureLightIdsFetchedAsync().Forget();
+            _logger?.ZLogInformation($"휴 설정 로드 완료 (IP: {Config.bridgeIp})");
+            _cachedBaseUrl = ZString.Format("http://{0}/api/{1}/lights", Config.bridgeIp, Config.apiKey);
+            
+            EnsureLightIdsFetchedAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        /// <summary>
-        /// 휴 브릿지의 API를 호출하여 조명 장치 ID를 비동기로 캐싱함.
-        /// </summary>
-        /// <param name="ct">비동기 작업 취소 토큰</param>
         private async UniTask EnsureLightIdsFetchedAsync(CancellationToken ct = default)
         {
             if (HandleEditorOrCachedState()) return;
@@ -119,9 +119,6 @@ namespace My.Scripts.Hardware
             }
         }
 
-        /// <summary>
-        /// 에디터 환경이거나 이미 데이터를 가져온 경우의 예외 처리를 수행함.
-        /// </summary>
         private bool HandleEditorOrCachedState()
         {
 #if UNITY_EDITOR
@@ -136,9 +133,6 @@ namespace My.Scripts.Hardware
             return _hasFetchedLights;
         }
 
-        /// <summary>
-        /// 실제 조명 목록을 요청하고 재시도 로직을 관리함.
-        /// </summary>
         private async UniTask ExecuteFetchSequence(CancellationToken ct)
         {
             if (Config == null || string.IsNullOrEmpty(_cachedBaseUrl)) return;
@@ -157,9 +151,6 @@ namespace My.Scripts.Hardware
             }
         }
 
-        /// <summary>
-        /// 웹 요청을 통해 수신된 JSON 데이터에서 ID를 추출함.
-        /// </summary>
         private async UniTask<bool> TryFetchAndParseLights(string url, CancellationToken ct)
         {
             using (UnityWebRequest request = UnityWebRequest.Get(url))
@@ -184,7 +175,7 @@ namespace My.Scripts.Hardware
                 ParseLightIds(request.downloadHandler.text);
                 if (_physicalLightIds.Count == 0)
                 {
-                    Debug.LogWarning("[HueManager] 조명 ID를 찾지 못해 다시 시도합니다.");
+                    _logger.ZLogWarning($"[HueManager] 조명 ID를 찾지 못해 다시 시도합니다.");
                     return false;
                 }
 
@@ -193,13 +184,10 @@ namespace My.Scripts.Hardware
             }
         }
 
-        /// <summary>
-        /// 정규식을 사용하여 JSON 텍스트에서 숫자 ID를 파싱함.
-        /// </summary>
         private void ParseLightIds(string json)
         {
             _physicalLightIds.Clear();
-            MatchCollection matches = _lightIdRegex.Matches(json);
+            MatchCollection matches = LightIdRegex.Matches(json);
 
             foreach (Match match in matches)
             {
@@ -212,9 +200,6 @@ namespace My.Scripts.Hardware
             _physicalLightIds.Sort();
         }
 
-        /// <summary>
-        /// 디버그용 단축키 입력을 처리함.
-        /// </summary>
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.M))
@@ -226,9 +211,6 @@ namespace My.Scripts.Hardware
             HandleDebugColorKeys();
         }
 
-        /// <summary>
-        /// 지정된 키에 따라 조명 색상을 즉시 변경함.
-        /// </summary>
         private void HandleDebugColorKeys()
         {
             if (!Input.anyKeyDown) return;
@@ -241,9 +223,6 @@ namespace My.Scripts.Hardware
             else if (Input.GetKeyDown(KeyCode.N)) TryApplyDebugColor(Config?.color5, "Color 5 (N)");
         }
 
-        /// <summary>
-        /// 데이터 유효성 검사 후 디버그 색상을 적용함.
-        /// </summary>
         private void TryApplyDebugColor(RGBColor color, string logName)
         {
             if (color == null) return;
@@ -251,9 +230,6 @@ namespace My.Scripts.Hardware
             ApplyDebugColor(color, logName);
         }
 
-        /// <summary>
-        /// 이전 작업을 취소하고 조명 색상 변경 태스크를 가동함.
-        /// </summary>
         private void ApplyDebugColor(RGBColor color, string logName)
         {
             _debugCts?.Cancel();
@@ -262,12 +238,9 @@ namespace My.Scripts.Hardware
 
             SetLightColorRGBAsync(1, color, -1, 4, _debugCts.Token).Forget();
             SetLightColorRGBAsync(2, color, -1, 4, _debugCts.Token).Forget();
-            Debug.Log($"디버그 조명 변경: {logName}");
+            _logger.ZLogInformation($"디버그 조명 변경: {logName}");
         }
 
-        /// <summary>
-        /// 조명의 전원 상태를 디버그 명령으로 변경함.
-        /// </summary>
         private void ApplyDebugState(bool isOn, string logName)
         {
             _debugCts?.Cancel();
@@ -276,12 +249,9 @@ namespace My.Scripts.Hardware
 
             SetLightStateAsync(1, isOn, _debugCts.Token).Forget();
             SetLightStateAsync(2, isOn, _debugCts.Token).Forget();
-            Debug.Log($"디버그 조명 상태 변경: {logName}");
+            _logger.ZLogInformation($"디버그 조명 상태 변경: {logName}");
         }
 
-        /// <summary>
-        /// 조명 연출용 셔플 리스트를 초기화함.
-        /// </summary>
         public void InitRandomColors()
         {
             if (Config == null) return;
@@ -302,9 +272,6 @@ namespace My.Scripts.Hardware
             _colorIndex = 0;
         }
 
-        /// <summary>
-        /// 셔플된 목록에서 다음 색상을 반환함.
-        /// </summary>
         public RGBColor PopRandomColor()
         {
             if (_shuffledColors == null || _colorIndex >= _shuffledColors.Count) InitRandomColors();
@@ -315,9 +282,6 @@ namespace My.Scripts.Hardware
             return selectedColor;
         }
 
-        /// <summary>
-        /// 조명의 전원 상태를 변경하는 API 명령을 전송함.
-        /// </summary>
         public async UniTask SetLightStateAsync(int lightId, bool isOn, CancellationToken ct = default)
         {
             if (Config == null || string.IsNullOrEmpty(_cachedBaseUrl)) return;
@@ -325,22 +289,19 @@ namespace My.Scripts.Hardware
             await EnsureLightIdsFetchedAsync(ct);
             int actualId = GetPhysicalLightId(lightId);
             if (actualId == -1) return;
-
-            string url = $"{_cachedBaseUrl}/{actualId}/state";
-            string jsonBody = "{\"on\":" + (isOn ? "true" : "false") + "}";
-
-            if (ArduinoManager.Instance)
+            
+            string url = ZString.Format("{0}/{1}/state", _cachedBaseUrl, actualId);
+            string jsonBody = ZString.Format("{{\"on\":{0}}}", isOn ? "true" : "false");
+            
+            if (_arduinoManager)
             {
                 string command = isOn ? GameConstants.Hardware.CmdLightOn : GameConstants.Hardware.CmdLightOff;
-                ArduinoManager.Instance.SendCommandToLight(command);
+                _arduinoManager.SendCommandToLight(command);
             }
 
             await SendPutRequestAsync(url, jsonBody, ct);
         }
 
-        /// <summary>
-        /// RGB 색상을 HSV 모델로 변환하여 조명 명령을 전송함.
-        /// </summary>
         public async UniTask SetLightColorRGBAsync(int lightId, RGBColor rgb, int bri = -1, int transitionTime = 4,
             CancellationToken ct = default)
         {
@@ -356,9 +317,6 @@ namespace My.Scripts.Hardware
             await SetLightColorAsync(lightId, hueValue, satValue, finalBri, transitionTime, ct);
         }
 
-        /// <summary>
-        /// 원시 색상 데이터를 사용하여 브릿지에 조명 변경을 요청함.
-        /// </summary>
         public async UniTask SetLightColorAsync(int lightId, int hue, int sat = -1, int bri = -1,
             int transitionTime = 4, CancellationToken ct = default)
         {
@@ -370,19 +328,20 @@ namespace My.Scripts.Hardware
 
             int finalSat = (sat == -1) ? Config.defaultSaturation : sat;
             int finalBri = (bri == -1) ? Config.defaultBrightness : bri;
+            
+            string url = ZString.Format("{0}/{1}/state", _cachedBaseUrl, actualId);
+            string jsonBody = ZString.Format(
+                "{{\"on\":true, \"bri\":{0}, \"hue\":{1}, \"sat\":{2}, \"transitiontime\":{3}}}", 
+                finalBri, hue, finalSat, transitionTime);
 
-            string url = $"{_cachedBaseUrl}/{actualId}/state";
-            string jsonBody =
-                $"{{\"on\":true, \"bri\":{finalBri}, \"hue\":{hue}, \"sat\":{finalSat}, \"transitiontime\":{transitionTime}}}";
-
-            if (ArduinoManager.Instance) ArduinoManager.Instance.SendCommandToLight(GameConstants.Hardware.CmdLightOn);
+            if (_arduinoManager)
+            {
+                _arduinoManager.SendCommandToLight(GameConstants.Hardware.CmdLightOn);
+            }
 
             await SendPutRequestAsync(url, jsonBody, ct);
         }
 
-        /// <summary>
-        /// HTTP PUT 메서드로 명령을 송신함.
-        /// </summary>
         private async UniTask SendPutRequestAsync(string url, string jsonBody, CancellationToken ct = default)
         {
 #if UNITY_EDITOR
@@ -405,14 +364,12 @@ namespace My.Scripts.Hardware
                 }
                 catch (Exception e)
                 {
-                    if (!ct.IsCancellationRequested) Debug.LogError($"통신 예외: {e.Message}");
+                    // [품질 보완] e 자체를 전달하여 내부 가비지 없이 원본 오류 유실 없는 스택 트레이스 디버깅 제공
+                    if (!ct.IsCancellationRequested) _logger.ZLogError(e, $"통신 예외: {e.Message}");
                 }
             }
         }
 
-        /// <summary>
-        /// 논리 ID를 실제 물리 ID로 변환함.
-        /// </summary>
         private int GetPhysicalLightId(int logicalId)
         {
             int index = logicalId - 1;
@@ -423,8 +380,6 @@ namespace My.Scripts.Hardware
 
         private void OnDestroy()
         {
-            if (Instance != this) return;
-
             _debugCts?.Cancel();
             _debugCts?.Dispose();
         }

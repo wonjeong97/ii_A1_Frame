@@ -1,30 +1,44 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using My.Scripts.Utils;
 using UnityEngine;
+using VContainer;
+using ZLogger;
 
 namespace My.Scripts.Core
 {
-    /// <summary> 페이지 순차 진행 관리 부모 클래스 </summary>
-    public abstract class BaseFlowManager : MonoBehaviour
+    /// <summary> 
+    /// 페이지 순차 진행 관리 부모 클래스.
+    /// IPageFlowListener를 상속받아 가비지 라인을 완전히 제거했습니다.
+    /// </summary>
+    public abstract class BaseFlowManager : MonoBehaviour, IPageFlowListener
     {
         [Header("Base Pages")]
-        [SerializeField] protected GamePage[] pages; // 진행될 페이지 리스트
+        [SerializeField] protected GamePage[] pages; 
 
-        protected int currentPageIndex = -1; // 현재 페이지 인덱스
-        protected bool isTransitioning; // 전환 연출 진행 여부
-        protected CancellationTokenSource transitionCts; // 비동기 전환 취소 토큰
+        protected int currentPageIndex = -1; 
+        protected bool isTransitioning; 
+        protected CancellationTokenSource transitionCts; 
+        protected ILogger<BaseFlowManager> _baseLogger;
+        
+        [Inject]
+        public void ConstructBase(ILogger<BaseFlowManager> baseLogger)
+        {
+            _baseLogger = baseLogger;
+        }
 
         protected virtual void Start()
         {
-            LoadSettings(); // 1. 데이터 로드 
+            LoadSettings(); 
             if (pages == null || pages.Length == 0)
             {
                 Debug.LogWarning("[BaseFlowManager] pages 비어있음");
                 return;
             }
-            InitializePages(); // 2. 페이지 초기화
-            StartFlow(); // 3. 흐름 시작
+            InitializePages(); 
+            StartFlow(); 
         }
 
         protected virtual void OnDestroy()
@@ -42,13 +56,9 @@ namespace My.Scripts.Core
             }
         }
 
-        /// <summary> 데이터 로드 (자식 구현) </summary>
         protected abstract void LoadSettings();
-
-        /// <summary> 모든 페이지 완료 시 호출 (자식 구현) </summary>
         protected abstract void OnAllFinished();
 
-        /// <summary> 페이지 초기화 및 이벤트 연결 </summary>
         protected virtual void InitializePages()
         {
             if (pages == null) return;
@@ -56,30 +66,38 @@ namespace My.Scripts.Core
             {
                 if (!pages[i]) continue;
                 
-                // 초기 상태: 비활성화 및 투명
                 pages[i].gameObject.SetActive(false);
                 pages[i].SetAlpha(0f);
                 
-                // 이벤트 연결: 현재 페이지가 끝나면 -> OnPageComplete 호출
-                int currentIndex = i;
-                int nextIndex = i + 1;
-                
-                // 기존 구독 해제 (중복 방지)
-                pages[i].onStepComplete = null; 
-                pages[i].onStepComplete += (info) => OnPageComplete(currentIndex, nextIndex, info);
+                // [최적화 완료] 뉴 할당 람다식(Closure)을 완전히 제거하고, 직관적인 포인터 주입으로 대체
+                pages[i].SetFlowListener(this);
             }
         }
 
-        /// <summary> 첫 페이지 진입 </summary>
         protected virtual void StartFlow()
         {
             if (pages != null && pages.Length > 0)
             {
+                _baseLogger?.ZLogInformation($"[{GetType().Name}] 플로우 시작 -> 첫 번째 페이지 진입 (Index: 0)");
                 TransitionToPage(0);
             }
         }
 
-        /// <summary> 페이지 완료 처리 (다음 이동 또는 종료) </summary>
+        /// <summary>
+        /// GamePage 인터페이스로부터 다이렉트로 호출되는 무결점 역추적 콜백부
+        /// </summary>
+        public void OnPageStepComplete(GamePage page, int triggerInfo)
+        {
+            // 현재 페이지의 배열 인덱스를 고속 역추적하여 안전하게 다음 단계 연산
+            int currentIndex = Array.IndexOf(pages, page);
+            if (currentIndex == -1 || currentIndex != currentPageIndex) return;
+
+            _baseLogger?.ZLogInformation($"[{GetType().Name}] Page {currentIndex} 단계 완료 (Trigger Info: {triggerInfo})");
+
+            int nextIndex = currentIndex + 1;
+            OnPageComplete(currentIndex, nextIndex, triggerInfo);
+        }
+
         protected virtual void OnPageComplete(int currentIndex, int nextIndex, int info)
         {
             if (nextIndex < pages.Length)
@@ -88,19 +106,25 @@ namespace My.Scripts.Core
             }
             else
             {
+                _baseLogger?.ZLogInformation($"[{GetType().Name}] 모든 페이지 플로우 완료. OnAllFinished() 호출.");
                 OnAllFinished();
             }
         }
 
-        /// <summary> 특정 페이지로 전환 요청 </summary>
         protected virtual void TransitionToPage(int targetIndex, int info = 0)
         {
-            if (isTransitioning) return;
-            if (pages == null || targetIndex < 0 || targetIndex >= pages.Length)
+            if (isTransitioning)
             {
-                Debug.LogWarning($"[BaseFlowManager] 잘못된 인덱스: {targetIndex}");
+                _baseLogger?.ZLogWarning($"[{GetType().Name}] 트랜지션 중단됨: 이미 전환 중 (Target: {targetIndex})");
                 return;
             }
+            if (pages == null || targetIndex < 0 || targetIndex >= pages.Length)
+            {
+                _baseLogger?.ZLogError($"[{GetType().Name}] 잘못된 인덱스 오류: {targetIndex}");
+                return;
+            }
+            
+            _baseLogger?.ZLogInformation($"[{GetType().Name}] 페이지 전환 트리거: 현재({currentPageIndex}) -> 타겟({targetIndex}) | 데이터: {info}");
             
             CancelTransition();
             transitionCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
@@ -108,16 +132,11 @@ namespace My.Scripts.Core
             TransitionAsync(targetIndex, info, transitionCts.Token).Forget();
         }
 
-        /// <summary> 
-        /// 페이지 전환 연출 (Fade Out -> Fade In) 
-        /// IEnumerator 대신 UniTask를 사용하여 가비지 할당(GC)을 제거함.
-        /// </summary>
         protected virtual async UniTaskVoid TransitionAsync(int targetIndex, int info, CancellationToken token)
         {
             isTransitioning = true;
             try
             {
-                // 1. 현재 페이지 퇴장 (있다면)
                 if (currentPageIndex >= 0 && currentPageIndex < pages.Length)
                 {
                     GamePage current = pages[currentPageIndex];
@@ -128,43 +147,36 @@ namespace My.Scripts.Core
                     }
                 }
                 
-                // 2. 다음 페이지 준비
                 currentPageIndex = targetIndex;
                 GamePage next = pages[targetIndex];
                 if (next)
                 {
-                    next.OnEnter(); // 활성화 및 초기화
-                    
-                    // 3. 다음 페이지 등장
+                    next.OnEnter();
                     await FadePageAsync(next, 0f, 1f, 0.5f, token);
                 }
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                _baseLogger?.ZLogWarning($"[{GetType().Name}] 비동기 페이지 전환 취소됨: {targetIndex}");
+            }
             finally
             {
                 isTransitioning = false;
             }
         }
 
-        /// <summary> 페이지 투명도 조절 </summary>
         protected async UniTask FadePageAsync(GamePage page, float start, float end, float duration, CancellationToken token)
         {
             if (!page) return;
-            if (duration <= 0f)
+
+            if (page.TryGetComponent(out CanvasGroup cg))
+            {
+                await cg.FadeAsync(start, end, duration, token);
+            }
+            else
             {
                 page.SetAlpha(end);
-                return;
             }
-            
-            float t = 0f;
-            page.SetAlpha(start);
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                page.SetAlpha(Mathf.Lerp(start, end, t / duration));
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
-            }
-            page.SetAlpha(end);
         }
     }
 }

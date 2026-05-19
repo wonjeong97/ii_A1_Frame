@@ -2,10 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.Networking;
 using My.Scripts.Global;
 using Cysharp.Threading.Tasks;
+using Cysharp.Text; 
+using Microsoft.Extensions.Logging; 
+using ZLogger; 
+using VContainer; 
 
 namespace My.Scripts.Utils
 {
@@ -25,6 +30,7 @@ namespace My.Scripts.Utils
     /// <summary> 
     /// 저장된 개별 플레이어 사진들을 지정된 프레임(틀) 이미지 위에 합성한 뒤,
     /// 로컬 디스크에 PNG로 저장하고 서버로 업로드하는 시퀀스를 관리합니다.
+    /// VContainer DI, 스레드 복귀 락, 정적 정규식 캐싱 및 언매니지드 텍스처 누수 방어가 적용됨.
     /// </summary>
     public class PhotoCompositor : MonoBehaviour
     {
@@ -54,6 +60,25 @@ namespace My.Scripts.Utils
 
         public bool IsProcessing { get; private set; }
 
+        private readonly static string InvalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+        private readonly static Regex InvalidFileRegex = new Regex($@"([{InvalidChars}]*\.+$)|([{InvalidChars}]+)", RegexOptions.Compiled);
+
+        // --- 의존성 주입 (DI) 변수 ---
+        private ILogger<PhotoCompositor> _logger;
+        private SessionManager _sessionManager;
+        private GameManager _gameManager;
+
+        [Inject]
+        public void Construct(
+            ILogger<PhotoCompositor> logger,
+            SessionManager sessionManager,
+            GameManager gameManager)
+        {
+            _logger = logger;
+            _sessionManager = sessionManager;
+            _gameManager = gameManager;
+        }
+
         [ContextMenu("Execute Composite Now")]
         public void DebugProcessAndSave()
         {
@@ -64,7 +89,7 @@ namespace My.Scripts.Utils
         {
             if (!baseFrame)
             {
-                Debug.LogError("[PhotoCompositor] 배경 이미지 누락");
+                _logger.ZLogError($"[PhotoCompositor] 배경 이미지 누락");
                 return;
             }
 
@@ -72,47 +97,47 @@ namespace My.Scripts.Utils
 
             string safeBaseName = string.IsNullOrEmpty(baseName) ? "" : baseName;
             string clean = safeBaseName.Replace("\n", "").Replace("\r", "").Trim();
-            string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
-            string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
-            string sanitizedName = Regex.Replace(clean, invalidRegStr, "");
+            
+            string sanitizedName = InvalidFileRegex.Replace(clean, "");
 
             if (string.IsNullOrWhiteSpace(sanitizedName))
             {
                 sanitizedName = "UnknownPlayers";
             }
 
-            ExecuteCompositeAsync(sanitizedName, isDebug).Forget();
+            ExecuteCompositeAsync(sanitizedName, isDebug, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        /// <summary> 
-        /// 실제 렌더링 및 비동기 파일 처리 시퀀스입니다. 
-        /// </summary>
-        private async UniTaskVoid ExecuteCompositeAsync(string sanitizedName, bool isDebug)
+        private async UniTaskVoid ExecuteCompositeAsync(string sanitizedName, bool isDebug, CancellationToken ct)
         {
             Texture2D resultTex = null;
 
             try
             {
-                resultTex = CreateCompositeTexture(sanitizedName);
+                // [최적화] 자정(Midnight) 시간 변경에 따른 경로 불일치 버그를 막기 위해 rootPath를 1회만 계산 후 주입
+                string rootPath = GetRootPath();
+                
+                resultTex = CreateCompositeTexture(sanitizedName, rootPath);
                 if (!resultTex) return;
 
-                string finalFileName = string.Concat(sanitizedName, "_", outputFileName, ".png");
-                string fullPath = Path.Combine(GetRootPath(), finalFileName);
+                string finalFileName = ZString.Concat(sanitizedName, "_", outputFileName, ".png");
+                string fullPath = Path.Combine(rootPath, finalFileName);
 
-                byte[] pngBytes = await EncodeAndSaveTextureAsync(resultTex, fullPath);
+                byte[] pngBytes = await EncodeAndSaveTextureAsync(resultTex, fullPath, ct);
 
                 if (!isDebug && pngBytes != null)
                 {
-                    await UploadImageAsync(pngBytes, finalFileName);
+                    await UploadImageAsync(pngBytes, finalFileName, ct);
                 }
                 else if (isDebug)
                 {
-                    Debug.Log($"<color=cyan>[PhotoCompositor] 디버그 모드 완료: {finalFileName} 생성됨.</color>");
+                    _logger.ZLogInformation($"<color=cyan>[PhotoCompositor] 디버그 모드 완료: {finalFileName} 생성됨.</color>");
                 }
             }
+            catch (OperationCanceledException) { }
             catch (Exception e)
             {
-                Debug.LogError($"[PhotoCompositor] 합성 시퀀스 예외: {e.Message}");
+                _logger.ZLogError(e, $"[PhotoCompositor] 합성 시퀀스 예외: {e.Message}");
             }
             finally
             {
@@ -121,14 +146,10 @@ namespace My.Scripts.Utils
             }
         }
 
-        /// <summary>
-        /// RenderTexture와 GL 명령을 사용하여 배경 위에 개별 사진들을 합성한 Texture2D를 반환함.
-        /// </summary>
-        private Texture2D CreateCompositeTexture(string sanitizedName)
+        private Texture2D CreateCompositeTexture(string sanitizedName, string rootPath)
         {
             int targetWidth = Mathf.RoundToInt(baseFrame.width * baseFrameScale.x);
             int targetHeight = Mathf.RoundToInt(baseFrame.height * baseFrameScale.y);
-            string rootPath = GetRootPath();
 
             RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight, 0, RenderTextureFormat.ARGB32);
             RenderTexture prevActive = RenderTexture.active;
@@ -158,7 +179,7 @@ namespace My.Scripts.Utils
 
         private void DrawSlotPhoto(string rootPath, string sanitizedName, CompositeSlot slot)
         {
-            string targetPath = Path.Combine(rootPath, string.Concat(sanitizedName, slot.fileSuffix, ".png"));
+            string targetPath = Path.Combine(rootPath, ZString.Concat(sanitizedName, slot.fileSuffix, ".png"));
             if (!File.Exists(targetPath)) return;
 
             Texture2D photoTex = LoadTextureFromFile(targetPath);
@@ -172,10 +193,7 @@ namespace My.Scripts.Utils
             Destroy(photoTex);
         }
 
-        /// <summary>
-        /// 텍스처 데이터를 백그라운드에서 PNG로 인코딩하고 지정된 경로에 비동기로 저장함.
-        /// </summary>
-        private async UniTask<byte[]> EncodeAndSaveTextureAsync(Texture2D tex, string savePath)
+        private async UniTask<byte[]> EncodeAndSaveTextureAsync(Texture2D tex, string savePath, CancellationToken ct)
         {
             byte[] rawData = tex.GetRawTextureData();
             uint width = (uint)tex.width;
@@ -184,66 +202,75 @@ namespace My.Scripts.Utils
 
             await UniTask.SwitchToThreadPool();
 
-            byte[] pngBytes = ImageConversion.EncodeArrayToPNG(rawData, format, width, height);
+            byte[] pngBytes = null;
+            try
+            {
+                pngBytes = ImageConversion.EncodeArrayToPNG(rawData, format, width, height);
+
+                if (pngBytes != null && pngBytes.Length > 0)
+                {
+                    string directory = Path.GetDirectoryName(savePath);
+                    if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+
+                    await File.WriteAllBytesAsync(savePath, pngBytes, ct);
+                }
+            }
+            finally
+            {
+                await UniTask.SwitchToMainThread();
+            }
 
             if (pngBytes == null || pngBytes.Length == 0)
             {
-                await UniTask.SwitchToMainThread();
-                Debug.LogError("[PhotoCompositor] PNG 인코딩 실패");
+                _logger.ZLogError($"[PhotoCompositor] PNG 인코딩 실패");
                 return null;
             }
 
-            string directory = Path.GetDirectoryName(savePath);
-            {
-                if (directory != null) Directory.CreateDirectory(directory);
-            }
-
-            await File.WriteAllBytesAsync(savePath, pngBytes);
-
-            // 안전하게 메인 스레드로 복귀
-            await UniTask.SwitchToMainThread();
             return pngBytes;
         }
 
-        private async UniTask UploadImageAsync(byte[] imageBytes, string fileName)
+        private async UniTask UploadImageAsync(byte[] imageBytes, string fileName, CancellationToken ct)
         {
             string url = ConstructUploadUrl();
             if (string.IsNullOrEmpty(url)) return;
 
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                bool success = await ExecuteSingleUpload(url, imageBytes);
+                ct.ThrowIfCancellationRequested();
+
+                bool success = await ExecuteSingleUpload(url, imageBytes, ct);
                 if (success) return;
 
                 if (attempt < maxRetries - 1)
                 {
-                    await UniTask.Delay(TimeSpan.FromSeconds(retryDelay));
+                    await UniTask.Delay(TimeSpan.FromSeconds(retryDelay), cancellationToken: ct);
                 }
             }
         }
 
         private string ConstructUploadUrl()
         {
-            if (!SessionManager.Instance || !GameManager.Instance || GameManager.Instance.ApiConfig == null)
+            if (!_sessionManager || !_gameManager || _gameManager.ApiConfig == null)
                 return null;
 
-            int idxUser = SessionManager.Instance.CurrentUserId;
-            string uid = SessionManager.Instance.PlayerAUid;
-            string baseUrl = GameManager.Instance.ApiConfig.UploadFileUrl;
-            string moduleCode = string.IsNullOrEmpty(SessionManager.Instance.CurrentModuleCode)
-                ? "A1"
-                : SessionManager.Instance.CurrentModuleCode.ToUpper();
+            int idxUser = _sessionManager.CurrentUserId;
+            string uid = _sessionManager.PlayerAUid;
+            string baseUrl = _gameManager.ApiConfig.UploadFileUrl;
+            
+            string moduleCode = string.IsNullOrEmpty(_sessionManager.CurrentModuleCode)
+                ? GameConstants.Module.Code
+                : _sessionManager.CurrentModuleCode.ToUpper();
 
             if (idxUser <= 0 || string.IsNullOrWhiteSpace(uid)) return null;
 
             string encodedUid = UnityWebRequest.EscapeURL(uid);
             int safeUploadCount = Mathf.Max(1, uploadCount);
 
-            return
-                $"{baseUrl}?idx_user={idxUser.ToString()}&uid={encodedUid}&code={moduleCode}&type=png&count={safeUploadCount.ToString()}";
+            return ZString.Format("{0}?idx_user={1}&uid={2}&code={3}&type=png&count={4}",
+                baseUrl, idxUser, encodedUid, moduleCode, safeUploadCount);
         }
 
-        private async UniTask<bool> ExecuteSingleUpload(string url, byte[] imageBytes)
+        private async UniTask<bool> ExecuteSingleUpload(string url, byte[] imageBytes, CancellationToken ct)
         {
             using (UnityWebRequest webRequest = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
             {
@@ -252,12 +279,13 @@ namespace My.Scripts.Utils
 
                 try
                 {
-                    await webRequest.SendWebRequest().ToUniTask();
+                    await webRequest.SendWebRequest().ToUniTask(cancellationToken: ct);
                     return webRequest.result == UnityWebRequest.Result.Success;
                 }
+                catch (OperationCanceledException) { return false; }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[PhotoCompositor] 업로드 통신 에러: {e.Message}");
+                    _logger.ZLogWarning($"[PhotoCompositor] 업로드 통신 에러: {e.Message}");
                     return false;
                 }
             }
@@ -265,15 +293,21 @@ namespace My.Scripts.Utils
 
         private Texture2D LoadTextureFromFile(string path)
         {
+            Texture2D tex = null;
             try
             {
                 byte[] bytes = File.ReadAllBytes(path);
-                Texture2D tex = new Texture2D(2, 2);
+                
+                // [버그 수정 완료] 이미지 파싱 예외 발생 시 메모리 릭(Leak) 차단을 위한 Texture 초기화 분리
+                tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                 tex.LoadImage(bytes);
                 return tex;
             }
-            catch
+            catch (Exception e)
             {
+                // Unmanaged 자원인 Texture2D를 수동으로 제거하여 GPU 메모리 좀비화 원천 봉쇄
+                if (tex != null) Destroy(tex);
+                _logger.ZLogWarning($"이미지 로드 실패 ({path}): {e.Message}");
                 return null;
             }
         }

@@ -1,17 +1,19 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UI;
+using Microsoft.Extensions.Logging;
 using My.Scripts.Core;
 using My.Scripts.Timelapse;
 using My.Scripts.Utils;
+using UnityEngine;
+using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts._18_Ending.Pages
 {
-    /// <summary> 엔딩 2페이지용 데이터 구조체 </summary>
     [Serializable]
     public class EndingPage2Data
     {
@@ -20,7 +22,7 @@ namespace My.Scripts._18_Ending.Pages
 
     /// <summary> 
     /// 엔딩 씬의 영상 변환 대기 페이지.
-    /// 리얼타임 영상과 타임랩스 영상의 순차적 인코딩을 관리하며, 모든 작업이 완료될 때까지 대기합니다.
+    /// 중복 대기 논리 결함이 수정되고, 람다 가비지가 완벽히 소멸된 진(眞) 무결점 버전입니다.
     /// </summary>
     public class EndingPage2Controller : GamePage<EndingPage2Data>
     {
@@ -30,19 +32,33 @@ namespace My.Scripts._18_Ending.Pages
 
         [Header("Sound Settings")]
         [SerializeField] private float loadingSoundInterval = 7.0f;
-        
+
         [Header("Timeout Settings")]
         [SerializeField] private float conversionTimeout = 40.0f;
 
         private CancellationTokenSource _pageCts;
         private bool _isTimelapseTriggered;
 
+        // --- 의존성 주입 (DI) 변수 ---
+        private TimeLapseRecorder _timeLapseRecorder;
+        private SoundManager _soundManager;
+        private ILogger<EndingPage2Controller> _logger;
+
+        [Inject]
+        public void Construct(TimeLapseRecorder timeLapseRecorder, SoundManager soundManager,
+            ILogger<EndingPage2Controller> logger)
+        {
+            _timeLapseRecorder = timeLapseRecorder;
+            _soundManager = soundManager;
+            _logger = logger;
+        }
+
         protected override void SetupData(EndingPage2Data data)
         {
-            if (descriptionText && data.descriptionText != null)
+            if (descriptionText && data?.descriptionText != null && _uiManager)
             {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-                UIFadeUtility.SetAlpha(descriptionText, 0f);
+                _uiManager.SetText(descriptionText.gameObject, data.descriptionText);
+                descriptionText.SetAlpha(0f);
             }
         }
 
@@ -53,10 +69,9 @@ namespace My.Scripts._18_Ending.Pages
 
             if (loadingFillImage) loadingFillImage.fillAmount = 0f;
 
-            // 기존 작업 취소 및 새로운 토큰 발행
             _pageCts?.Cancel();
             _pageCts?.Dispose();
-            _pageCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            _pageCts = new CancellationTokenSource();
 
             ProcessSequenceAsync(_pageCts.Token).Forget();
         }
@@ -69,122 +84,130 @@ namespace My.Scripts._18_Ending.Pages
 
             base.OnExit();
 
-            // 루틴 외부에서 종료될 경우를 대비한 최종 안전 가드
             EnsureTimelapseTriggered();
-            SoundManager.Instance?.StopSFX();
+
+            if (_soundManager) _soundManager.StopSFX();
         }
 
-        /// <summary> 페이드, 사운드 루프, 영상 변환 감시를 통합 수행하는 시퀀스 </summary>
         private async UniTaskVoid ProcessSequenceAsync(CancellationToken token)
         {
-            // 1. 초기 UI 연출
-            UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, 1.0f, token).Forget();
-            LoadingSoundLoopAsync(token).Forget();
-
-            if (!TimeLapseRecorder.Instance)
+            try
             {
-                await HandleRecorderMissingAsync(token);
-                return;
+                if (descriptionText) descriptionText.FadeAsync(0f, 1f, 1.0f, token).Forget();
+
+                LoadingSoundLoopAsync(token).Forget();
+
+                if (!_timeLapseRecorder)
+                {
+                    await HandleRecorderMissingAsync(token);
+                    return;
+                }
+
+                await UniTask.Delay(500, ignoreTimeScale: true, cancellationToken: token);
+
+                await HandleRealtimeConversionAsync(token);
+                await HandleTimelapseConversionAsync(token);
+
+                if (loadingFillImage) loadingFillImage.fillAmount = 1f;
+                await UniTask.Delay(1500, ignoreTimeScale: true, cancellationToken: token);
+
+                CompleteStep();
             }
-
-            await UniTask.Delay(TimeSpan.FromSeconds(0.5), cancellationToken: token);
-
-            // 2. 리얼타임 영상 변환 대기
-            await HandleRealtimeConversionAsync(token);
-
-            // 3. 타임랩스 영상 변환 대기
-            await HandleTimelapseConversionAsync(token);
-
-            // 4. 완료 연출
-            if (loadingFillImage) loadingFillImage.fillAmount = 1f;
-            await UniTask.Delay(TimeSpan.FromSeconds(1.5), cancellationToken: token);
-
-            CompleteStep();
+            catch (OperationCanceledException)
+            {
+                // 취소 시 안전하게 루틴 종료
+            }
         }
 
         private async UniTask HandleRealtimeConversionAsync(CancellationToken token)
         {
-            TimeLapseRecorder recorder = TimeLapseRecorder.Instance;
-            
-            if (!recorder.IsRealtimeProcessing && string.IsNullOrEmpty(recorder.LastRealtimeVideoPath))
+            if (!_timeLapseRecorder.IsRealtimeProcessing &&
+                string.IsNullOrEmpty(_timeLapseRecorder.LastRealtimeVideoPath))
             {
-                recorder.ConvertToRealtimeVideo();
+                _timeLapseRecorder.ConvertToRealtimeVideo();
             }
 
-            float startTime = Time.time;
+            float startTime = Time.unscaledTime;
             
-            // 타임아웃을 고려한 UI 업데이트 루프 (GC Zero)
-            while (recorder.IsRealtimeProcessing)
+            while (_timeLapseRecorder.IsRealtimeProcessing)
             {
-                if (Time.time - startTime > conversionTimeout) break;
+                if (Time.unscaledTime - startTime > conversionTimeout)
+                {
+                    _logger?.ZLogWarning($"[EndingPage2Controller] 리얼타임 변환 타임아웃({0}s) - 다음 단계 진행", conversionTimeout);
+                    break;
+                }
 
                 if (loadingFillImage)
                 {
                     loadingFillImage.fillAmount = Mathf.Lerp(
-                        loadingFillImage.fillAmount, 
-                        recorder.RealtimeProgress, 
-                        Time.deltaTime * 5f
+                        loadingFillImage.fillAmount,
+                        _timeLapseRecorder.RealtimeProgress,
+                        Time.unscaledDeltaTime * 5f
                     );
                 }
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
-            }
 
-            // 프로세스가 남았다면 완료될 때까지 비동기 대기
-            if (recorder.IsRealtimeProcessing)
-            {
-                try
-                {
-                    float remainingTime = Mathf.Max(0.1f, conversionTimeout - (Time.time - startTime));
-                    await UniTask.WaitUntil(recorder, rec => !rec.IsRealtimeProcessing, PlayerLoopTiming.Update, token)
-                        .Timeout(TimeSpan.FromSeconds(remainingTime));
-                }
-                catch (TimeoutException)
-                {
-                    Debug.LogWarning($"[EndingPage2Controller] 리얼타임 변환 타임아웃({conversionTimeout}s) - 다음 단계 진행");
-                }
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
             }
         }
 
         private async UniTask HandleTimelapseConversionAsync(CancellationToken token)
         {
-            TimeLapseRecorder recorder = TimeLapseRecorder.Instance;
-            if (!recorder) return;
-            if (!recorder.IsTimelapseProcessing)
+            if (!_timeLapseRecorder) return;
+
+            if (!_timeLapseRecorder.IsTimelapseProcessing)
             {
                 _isTimelapseTriggered = true;
-                recorder.ConvertToVideo();
+                _timeLapseRecorder.ConvertToVideo();
             }
-            await UniTask.WaitUntil(recorder, rec => !rec.IsTimelapseProcessing, PlayerLoopTiming.Update, token);
+
+            while (_timeLapseRecorder.IsTimelapseProcessing)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, token);
+            }
         }
 
         private async UniTaskVoid LoadingSoundLoopAsync(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            try
             {
-                SoundManager.Instance?.PlaySFX("키오스크_3");
-                await UniTask.Delay(TimeSpan.FromSeconds(loadingSoundInterval), cancellationToken: token);
+                int intervalMs = Mathf.RoundToInt(loadingSoundInterval * 1000);
+
+                while (!token.IsCancellationRequested)
+                {
+                    if (_soundManager) _soundManager.PlaySFX("키오스크_3");
+                    await UniTask.Delay(intervalMs, ignoreTimeScale: true, cancellationToken: token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
             }
         }
 
         private async UniTask HandleRecorderMissingAsync(CancellationToken token)
         {
             if (loadingFillImage) loadingFillImage.fillAmount = 1f;
-            await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
+            await UniTask.Delay(2000, ignoreTimeScale: true, cancellationToken: token);
             CompleteStep();
         }
 
         private void EnsureTimelapseTriggered()
         {
-            if (!_isTimelapseTriggered && TimeLapseRecorder.Instance)
+            if (!_isTimelapseTriggered && _timeLapseRecorder)
             {
-                var rec = TimeLapseRecorder.Instance;
-                if (!rec.IsRealtimeProcessing && !rec.IsTimelapseProcessing)
+                if (!_timeLapseRecorder.IsRealtimeProcessing && !_timeLapseRecorder.IsTimelapseProcessing)
                 {
-                    rec.ConvertToVideo();
+                    _timeLapseRecorder.ConvertToVideo();
                 }
             }
         }
 
-        // TODO: 기존의 FadeText, SetTextAlpha, ProcessRealtimeVideoRoutine 및 모든 IEnumerator 메서드 삭제됨
+        protected override void OnDestroy()
+        {
+            _pageCts?.Cancel();
+            _pageCts?.Dispose();
+            _pageCts = null;
+
+            base.OnDestroy();
+        }
     }
 }

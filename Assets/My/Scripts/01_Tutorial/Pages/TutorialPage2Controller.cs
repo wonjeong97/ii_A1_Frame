@@ -1,12 +1,16 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using My.Scripts.Core;
+using My.Scripts.Global;
 using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
@@ -27,15 +31,22 @@ namespace My.Scripts._01_Tutorial.Pages
         [SerializeField] private Text descriptionText;
 
         private TutorialPage2Data _data;
+        private CancellationTokenSource _sequenceCts;
 
-        /// <summary> JSON에서 로드한 텍스트 데이터 주입 </summary>
+        // --- 의존성 주입 (DI) 변수 ---
+        private ILogger<TutorialPage2Controller> _logger;
+        private SoundManager _soundManager;
+
+        [Inject]
+        public void Construct(SoundManager soundManager, ILogger<TutorialPage2Controller> logger)
+        {
+            _soundManager = soundManager;
+            _logger = logger;
+        }
+
         protected override void SetupData(TutorialPage2Data data)
         {
             _data = data;
-            if (descriptionText)
-            {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            }
         }
 
         public override object ExtractCurrentData()
@@ -46,27 +57,70 @@ namespace My.Scripts._01_Tutorial.Pages
             };
         }
 
-        /// <summary> 페이지 진입 시 UI 표시 및 BGM 전환, 타이머 시작 </summary>
         public override void OnEnter()
         {
             base.OnEnter(); 
     
-            if (descriptionText) UIFadeUtility.SetAlpha(descriptionText, 1f);
-
-            if (SoundManager.Instance)
+            if (descriptionText)
             {
-                SoundManager.Instance.StopBGM();
-                SoundManager.Instance.PlayBGM("MainBGM");
-                SoundManager.Instance.PlaySFX("공통_6");
+                if (_data?.descriptionText != null && _uiManager)
+                {
+                    _uiManager.SetText(descriptionText.gameObject, _data.descriptionText);
+
+                    if (Mathf.Abs(descriptionText.color.a - 1f) > Mathf.Epsilon)
+                    {
+                        descriptionText.SetAlpha(1f);
+                    }
+                }
+                else
+                {
+                    descriptionText.SetAlpha(1f);
+                }
+            }
+
+            if (_soundManager)
+            {
+                _soundManager.StopBGM();
+                _soundManager.PlayBGM("MainBGM");
+                _soundManager.PlaySFX("공통_6");
             }
     
-            WaitAndNextAsync(this.GetCancellationTokenOnDestroy()).Forget();
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = new CancellationTokenSource();
+
+            WaitAndNextAsync(_sequenceCts.Token).Forget();
         }
         
+        public override void OnExit()
+        {
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+
+            base.OnExit();
+        }
+
         private async UniTaskVoid WaitAndNextAsync(CancellationToken token)
         {
-            await UniTask.Delay(TimeSpan.FromSeconds(3.0), cancellationToken: token);
-            CompleteStep();
+            try
+            {
+                await UniTask.Delay(4000, ignoreTimeScale: true, cancellationToken: token);
+                CompleteStep();
+            }
+            catch (OperationCanceledException)
+            {
+                // 씬 파괴 및 페이지 전환 시 강제 취소 예외 무음 처리
+            }
+        }
+
+        protected override void OnDestroy()
+        {
+            _sequenceCts?.Cancel();
+            _sequenceCts?.Dispose();
+            _sequenceCts = null;
+
+            base.OnDestroy();
         }
     }
 }

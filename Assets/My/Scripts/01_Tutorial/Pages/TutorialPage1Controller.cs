@@ -1,20 +1,21 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Cysharp.Text; 
+using Microsoft.Extensions.Logging; 
 using My.Scripts.Core;
 using My.Scripts.Global;
 using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts._01_Tutorial.Pages
 {
-    /// <summary>
-    /// 튜토리얼 1페이지 텍스트 데이터 구조체.
-    /// </summary>
     [Serializable]
     public class TutorialPage1Data
     {
@@ -25,7 +26,7 @@ namespace My.Scripts._01_Tutorial.Pages
 
     /// <summary>
     /// 튜토리얼 진입 시 서버 폴링을 통해 실제 유저 상태를 동기화하는 컨트롤러.
-    /// UniTask를 사용하여 가비지 발생을 억제하고 비동기 루프를 안정적으로 관리함.
+    /// UI 렌더링 타이밍을 OnEnter로 이관하여 초기화 시 텍스트가 누락되는 라이프사이클 버그를 완벽 요격했습니다.
     /// </summary>
     public class TutorialPage1Controller : PopupGamePage<TutorialPage1Data>
     {
@@ -43,10 +44,19 @@ namespace My.Scripts._01_Tutorial.Pages
         private string cachedCheckUrl;
         private string cachedUserUrl;
         private float emptyUserStartTime;
+        private bool _isFetchingData;
 
-        /// <summary>
-        /// 초기화 단계에서 페이드인 연출을 위해 텍스트 투명도를 선제적으로 낮춤.
-        /// </summary>
+        // --- 의존성 주입 (DI) 변수 ---
+        private SessionManager _sessionManager;
+
+        [Inject]
+        public void Construct(GameManager gameManager, SessionManager sessionManager, ILogger<TutorialPage1Controller> logger)
+        {
+            _gameManager = gameManager;
+            _sessionManager = sessionManager;
+            _logger = logger;
+        }
+
         protected override void Awake()
         {
             base.Awake();
@@ -55,32 +65,23 @@ namespace My.Scripts._01_Tutorial.Pages
 
             if (!descriptionText)
             {
-                Debug.LogWarning("TutorialPage1: descriptionText 컴포넌트가 누락됨.");
+               if (_logger != null) _logger.ZLogWarning($"[TutorialPage1] descriptionText 컴포넌트가 누락됨.");
             }
             else
             {
-                Color c = descriptionText.color;
-                c.a = 0f;
-                descriptionText.color = c;
+                descriptionText.SetAlpha(0f); 
             }
 
             if (!apiManager)
             {
-                Debug.LogWarning("TutorialPage1: apiManager 인스턴스가 할당되지 않음.");
+                if (_logger != null) _logger.ZLogWarning($"[TutorialPage1] apiManager 인스턴스가 할당되지 않음.");
             }
         }
 
-        /// <summary>
-        /// 전달받은 데이터를 기반으로 UI 텍스트 컴포넌트의 값을 갱신함.
-        /// </summary>
         protected override void SetupData(TutorialPage1Data data)
         {
             pageData = data;
-            if (descriptionText && data.descriptionText != null)
-            {
-                UIManager.Instance.SetText(descriptionText.gameObject, data.descriptionText);
-            }
-            SetupPopupMessage(data.warningMessage, data.resetMessage);
+            SetupPopupMessage(data?.warningMessage ?? string.Empty, data?.resetMessage ?? string.Empty);
         }
 
         public override object ExtractCurrentData()
@@ -93,32 +94,46 @@ namespace My.Scripts._01_Tutorial.Pages
             };
         }
 
-        /// <summary>
-        /// 페이지 활성화 시 무인 타이머를 초기화하고 네트워크 상태 폴링을 시작함.
-        /// 기존 작업이 있다면 취소하고 새로운 토큰을 발행하여 중복 실행을 방지함.
-        /// </summary>
         public override void OnEnter()
         {
             base.OnEnter();
             ResetIdleState(true);
             
+            // 타이틀 씬에서 누락되었을 수 있는 LED 강제 소등 처리
+            if (_arduinoManager)
+            {
+                _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+                _arduinoManager.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
+            }
+    
             emptyUserStartTime = -1f;
+            _isFetchingData = false; 
+
+            if (descriptionText && pageData?.descriptionText != null)
+            {
+                if (!_uiManager)
+                {
+                    Debug.LogError($"[TutorialPage1] 치명적 오류: _uiManager가 주입되지 않았습니다! 스코프 배치를 확인하세요.");
+                }
+                else
+                {
+                    _uiManager.SetText(descriptionText.gameObject, pageData.descriptionText);
+                }
+            }
 
             if (descriptionText)
             {
-                UIFadeUtility.FadeGraphicAsync(descriptionText, 0f, 1f, fadeTime, this.GetCancellationTokenOnDestroy()).Forget();
+                descriptionText.FadeAsync(0f, 1f, fadeTime, this.GetCancellationTokenOnDestroy()).Forget();
             }
 
             pollCts?.Cancel();
             pollCts?.Dispose();
-            pollCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            pollCts = new CancellationTokenSource();
             
             PollRoomStateAsync(pollCts.Token).Forget();
         }
 
-        /// <summary>
-        /// 페이지 비활성화 시 비동기 루프를 중단하고 토큰 리소스를 해제함.
-        /// </summary>
         public override void OnExit()
         {
             pollCts?.Cancel();
@@ -128,9 +143,6 @@ namespace My.Scripts._01_Tutorial.Pages
             base.OnExit();
         }
 
-        /// <summary>
-        /// 입력 장치 이벤트를 감지하여 대기 상태 해제 및 수동 스킵을 제어함.
-        /// </summary>
         private void Update()
         {
             if (Input.anyKey || Input.touchCount > 0)
@@ -143,47 +155,53 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             else
             {
-                UpdateInactivity();
+                if (emptyUserStartTime < 0f && !_isFetchingData)
+                {
+                    UpdateInactivity();
+                }
             }
         }
 
-        /// <summary>
-        /// 서버 상태를 주기적으로 확인하며 유저 세션을 동기화하는 비동기 루프.
-        /// 에디터 환경에서는 폴링을 생략하여 불필요한 로그 발생을 억제함.
-        /// </summary>
         private async UniTaskVoid PollRoomStateAsync(CancellationToken token)
         {
 #if UNITY_EDITOR
             return;
 #endif
+            int intervalMs = Mathf.RoundToInt((pollInterval > 0 ? pollInterval : 3.0f) * 1000);
+
             while (!token.IsCancellationRequested)
             {
-                if (GameManager.Instance && GameManager.Instance.ApiConfig != null)
+                try
                 {
-                    CacheUrls();
-                    await ProcessRoomStateAsync(token);
+                    if (_gameManager && _gameManager.ApiConfig != null)
+                    {
+                        CacheUrls();
+                        await ProcessRoomStateAsync(token);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception e)
+                {
+                    _logger?.ZLogWarning($"[TutorialPage1] 폴링 루프 예외 발생 (재시도 대기): {e.Message}");
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(pollInterval > 0 ? pollInterval : 3.0f), cancellationToken: token);
+                await UniTask.Delay(intervalMs, ignoreTimeScale: true, cancellationToken: token);
             }
         }
 
-        /// <summary>
-        /// URL 문자열 조합 시 발생하는 가비지를 방지하기 위해 엔드포인트를 캐싱함.
-        /// </summary>
         private void CacheUrls()
         {
-            if (string.IsNullOrEmpty(cachedCheckUrl) && GameManager.Instance.ApiConfig != null)
+            if (string.IsNullOrEmpty(cachedCheckUrl) && _gameManager?.ApiConfig != null)
             {
                 string code = GameConstants.Module.Code.ToLower();
-                cachedCheckUrl = $"{GameManager.Instance.ApiConfig.CheckRoomStateUrl}?code={code}";
-                cachedUserUrl = $"{GameManager.Instance.ApiConfig.GetCurrentRoomUserUrl}?code={code}";
+                cachedCheckUrl = ZString.Format("{0}?code={1}", _gameManager.ApiConfig.CheckRoomStateUrl, code);
+                cachedUserUrl = ZString.Format("{0}?code={1}", _gameManager.ApiConfig.GetCurrentRoomUserUrl, code);
             }
         }
 
-        /// <summary>
-        /// 현재 방의 점유 상태를 확인하고, 비어있을 시 타이틀로 강제 복귀시킴.
-        /// </summary>
         private async UniTask ProcessRoomStateAsync(CancellationToken token)
         {
             using (UnityWebRequest stateReq = UnityWebRequest.Get(cachedCheckUrl))
@@ -195,20 +213,16 @@ namespace My.Scripts._01_Tutorial.Pages
                 {
                     if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        await UniTask.Delay(TimeSpan.FromSeconds(1.0), cancellationToken: token);
-                        if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                        await UniTask.Delay(1000, ignoreTimeScale: true, cancellationToken: token);
+                        if (_gameManager) _gameManager.ReturnToTitle();
                         return;
                     }
                     
-                    // 방이 비어있지 않다면 유저 상세 상태 확인 단계로 진입
                     await ProcessUserStateAsync(token);
                 }
             }
         }
 
-        /// <summary>
-        /// 방에 접속한 특정 유저의 유효성을 검사하고 데이터 적용 시퀀스를 실행함.
-        /// </summary>
         private async UniTask ProcessUserStateAsync(CancellationToken token)
         {
             using (UnityWebRequest userReq = UnityWebRequest.Get(cachedUserUrl))
@@ -231,57 +245,57 @@ namespace My.Scripts._01_Tutorial.Pages
             }
         }
 
-        /// <summary>
-        /// 일시적인 통신 지연을 고려하여 15초 이상 유저 정보가 없을 경우에만 리셋을 수행함.
-        /// </summary>
         private void HandleEmptyUserTimeout()
         {
             if (emptyUserStartTime < 0f)
             {
-                emptyUserStartTime = Time.time;
+                emptyUserStartTime = Time.unscaledTime;
             }
 
-            if (Time.time - emptyUserStartTime >= 15f)
+            if (Time.unscaledTime - emptyUserStartTime >= 15f)
             {
-                if (GameManager.Instance) GameManager.Instance.ReturnToTitle();
+                if (_gameManager) _gameManager.ReturnToTitle();
             }
         }
 
-        /// <summary>
-        /// 수신된 UID를 바탕으로 APIManager를 호출하여 유저 데이터를 세션에 동기화함.
-        /// </summary>
         private async UniTask FetchAndApplyUserDataAsync(string rawText, CancellationToken token)
         {
-            string[] parts = rawText.Split(new[] { '\r', '\n', ',' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 1) return;
+            int commaIndex = rawText.IndexOf(',');
+            if (commaIndex < 0) return;
 
-            string uidLeft = parts[0].Trim();
-
-            if (parts.Length >= 2 && SessionManager.Instance)
+            string uidLeft = rawText.Substring(0, commaIndex).Trim();
+            
+            if (_sessionManager)
             {
-                SessionManager.Instance.PlayerAUid = uidLeft;
-                SessionManager.Instance.PlayerBUid = parts[1].Trim();
+                _sessionManager.PlayerAUid = uidLeft;
+                _sessionManager.PlayerBUid = rawText.Substring(commaIndex + 1).Trim();
             }
 
             if (!apiManager) return;
 
-            // API 조회 무한 대기를 방지하기 위해 타임아웃을 적용한 비동기 호출 수행
+            _isFetchingData = true; 
+
             try
             {
-                bool success = await apiManager.FetchDataAsync(uidLeft).Timeout(TimeSpan.FromSeconds(25));
+                bool success = await apiManager.FetchDataAsync(uidLeft)
+                    .AttachExternalCancellation(token)
+                    .Timeout(TimeSpan.FromSeconds(25));
 
-                if (success && SessionManager.Instance && SessionManager.Instance.CurrentUserId != 0)
+                if (success && _sessionManager && _sessionManager.CurrentUserId != 0)
                 {
                     CompleteStep();
                 }
             }
             catch (TimeoutException)
             {
-                Debug.LogWarning("TutorialPage1: 유저 데이터 페치 타임아웃.");
+                _logger?.ZLogWarning($"[TutorialPage1] 유저 데이터 페치 타임아웃.");
             }
             catch (OperationCanceledException)
             {
-                // 페이지 종료/파괴에 의한 정상 취소 - 무시
+            }
+            finally
+            {
+                _isFetchingData = false; 
             }
         }
     }
