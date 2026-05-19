@@ -2,6 +2,7 @@ using System;
 using My.Scripts.Global;
 using My.Scripts.Hardware;
 using My.Scripts.Timelapse;
+using My.Scripts.Utils;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -26,6 +27,7 @@ namespace My.Scripts.App
         [SerializeField] private FadeManager fadeManager;
         [SerializeField] private UIManager uiManager;
         [SerializeField] private VideoManager videoManager;
+        [SerializeField] private StorageCleaner storageCleaner;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -42,6 +44,7 @@ namespace My.Scripts.App
             if (!fadeManager) throw new InvalidOperationException("GameLifetimeScope.fadeManager is required.");
             if (!uiManager) throw new InvalidOperationException("GameLifetimeScope.uiManager is required.");
             if (!videoManager) throw new InvalidOperationException("GameLifetimeScope.videoManager is required.");
+            if (!storageCleaner) throw new InvalidOperationException("GameLifetimeScope.storageCleaner is required.");
             
             builder.RegisterComponent(gameManager);
             builder.RegisterComponent(sessionManager);
@@ -52,6 +55,7 @@ namespace My.Scripts.App
             builder.RegisterComponent(fadeManager);
             builder.RegisterComponent(uiManager);
             builder.RegisterComponent(videoManager);
+            builder.RegisterComponent(storageCleaner);
         }
     }
 }

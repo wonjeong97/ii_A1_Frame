@@ -441,6 +441,7 @@ namespace My.Scripts.Timelapse
         private async UniTask ProcessDiskWriteAsync(SaveTaskData task)
         {
             Interlocked.Increment(ref _activeDiskWrites);
+            Stopwatch sw = Stopwatch.StartNew();
 
             try
             {
@@ -451,6 +452,12 @@ namespace My.Scripts.Timelapse
                 }
 
                 await File.WriteAllBytesAsync(task.path, task.data);
+                
+                sw.Stop();
+                if (sw.ElapsedMilliseconds > 100) // 100ms 이상 소요 시 경고 로그
+                {
+                    _logger?.ZLogWarning($"[TimeLapseRecorder] 디스크 쓰기 병목 감지: {sw.ElapsedMilliseconds}ms 소요 (경로: {task.path})");
+                }
             }
             catch (Exception e)
             {
@@ -510,7 +517,14 @@ namespace My.Scripts.Timelapse
                 string outputPath = Path.Combine(outputFolder, ZString.Format("{0}.mp4", filePrefix));
                 if (!ValidateSourceFiles(sourceFolder, outputPath, isRealtime)) return;
 
+                Stopwatch sw = Stopwatch.StartNew();
+                _logger?.ZLogInformation($"[TimeLapseRecorder] 영상 변환 시작: {filePrefix} (FPS: {fps})");
+
                 bool success = await ExecuteFfmpeg(sourceFolder, outputPath, fps, ct);
+                
+                sw.Stop();
+                _logger?.ZLogInformation($"[TimeLapseRecorder] 영상 변환 완료: {filePrefix} ({sw.Elapsed.TotalSeconds:F1}초 소요)");
+                
                 HandleConversionResult(success, outputPath, sourceFolder, isRealtime, ct);
             }
             catch (OperationCanceledException) { }

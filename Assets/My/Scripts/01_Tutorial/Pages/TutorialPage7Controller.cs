@@ -104,7 +104,10 @@ namespace My.Scripts._01_Tutorial.Pages
         private void RenderUI()
         {
             if (!_uiManager || _data == null)
-            {
+            {   
+                if (!_uiManager) Debug.LogError($"[TutorialPage7] 치명적 오류: _uiManager가 주입되지 않았습니다! 스코프 배치를 확인하세요.");
+                if (_data == null) Debug.LogError($"[TutorialPage7] 에러: _data가 null입니다.");
+
                 if (text1) text1.SetAlpha(1f);
                 if (text2) text2.SetAlpha(1f);
                 return;

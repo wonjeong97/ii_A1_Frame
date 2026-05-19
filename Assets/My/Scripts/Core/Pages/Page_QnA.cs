@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts.Core.Pages
 {
@@ -47,17 +48,23 @@ namespace My.Scripts.Core.Pages
 
         // --- 의존성 주입 (DI) 변수 ---
         private SessionManager _sessionManager;
+        private LevelManager _levelManager;
 
         /// <summary> 부모들의 수령 체인 외에 QnA 자체적으로 필요한 고유 세션 데이터 주입 </summary>
         [Inject]
-        public void ConstructQnA(SessionManager sessionManager)
+        public void ConstructQnA(SessionManager sessionManager, LevelManager levelManager)
         {
             _sessionManager = sessionManager;
+            _levelManager = levelManager;
         }
 
         protected override void SetupData(QnAPageData data)
         {
             if (data == null) return;
+            if (_levelManager && _levelManager.CurrentQuestionNumber > 0 && data.questionText != null)
+            {
+                _logger?.ZLogInformation($"[Page_QnA] {_levelManager.CurrentQuestionNumber}번 문항 질문 로드 완료: {data.questionText.text}");
+            }
 
             ApplyTextSetting(descriptionText, data.descriptionText, "descriptionText");
             ApplyTextSetting(questionText, data.questionText, "questionText");
@@ -190,8 +197,15 @@ namespace My.Scripts.Core.Pages
 
             ResetIdleState(false);
             MarkAsAnswered(isPlayerA);
-            
             TurnOffHardwareLed(isPlayerA);
+            
+            if (_sessionManager && _levelManager)
+            {
+                string playerName = isPlayerA ? _sessionManager.PlayerAFirstName : _sessionManager.PlayerBFirstName;
+                int qNo = _levelManager.CurrentQuestionNumber;
+                _logger?.ZLogInformation($"[Page_QnA] {playerName}이(가) {qNo}번 질문에서 {selectedValue}번 답변을 선택함.");
+            }
+            
             SendApiUpdate(side, selectedValue);
             ShowLightUI(isPlayerA);
             
@@ -219,9 +233,9 @@ namespace My.Scripts.Core.Pages
 
         private void SendApiUpdate(string side, int selectedValue)
         {
-            if (!_gameManager || !LevelManager.Instance) return;
+            if (!_gameManager || !_levelManager) return;
 
-            int qNo = LevelManager.Instance.CurrentQuestionNumber;
+            int qNo = _levelManager.CurrentQuestionNumber;
             if (qNo > 0)
             {
                 _gameManager.SendValueUpdateAPI(qNo, side, selectedValue);
@@ -273,7 +287,7 @@ namespace My.Scripts.Core.Pages
                 _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOn);
             }
             
-            bool isTutorial = LevelManager.Instance && LevelManager.Instance.CurrentQuestionNumber == 0;
+            bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             if (!isTutorial)
             {
                 _isInputEnabled = true;

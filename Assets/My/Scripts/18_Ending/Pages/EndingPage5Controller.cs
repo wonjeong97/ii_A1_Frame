@@ -115,7 +115,7 @@ namespace My.Scripts._18_Ending.Pages
 
             TextSetting targetSetting = _isAllFinished ? _data.allFinishedText : _data.descriptionText;
             
-            if (targetSetting != null && descriptionText != null && _uiManager != null)
+            if (targetSetting != null && descriptionText && _uiManager)
             {
                 _uiManager.SetText(descriptionText.gameObject, targetSetting);
             }
@@ -244,7 +244,7 @@ namespace My.Scripts._18_Ending.Pages
                 }
                 else
                 {
-                    // [최적화 핵심] 백그라운드 스레드에서 파일 I/O를 처리하도록 Forget() 비동기 호출
+                    // 백그라운드 스레드에서 파일 I/O를 처리하도록 Forget() 비동기 호출
                     SaveBackupLocallyAsync(taskName, url, "최대 재시도 횟수 초과 및 통신 실패").Forget();
                 }
             }

@@ -87,7 +87,7 @@ namespace My.Scripts.Utils
 
             DirectoryInfo dirInfo = new DirectoryInfo(targetPath);
             
-            // GetDirectories 배열 일괄 할당(GC) 대신 EnumerateDirectories 지연 평가 순회 사용
+            // GetDirectories 배열 일괄 할당(GC) 대신 EnumerateDirectories 지연 평가 순회 사용  
             foreach (DirectoryInfo subDir in dirInfo.EnumerateDirectories())
             {
                 // 디스크 스캔 도중 앱이 종료될 경우 즉시 중단하여 잔여 OS 파일 락(File Lock) 해제

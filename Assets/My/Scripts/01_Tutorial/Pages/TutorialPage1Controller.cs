@@ -98,6 +98,14 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             base.OnEnter();
             ResetIdleState(true);
+            
+            // 타이틀 씬에서 누락되었을 수 있는 LED 강제 소등 처리
+            if (_arduinoManager)
+            {
+                _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedAllOff);
+                _arduinoManager.SendCommandToBoth(GameConstants.Hardware.CmdLedShotOff);
+                _arduinoManager.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
+            }
     
             emptyUserStartTime = -1f;
             _isFetchingData = false; 

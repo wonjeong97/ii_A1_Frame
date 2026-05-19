@@ -320,11 +320,24 @@ namespace My.Scripts.Global
                     req.timeout = 10;
                     await req.SendWebRequest().ToUniTask();
 
-                    if (req.result == UnityWebRequest.Result.Success) return;
+                    if (req.result == UnityWebRequest.Result.Success)
+                    {
+                        if (attempt > 0) _childLogger.ZLogInformation($"[GameManager] API 요청 성공: {url} (시도: {attempt + 1}회)");
+                        return;
+                    }
+
+                    // 상세 에러 로그 기록 (응답 코드 포함)
+                    _childLogger.ZLogWarning($"[GameManager] API 요청 실패 (시도 {attempt + 1}/{maxRetries})");
+                    _childLogger.ZLogWarning($"-> URL: {url}");
+                    _childLogger.ZLogWarning($"-> 결과: {req.result}, 응답 코드: {req.responseCode}, 에러: {req.error}");
 
                     if (attempt < maxRetries - 1)
                     {
                         await UniTask.Delay(TimeSpan.FromSeconds(retryDelay));
+                    }
+                    else
+                    {
+                        _childLogger.ZLogError($"[GameManager] API 통신 최종 실패: {url}");
                     }
                 }
             }

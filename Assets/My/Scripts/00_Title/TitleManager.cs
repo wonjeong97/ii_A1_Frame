@@ -20,9 +20,7 @@ namespace My.Scripts._00_Title
     /// </summary>
     public class TitleManager : MonoBehaviour
     {
-        [Header("Polling Settings")]
-        [SerializeField] private float pollInterval = 3.0f;
-
+        private const float PollInterval = 1.0f;
         private bool _isTransitioning;
         private string _cachedRoomStateUrl;
 
@@ -156,7 +154,7 @@ namespace My.Scripts._00_Title
 #if UNITY_EDITOR
             return;
 #endif
-            int intervalMs = Mathf.RoundToInt(pollInterval * 1000);
+            int intervalMs = Mathf.RoundToInt(PollInterval * 1000);
 
             while (!token.IsCancellationRequested && !_isTransitioning)
             {
@@ -206,7 +204,8 @@ namespace My.Scripts._00_Title
                                responseText.IndexOf(GameConstants.Api.StatusUsing, StringComparison.OrdinalIgnoreCase) >= 0;
 
                 if (isUsing)
-                {
+                {   
+                    _logger?.ZLogInformation($"[TitleManager] 방 상태 USING 확인.");
                     GoToTutorial();
                 }
             }

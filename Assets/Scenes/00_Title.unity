@@ -548,7 +548,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87cf03de0068c6d4380a62cbd78085e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pollInterval: 3
 --- !u!4 &1060913009
 Transform:
   m_ObjectHideFlags: 0

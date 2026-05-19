@@ -105,7 +105,7 @@ namespace My.Scripts._01_Tutorial.Pages
         {
             try
             {
-                await UniTask.Delay(3000, ignoreTimeScale: true, cancellationToken: token);
+                await UniTask.Delay(4000, ignoreTimeScale: true, cancellationToken: token);
                 CompleteStep();
             }
             catch (OperationCanceledException)

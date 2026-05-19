@@ -111,7 +111,6 @@ namespace My.Scripts._18_Ending
 
             if (setting == null)
             {
-                // [로거 교체] 문자열 보간 가비지가 없는 ZLogger 에러 출력
                 _logger?.ZLogError($"[EndingManager] 설정 로드 실패: {path}");
                 return;
             }
@@ -124,7 +123,6 @@ namespace My.Scripts._18_Ending
         {
             if (pages == null || pages.Length == 0) return;
 
-            // [복잡도 대폭 감소] 직관적인 수직 레이아웃으로 가독성 극대화
             TrySetupPage(0, setting.page1);
             TrySetupPage(1, setting.page2);
             TrySetupPage(2, setting.page3);
@@ -134,7 +132,6 @@ namespace My.Scripts._18_Ending
 
         /// <summary> 
         /// 단일 페이지 데이터 바인딩을 안전하게 처리하는 마이크로 헬퍼 메서드.
-        /// 참조(Reference)만 토스하므로 가비지(GC)가 전혀 발생하지 않습니다.
         /// </summary>
         private void TrySetupPage(int index, object pageData)
         {
@@ -146,7 +143,6 @@ namespace My.Scripts._18_Ending
             }
             else if (pageData == null)
             {
-                // 누락된 페이지 데이터 추적용 로거 추가
                 _logger?.ZLogWarning($"[EndingManager] JSON 내 Page {index + 1} 데이터가 누락되었습니다.");
             }
         }
@@ -161,7 +157,7 @@ namespace My.Scripts._18_Ending
         {
             try
             {
-                const float timeoutSeconds = 300.0f;
+                const float timeoutSeconds = 60.0f;
                 float elapsed = 0f;
                 const int pollingIntervalMs = 500; 
 

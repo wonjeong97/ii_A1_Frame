@@ -23,8 +23,6 @@ namespace My.Scripts.Core
     /// </summary>
     public class LevelManager : BaseFlowManager
     {   
-        public static LevelManager Instance { get; private set; }
-        
         [Header("Level Settings")]
         [SerializeField] private UserType levelType = UserType.A1; 
         [SerializeField] private string levelID = GameConstants.Level.Q1; 
@@ -74,16 +72,6 @@ namespace My.Scripts.Core
             _fadeManager = fadeManager;
             _levelDataLoader = levelDataLoader;
         }
-
-        private void Awake()
-        {
-            if (Instance && Instance != this) 
-            { 
-                Destroy(gameObject); 
-                return; 
-            }
-            Instance = this;
-        }
         
         protected override void Start()
         {
@@ -110,7 +98,6 @@ namespace My.Scripts.Core
         protected override void OnDestroy()
         { 
             base.OnDestroy();
-            if (Instance == this) Instance = null; 
         }
 
         protected override void LoadSettings()
@@ -130,7 +117,6 @@ namespace My.Scripts.Core
         
         private bool LoadTutorialSettings()
         {
-            // [에러 해결] 정적 호출을 지우고 주입받은 _levelDataLoader 인스턴스 필드를 통해 호출합니다.
             TutorialLevelSetting tSetting = _levelDataLoader.LoadTutorialLevel();
             if (tSetting == null)
             {
@@ -161,7 +147,6 @@ namespace My.Scripts.Core
         private bool LoadStandardSettings()
         {
             UserType uType = HasActiveSession ? _sessionManager.CurrentUserType : levelType;
-            // [에러 해결] 정적 호출을 지우고 주입받은 _levelDataLoader 인스턴스 필드를 통해 호출합니다.
             StandardLevelSetting sSetting = _levelDataLoader.LoadStandardLevel(levelID, uType);
             
             if (sSetting == null)

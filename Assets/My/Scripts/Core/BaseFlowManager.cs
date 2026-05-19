@@ -1,8 +1,11 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using My.Scripts.Utils;
 using UnityEngine;
+using VContainer;
+using ZLogger;
 
 namespace My.Scripts.Core
 {
@@ -18,6 +21,13 @@ namespace My.Scripts.Core
         protected int currentPageIndex = -1; 
         protected bool isTransitioning; 
         protected CancellationTokenSource transitionCts; 
+        protected ILogger<BaseFlowManager> _baseLogger;
+        
+        [Inject]
+        public void ConstructBase(ILogger<BaseFlowManager> baseLogger)
+        {
+            _baseLogger = baseLogger;
+        }
 
         protected virtual void Start()
         {
@@ -68,6 +78,7 @@ namespace My.Scripts.Core
         {
             if (pages != null && pages.Length > 0)
             {
+                _baseLogger?.ZLogInformation($"[{GetType().Name}] 플로우 시작 -> 첫 번째 페이지 진입 (Index: 0)");
                 TransitionToPage(0);
             }
         }
@@ -81,6 +92,8 @@ namespace My.Scripts.Core
             int currentIndex = Array.IndexOf(pages, page);
             if (currentIndex == -1 || currentIndex != currentPageIndex) return;
 
+            _baseLogger?.ZLogInformation($"[{GetType().Name}] Page {currentIndex} 단계 완료 (Trigger Info: {triggerInfo})");
+
             int nextIndex = currentIndex + 1;
             OnPageComplete(currentIndex, nextIndex, triggerInfo);
         }
@@ -93,18 +106,25 @@ namespace My.Scripts.Core
             }
             else
             {
+                _baseLogger?.ZLogInformation($"[{GetType().Name}] 모든 페이지 플로우 완료. OnAllFinished() 호출.");
                 OnAllFinished();
             }
         }
 
         protected virtual void TransitionToPage(int targetIndex, int info = 0)
         {
-            if (isTransitioning) return;
-            if (pages == null || targetIndex < 0 || targetIndex >= pages.Length)
+            if (isTransitioning)
             {
-                Debug.LogWarning($"[BaseFlowManager] 잘못된 인덱스: {targetIndex}");
+                _baseLogger?.ZLogWarning($"[{GetType().Name}] 트랜지션 중단됨: 이미 전환 중 (Target: {targetIndex})");
                 return;
             }
+            if (pages == null || targetIndex < 0 || targetIndex >= pages.Length)
+            {
+                _baseLogger?.ZLogError($"[{GetType().Name}] 잘못된 인덱스 오류: {targetIndex}");
+                return;
+            }
+            
+            _baseLogger?.ZLogInformation($"[{GetType().Name}] 페이지 전환 트리거: 현재({currentPageIndex}) -> 타겟({targetIndex}) | 데이터: {info}");
             
             CancelTransition();
             transitionCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
@@ -135,7 +155,10 @@ namespace My.Scripts.Core
                     await FadePageAsync(next, 0f, 1f, 0.5f, token);
                 }
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                _baseLogger?.ZLogWarning($"[{GetType().Name}] 비동기 페이지 전환 취소됨: {targetIndex}");
+            }
             finally
             {
                 isTransitioning = false;

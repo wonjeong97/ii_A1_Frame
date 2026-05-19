@@ -59,16 +59,19 @@ namespace My.Scripts.Core.Pages
         private HueManager _hueManager;
         private TimeLapseRecorder _timeLapseRecorder;
         private SoundManager _soundManager;
+        private LevelManager _levelManager;
 
         [Inject]
         public void Construct(
             HueManager hueManager,
             TimeLapseRecorder timeLapseRecorder,
-            SoundManager soundManager)
+            SoundManager soundManager,
+            LevelManager levelManager)
         {
             _hueManager = hueManager;
             _timeLapseRecorder = timeLapseRecorder;
             _soundManager = soundManager;
+            _levelManager = levelManager;
         }
 
         protected override void Awake()
@@ -158,9 +161,9 @@ namespace My.Scripts.Core.Pages
 
         private void UpdateLightingState(CancellationToken token)
         {
-            if (!LevelManager.Instance || !_hueManager) return;
+            if (!_levelManager || !_hueManager) return;
 
-            int qNum = LevelManager.Instance.CurrentQuestionNumber;
+            int qNum = _levelManager.CurrentQuestionNumber;
             RGBColor targetRgb = GetTargetRgbColor(qNum);
 
             if (_isQ6To10)
@@ -248,7 +251,7 @@ namespace My.Scripts.Core.Pages
             if (_shouldSavePhoto && _timeLapseRecorder)
             {
                 _timeLapseRecorder.SetCurrentLevel(_levelID);
-                int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
+                int qNum = _levelManager ? _levelManager.CurrentQuestionNumber : 0;
                 _timeLapseRecorder.EnableTimelapseCapture = true;
                 _timeLapseRecorder.EnableRealtimeCapture = (qNum >= 11 && qNum <= 15);
                 _timeLapseRecorder.StartCapture(_webCamTexture);

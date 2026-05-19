@@ -6,8 +6,10 @@ using My.Scripts.Core.Data;
 using My.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts.Core.Pages
 {
@@ -91,6 +93,15 @@ namespace My.Scripts.Core.Pages
         private CancellationTokenSource _simultaneousWarningCts;
         private CancellationTokenSource _completionCts;
         private CancellationTokenSource _hintCts;
+
+        // --- 의존성 주입 (DI) 변수 ---
+        private LevelManager _levelManager;
+
+        [Inject]
+        public void ConstructGrid(LevelManager levelManager)
+        {
+            _levelManager = levelManager;
+        }
 
         private struct CellFadeState
         {
@@ -190,7 +201,7 @@ namespace My.Scripts.Core.Pages
         {
             if (textCounting)
             {
-                int qNum = LevelManager.Instance ? LevelManager.Instance.CurrentQuestionNumber : 0;
+                int qNum = _levelManager ? _levelManager.CurrentQuestionNumber : 0;
                 textCounting.text = qNum > 0 ? $"{qNum}/15" : string.Empty;
             }
 
