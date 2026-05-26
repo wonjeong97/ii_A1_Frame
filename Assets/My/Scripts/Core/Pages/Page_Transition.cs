@@ -18,7 +18,6 @@ namespace My.Scripts.Core.Pages
     /// <summary>
     /// 게임 진행 중 안내 및 대기 시간을 제공하는 트랜지션(전환) 페이지.
     /// 특정 모드에서는 아두이노 버튼 입력을 기다리거나 자동으로 다음 단계로 넘어감.
-    /// 정적 인스턴스 의존성이 100% 제거되고 텍스트 서식 버그가 원천 방어되었습니다.
     /// </summary>
     public class Page_Transition : PopupGamePage<TransitionPageData>
     {
