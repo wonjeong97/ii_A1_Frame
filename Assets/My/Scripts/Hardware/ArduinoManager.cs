@@ -296,9 +296,6 @@ namespace My.Scripts.Hardware
             }
         }
 
-        /// <summary>
-        /// [구조 전면 개편] 람다 중첩 호출을 제거하여 모호성 및 컴파일 에러 완전 방지
-        /// </summary>
         private async UniTask TryConnectPortAsync(string portName)
         {
             // 백그라운드 스레드 풀로 실행 컨텍스트 스위칭
@@ -311,12 +308,9 @@ namespace My.Scripts.Hardware
                 return;
             }
 
-            // [에러 해결] 독립 스레드 환경이므로 .NET 표준 Task.Delay를 활용해 메인프레임 프리징 완전 격리
             await Task.Delay(TimeSpan.FromSeconds(1.5f));
-
             string response = await WaitForDeviceResponseAsync(tempPort);
 
-            // 주석 연동 처리를 위해 메인 스레드로 안전하게 복귀
             await UniTask.SwitchToMainThread();
             AssignPortByResponse(response, tempPort, portName);
         }
@@ -353,7 +347,6 @@ namespace My.Scripts.Hardware
                     break;
                 }
 
-                // [에러 해결] 순수 OS 백그라운드 타이머로 안전하게 스캔 대기 루프 실행
                 await Task.Delay(TimeSpan.FromSeconds(1.0f));
                 elapsedTime += 1.0f;
             }

@@ -21,7 +21,6 @@ namespace My.Scripts._01_Tutorial.Pages
     /// <summary> 
     /// 튜토리얼 5페이지 컨트롤러.
     /// 유저의 추가 조작 없이 안내 텍스트를 보여준 뒤, 지정된 시간(4초) 후 자동으로 다음 페이지로 전환합니다.
-    /// 극단적인 연속 진입 상황에서도 좀비 태스크가 발생하지 않도록 자원 관리가 완전 캡슐화되었습니다.
     /// </summary>
     public class TutorialPage5Controller : GamePage<TutorialPage5Data>
     {

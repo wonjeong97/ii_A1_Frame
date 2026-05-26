@@ -364,7 +364,6 @@ namespace My.Scripts.Hardware
                 }
                 catch (Exception e)
                 {
-                    // [품질 보완] e 자체를 전달하여 내부 가비지 없이 원본 오류 유실 없는 스택 트레이스 디버깅 제공
                     if (!ct.IsCancellationRequested) _logger.ZLogError(e, $"통신 예외: {e.Message}");
                 }
             }

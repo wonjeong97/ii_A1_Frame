@@ -11,7 +11,6 @@ namespace My.Scripts.Global
 {
     /// <summary>
     /// Addressables 기반의 씬 비동기 로드 유틸리티.
-    /// 에러나 취소 시 발생하는 에셋번들 메모리 누수를 안전하게 차단합니다.
     /// </summary>
     public static class SceneLoader
     {

@@ -103,7 +103,7 @@ namespace My.Scripts._18_Ending.Pages
                 redLineImage.fillAmount = 0f;
             }
 
-            if (_sessionManager != null)
+            if (_sessionManager)
             {
                 _isAllFinished = _sessionManager.IsOtherCartridgeContentsCleared;
             }
@@ -128,7 +128,7 @@ namespace My.Scripts._18_Ending.Pages
 
         private void HandleApiFinalization(CancellationToken token)
         {
-            if (_hasSentEndTime || _sessionManager == null)
+            if (_hasSentEndTime || !_sessionManager)
             {
                 _isApiFinalized = true;
                 return;
@@ -156,14 +156,14 @@ namespace My.Scripts._18_Ending.Pages
                 {
                     await FillImageAsync(redLineImage, 0f, 1f, 2.0f, token);
 
-                    if (_soundManager != null) _soundManager.FadeOutBGM(5.0f);
+                    if (_soundManager) _soundManager.FadeOutBGM(5.0f);
                     await UniTask.Delay(5000, ignoreTimeScale: true, cancellationToken: token);
                 }
                 else
                 {
                     await UniTask.Delay(2000, ignoreTimeScale: true, cancellationToken: token);
 
-                    if (_soundManager != null) _soundManager.FadeOutBGM(5.0f);
+                    if (_soundManager) _soundManager.FadeOutBGM(5.0f);
                     await UniTask.Delay(5000, ignoreTimeScale: true, cancellationToken: token);
                 }
 

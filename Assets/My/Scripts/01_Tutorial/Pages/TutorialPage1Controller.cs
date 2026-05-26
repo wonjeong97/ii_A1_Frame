@@ -165,6 +165,9 @@ namespace My.Scripts._01_Tutorial.Pages
         private async UniTaskVoid PollRoomStateAsync(CancellationToken token)
         {
 #if UNITY_EDITOR
+            await UniTask.Delay(TimeSpan.FromSeconds(1.0f), cancellationToken: token);
+            if (apiManager) apiManager.FillDebugSession();
+            CompleteStep();
             return;
 #endif
             int intervalMs = Mathf.RoundToInt((pollInterval > 0 ? pollInterval : 3.0f) * 1000);

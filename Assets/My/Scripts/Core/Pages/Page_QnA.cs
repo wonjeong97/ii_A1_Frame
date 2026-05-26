@@ -72,13 +72,14 @@ namespace My.Scripts.Core.Pages
             ApplyTextSetting(nicknameB, data.nicknamePlayerB, "nicknamePlayerB");
 
             SetupAnswerTexts(data.answerTexts);
+            SetupPopupMessage(data.warningMessage, data.resetMessage);
         }
         
         private void ApplyTextSetting(Text uiText, TextSetting setting, string fieldName)
         {
             if (setting != null && !string.IsNullOrEmpty(setting.text))
             {
-                if (uiText && _uiManager != null) _uiManager.SetText(uiText.gameObject, setting);
+                if (uiText && _uiManager) _uiManager.SetText(uiText.gameObject, setting);
             }
             else
             {
@@ -101,12 +102,12 @@ namespace My.Scripts.Core.Pages
             for (int i = 0; i < answerTexts.Length; i++)
             {
                 Text txt = answerTexts[i];
-                if (txt == null) continue;
+                if (!txt) continue;
 
                 bool hasData = i < providedCount && providedAnswers[i] != null;
                 txt.gameObject.SetActive(hasData);
 
-                if (hasData && _uiManager != null)
+                if (hasData && _uiManager)
                 {
                     _uiManager.SetText(txt.gameObject, providedAnswers[i]);
                 }

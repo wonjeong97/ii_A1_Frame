@@ -69,7 +69,6 @@ namespace My.Scripts.Core
                 pages[i].gameObject.SetActive(false);
                 pages[i].SetAlpha(0f);
                 
-                // [최적화 완료] 뉴 할당 람다식(Closure)을 완전히 제거하고, 직관적인 포인터 주입으로 대체
                 pages[i].SetFlowListener(this);
             }
         }

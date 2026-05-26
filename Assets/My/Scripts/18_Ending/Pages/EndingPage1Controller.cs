@@ -45,7 +45,6 @@ namespace My.Scripts._18_Ending.Pages
 
         protected override void SetupData(EndingPage1Data data)
         {
-            // [최적화 완료] SetupData는 순수하게 데이터 캐싱 역할만 수행합니다. (중복 UI 세팅 제거)
             _data = data;
             
             if (!descriptionText)
@@ -82,7 +81,7 @@ namespace My.Scripts._18_Ending.Pages
                 if (descriptionText && _data?.firstText != null && _uiManager)
                 {
                     _uiManager.SetText(descriptionText.gameObject, _data.firstText);
-                    descriptionText.SetAlpha(1f); // 씬 전체가 페이드인 되므로 여기선 1로 두는 것이 맞습니다.
+                    descriptionText.SetAlpha(1f);
                 }
                 
                 await UniTask.Delay(4000, ignoreTimeScale: true, cancellationToken: token);

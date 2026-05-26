@@ -15,7 +15,6 @@ namespace My.Scripts.Core
         protected CanvasGroup canvasGroup; 
         protected UIManager _uiManager; 
 
-        // [최적화 완료] VContainer가 상속 구조를 따라 최상위 부모인 이 메서드를 최우선 자동 실행합니다.
         [Inject]
         public void InjectUIManager(UIManager uiManager)
         {

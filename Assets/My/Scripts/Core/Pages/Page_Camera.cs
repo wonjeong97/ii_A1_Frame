@@ -265,7 +265,7 @@ namespace My.Scripts.Core.Pages
             else if (_shouldSavePhoto && _timeLapseRecorder)
             {
                 _logger?.ZLogWarning(
-                    $"[Page_Camera] 웹캠 준비 실패 혹은 재생 중이지 않아 캡처 시작 불가 (WebCam: {_webCamTexture != null}, IsPlaying: {isWebCamReady})");
+                    $"[Page_Camera] 웹캠 준비 실패 혹은 재생 중이지 않아 캡처 시작 불가 (WebCam: {_webCamTexture}, IsPlaying: {isWebCamReady})");
             }
 
             if (_soundManager) _soundManager.PlaySFX("공통_10_3초");
@@ -314,7 +314,6 @@ namespace My.Scripts.Core.Pages
         {
             if (!_webCamTexture || !_webCamTexture.isPlaying) return;
 
-            // [치명적 버그 방어] 연출 연산 도중 예외가 터지더라도 VRAM 누수가 절대 없도록 try-finally 처리 구조 구축
             RenderTexture rt = RenderTexture.GetTemporary(PhotoWidth, PhotoHeight, 0, RenderTextureFormat.ARGB32);
             RenderTexture prev = RenderTexture.active;
 
@@ -438,8 +437,6 @@ namespace My.Scripts.Core.Pages
             if (_webCamTexture)
             {
                 if (_webCamTexture.isPlaying) _webCamTexture.Stop();
-
-                // [치명적 버그 수정] 언매니지드 C++ 미디어 드라이버 레이어에 맺힌 프레임 백버퍼를 즉시 완전히 파괴 (VRAM/RAM 리크 영구 소멸)
                 Destroy(_webCamTexture);
                 _webCamTexture = null;
             }

@@ -52,7 +52,7 @@ namespace My.Scripts._18_Ending.Pages
 
         protected override void SetupData(EndingPage3Data data)
         {
-            if (descriptionText && data?.descriptionText != null && _uiManager != null)
+            if (descriptionText && data?.descriptionText != null && _uiManager)
             {
                 _uiManager.SetText(descriptionText.gameObject, data.descriptionText);
                 descriptionText.text = "00:00";

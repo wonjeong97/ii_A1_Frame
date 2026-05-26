@@ -99,7 +99,7 @@ namespace My.Scripts.Global
         
         protected override async UniTaskVoid LoadSettingsAsync()
         {
-            // 1. 부모의 셋팅 템플릿 로드 결합 (ZString 활용 및 상수화)
+            // 1. 부모의 셋팅 템플릿 로드 결합
             string settingPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.JsonSetting);
             settings = await JsonLoader.LoadAsync<Settings>(settingPath, this.GetCancellationTokenOnDestroy());
             
@@ -113,7 +113,7 @@ namespace My.Scripts.Global
                 _fadeTime = settings.fadeTime;
             }
 
-            // 2. 자식 고유의 API 설정 로드 (GameConstants.Path 예외 로직 태우기)
+            // 2. 자식 고유의 API 설정 로드
             string currentLang = _sessionManager ? _sessionManager.CurrentLanguage : "ko";
             string apiPath = GameConstants.Path.GetLocalizedPath(GameConstants.Path.ApiSetting, currentLang);
             ApiConfig = JsonLoader.Load<ApiSettings>(apiPath);  

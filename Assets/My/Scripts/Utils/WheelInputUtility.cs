@@ -14,13 +14,13 @@ namespace My.Scripts.Utils
         public int lastDir;
         public float inputTimer;
 
-        // 정적 읽기 전용 필드로 단 1회만 할당하여 가비지(GC) 완전 제거
+        // 정적 읽기 전용 필드로 단 1회만 할당하여 가비지 제거
         public readonly static PlayerWheelState Default = new PlayerWheelState { lastKey = -1 };
     }
 
     /// <summary>
     /// 물리 다이얼의 입력 계산을 처리하는 유틸리티 클래스.
-    /// 하드웨어 노이즈 필터링, 경계선 모듈로 연산, 상태 갱신을 내부에서 100% 캡슐화하여 처리함.
+    /// 하드웨어 노이즈 필터링, 경계선 모듈로 연산, 상태 갱신을 내부에서 캡슐화하여 처리함.
     /// </summary>
     public static class WheelInputUtility
     {
@@ -47,10 +47,6 @@ namespace My.Scripts.Utils
         /// <summary>
         /// 현재 입력된 키를 기반으로 회전 방향을 계산하고, 노이즈 필터링 및 상태 갱신을 자동으로 수행함.
         /// </summary>
-        /// <param name="currentKey">방금 눌린 키 인덱스</param>
-        /// <param name="totalSteps">다이얼의 전체 단계 수 (예: 0~3이면 4)</param>
-        /// <param name="state">플레이어의 현재 다이얼 상태 (ref로 자동 갱신됨)</param>
-        /// <returns>회전 방향 (-1: 역회전, 0: 무효/정지, 1: 정회전)</returns>
         public static int ResolveDirection(int currentKey, int totalSteps, ref PlayerWheelState state)
         {
             if (totalSteps <= 1)

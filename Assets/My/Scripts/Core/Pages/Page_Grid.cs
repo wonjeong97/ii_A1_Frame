@@ -133,7 +133,7 @@ namespace My.Scripts.Core.Pages
         {
             if (setting != null)
             {
-                if (uiText && _uiManager != null) _uiManager.SetText(uiText.gameObject, setting);
+                if (uiText && _uiManager) _uiManager.SetText(uiText.gameObject, setting);
             }
             else
             {
@@ -170,14 +170,12 @@ namespace My.Scripts.Core.Pages
             for (int i = 0; i < questionTexts.Length; i++)
             {
                 Text txt = questionTexts[i];
-                if (txt == null) continue; // 안전망 가드 클로즈
+                if (!txt) continue;
 
                 bool hasData = i < questionDataCount && data.questions != null && data.questions[i] != null;
-                
                 txt.gameObject.SetActive(hasData);
 
-                // 데이터가 있을 때만 안전하게 텍스트 주입 수행
-                if (hasData && _uiManager != null)
+                if (hasData && _uiManager)
                 {
                     _uiManager.SetText(txt.gameObject, data.questions[i]);
                 }
@@ -436,24 +434,18 @@ namespace My.Scripts.Core.Pages
 
             currentIdleTime += Time.unscaledDeltaTime;
 
-            if (currentIdleTime >= inactivityThreshold)
-            {
-                StartResetSequence();
-                return;
-            }
-
             if (currentIdleTime >= BlinkThreshold)
             {
                 TryTriggerBlinkWarning();
             }
         }
         
+        // 화면 하단 텍스트를 "숨은 문항을 모두 찾아주세요!"로 바꾸고 깜빡임을 시작함.
         private void TryTriggerBlinkWarning()
         {
             if (_is1stWarningDone || _textBlinkCts != null || _simultaneousWarningCts != null) return;
 
-            // [에러 해결 완료] 주입 인스턴스 참조 전환
-            if (_warningText != null && textSub && _uiManager != null)
+            if (_warningText != null && textSub && _uiManager)
             {
                 _uiManager.SetText(textSub.gameObject, _warningText);
             }
@@ -506,8 +498,7 @@ namespace My.Scripts.Core.Pages
             if (textSub)
             {
                 textSub.gameObject.SetActive(true);
-                // [에러 해결 완료] 주입 인스턴스 참조 전환
-                if (_defaultTextSub != null && _uiManager != null) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
+                if (_defaultTextSub != null && _uiManager) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
                 textSub.SetAlpha(0f);
 
                 for (int i = 0; i < 2; i++)
@@ -689,8 +680,7 @@ namespace My.Scripts.Core.Pages
             
             if (textSub) textSub.gameObject.SetActive(false);
             CancelAndDispose(ref _textFadeCts);
-            // [에러 해결 완료] 주입 인스턴스 참조 전환
-            if (_defaultTextSub != null && textSub && _uiManager != null) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
+            if (_defaultTextSub != null && textSub && _uiManager) _uiManager.SetText(textSub.gameObject, _defaultTextSub);
         }
 
         private async UniTaskVoid AutoFadeMainTextAsync(CancellationToken token)
@@ -754,9 +744,7 @@ namespace My.Scripts.Core.Pages
             UpdateMaskPixelInstant(_currentGridX, _currentGridY, 1.0f, true);
 
             await FadeGroupsAsync(completionCanvasGroups, 0f, 1f, 1f, token);
-
             await UniTask.Delay(TimeSpan.FromSeconds(2.0), cancellationToken: token);
-            
             await FadeOutGridAndTextsAsync(0.5f, token);
 
             CompleteStep();
@@ -837,12 +825,10 @@ namespace My.Scripts.Core.Pages
 
             bool isUpdated = false;
     
-            // 이중 루프는 오직 '순회' 역할만 전담하여 최상위 복잡도를 제거
             for (int x = 0; x < gridSizeX; x++)
             {
                 for (int y = 0; y < gridSizeY; y++)
                 {
-                    // 단일 셀 업데이트 결과가 하나라도 true면 전체 마스크 Apply 트리거 활성화
                     if (UpdateSingleCellFade(x, y))
                     {
                         isUpdated = true;
@@ -1037,7 +1023,6 @@ namespace My.Scripts.Core.Pages
             if (_soundManager) _soundManager.PlaySFX("카메라_4");
             
             await UniTask.Delay(TimeSpan.FromSeconds(0.2), cancellationToken: token);
-
             await FadeHintSpotsAsync(0.3f, 0.0f, 0.1f, token);
         }
 

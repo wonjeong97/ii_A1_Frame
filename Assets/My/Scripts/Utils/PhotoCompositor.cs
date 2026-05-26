@@ -30,7 +30,6 @@ namespace My.Scripts.Utils
     /// <summary> 
     /// 저장된 개별 플레이어 사진들을 지정된 프레임(틀) 이미지 위에 합성한 뒤,
     /// 로컬 디스크에 PNG로 저장하고 서버로 업로드하는 시퀀스를 관리합니다.
-    /// VContainer DI, 스레드 복귀 락, 정적 정규식 캐싱 및 언매니지드 텍스처 누수 방어가 적용됨.
     /// </summary>
     public class PhotoCompositor : MonoBehaviour
     {
@@ -114,7 +113,6 @@ namespace My.Scripts.Utils
 
             try
             {
-                // [최적화] 자정(Midnight) 시간 변경에 따른 경로 불일치 버그를 막기 위해 rootPath를 1회만 계산 후 주입
                 string rootPath = GetRootPath();
                 
                 resultTex = CreateCompositeTexture(sanitizedName, rootPath);
@@ -298,14 +296,12 @@ namespace My.Scripts.Utils
             {
                 byte[] bytes = File.ReadAllBytes(path);
                 
-                // [버그 수정 완료] 이미지 파싱 예외 발생 시 메모리 릭(Leak) 차단을 위한 Texture 초기화 분리
                 tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
                 tex.LoadImage(bytes);
                 return tex;
             }
             catch (Exception e)
             {
-                // Unmanaged 자원인 Texture2D를 수동으로 제거하여 GPU 메모리 좀비화 원천 봉쇄
                 if (tex != null) Destroy(tex);
                 _logger.ZLogWarning($"이미지 로드 실패 ({path}): {e.Message}");
                 return null;

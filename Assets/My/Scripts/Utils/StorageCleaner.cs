@@ -12,7 +12,6 @@ namespace My.Scripts.Utils
 {
     /// <summary>
     /// 앱 실행 시 백그라운드에서 오래된 데이터(사진, 영상)를 자동 삭제하여 디스크 용량을 관리하는 유틸리티입니다.
-    /// VContainer DI 생명주기에 통합되었으며, 앱 실행 시 1회 백그라운드에서 안전하게 정리 작업을 수행합니다.
     /// </summary>
     public class StorageCleaner : MonoBehaviour
     {

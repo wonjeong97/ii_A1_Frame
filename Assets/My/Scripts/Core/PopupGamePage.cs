@@ -23,12 +23,10 @@ namespace My.Scripts.Core
     {
         [Header("Popup References (Base)")]
         [SerializeField] protected CanvasGroup popupCanvasGroup;
-
         [SerializeField] protected Text popupText;
 
         [Header("Popup Settings (Base)")]
         [SerializeField] protected float warningDuration = 3f;
-
         [SerializeField] protected float resetPopupDuration = 3f;
 
         protected string msgWarning;

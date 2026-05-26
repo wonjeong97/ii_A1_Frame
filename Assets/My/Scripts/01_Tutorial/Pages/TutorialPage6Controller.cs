@@ -19,12 +19,10 @@ namespace My.Scripts._01_Tutorial.Pages
     {
         [Header("Player A")]
         public TextSetting txtA_Start;
-
         public TextSetting txtA_Info;
 
         [Header("Player B")]
         public TextSetting txtB_Start;
-
         public TextSetting txtB_Info;
 
         public string warningMessage;

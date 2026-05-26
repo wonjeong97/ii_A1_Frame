@@ -66,7 +66,6 @@ namespace My.Scripts.Core
 
     /// <summary>
     /// API 서버와 통신하여 유저의 진행 데이터를 조회하고 세션에 동기화함.
-    /// C# 10의 Verbatim 보간 문자열($@)을 활용해 ZLogger v2의 Zero-Allocation을 실현함.
     /// </summary>
     public class APIManager : MonoBehaviour
     {
@@ -311,7 +310,7 @@ namespace My.Scripts.Core
             _sessionManager.IsOtherCartridgeContentsCleared = (endCount >= 3);
 
             _logger.ZLogInformation(
-                $"타 콘텐츠 완료 개수: {endCount}개 (Z계열 제외, 3개 이상 완료 판정: {_sessionManager.IsOtherCartridgeContentsCleared})");
+                $"타 콘텐츠 완료 개수: {endCount}개 (3개 이상 완료 판정: {_sessionManager.IsOtherCartridgeContentsCleared})");
         }
 
         private void ApplyPiecesToSession(SessionManager session, Dictionary<string, int> colMap, List<object> row)

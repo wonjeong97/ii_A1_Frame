@@ -30,7 +30,7 @@ namespace My.Scripts._01_Tutorial
     public class TutorialManager : BaseFlowManager
     {
         // --- 의존성 주입 (DI) 변수 ---
-        private IObjectResolver _resolver; // [추가] 수동 주입을 위한 리졸버
+        private IObjectResolver _resolver;
         private GameManager _gameManager;
         private SessionManager _sessionManager;
         private FadeManager _fadeManager;
@@ -38,7 +38,7 @@ namespace My.Scripts._01_Tutorial
 
         [Inject]
         public void ConstructTutorial(
-            IObjectResolver resolver, // [추가] VContainer로부터 주입 권한 수령
+            IObjectResolver resolver,
             GameManager gameManager, 
             SessionManager sessionManager, 
             FadeManager fadeManager,

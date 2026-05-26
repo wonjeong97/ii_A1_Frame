@@ -51,8 +51,6 @@ namespace My.Scripts._01_Tutorial.Pages
         public void Construct(SessionManager sessionManager, SoundManager soundManager, ILogger<TutorialPage3Controller> logger)
         {
             _sessionManager = sessionManager;
-            
-            // 주입받은 인스턴스를 부모 클래스의 protected 변수에 그대로 쏙 넣어줍니다.
             _soundManager = soundManager; 
             
             _logger = logger;

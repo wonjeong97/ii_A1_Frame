@@ -18,7 +18,6 @@ namespace My.Scripts.Global
 
     /// <summary>
     /// 게임 세션 전역 데이터를 유지 및 관리하는 클래스.
-    /// VContainer DI 기반으로 작동하며, 세션 초기화 시 UI 언어 복귀 버그를 완벽히 해결함.
     /// </summary>
     public class SessionManager : MonoBehaviour
     {
@@ -286,7 +285,6 @@ namespace My.Scripts.Global
             PlayerBUid = string.Empty;
             BlockCode = string.Empty;
             
-            // [버그 수정 완료] Property 프로퍼티 접근자로 우회하여 언어 리셋 이벤트 트리거 유실 방지
             CurrentLanguage = "ko";
             
             PlayerAFirstName = "NoNameA";

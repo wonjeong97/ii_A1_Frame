@@ -168,7 +168,7 @@ namespace My.Scripts._00_Title
                 }
                 catch (Exception ex)
                 {
-                    _logger?.ZLogWarning($"[TitleManager] 서버 통신 순 순간 에러 (루프 유지됨): {ex.Message}");
+                    _logger?.ZLogWarning($"[TitleManager] 서버 통신 중 순간 에러 (루프 유지됨): {ex.Message}");
                 }
 
                 if (_isTransitioning) return;
