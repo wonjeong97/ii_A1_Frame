@@ -158,9 +158,14 @@ namespace My.Scripts.Core
             {
                 _baseLogger?.ZLogWarning($"[{GetType().Name}] 비동기 페이지 전환 취소됨: {targetIndex}");
             }
+            catch (Exception e)
+            {
+                _baseLogger?.ZLogError(e, $"[{GetType().Name}] 전환 중 예외 발생: {e.Message}");
+            }
             finally
             {
                 isTransitioning = false;
+                _baseLogger?.ZLogInformation($"[{GetType().Name}] 전환 종료 (isTransitioning = false)");
             }
         }
 

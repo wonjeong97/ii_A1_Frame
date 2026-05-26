@@ -144,7 +144,7 @@ namespace My.Scripts.Core.Pages
 
         protected override void OnHardwareInput(string input, bool isLeft)
         {
-            if (_isCompleted) return;
+            if (_isCompleted || Time.unscaledTime - _enterTime < 1.5f) return;
 
             bool isTutorial = _levelManager && _levelManager.CurrentQuestionNumber == 0;
             if (isTutorial && waitForShotButton) return;

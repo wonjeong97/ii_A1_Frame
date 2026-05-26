@@ -14,6 +14,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Wonjeong.Data;
 using Wonjeong.UI;
+using ZLogger;
 
 namespace My.Scripts.Core
 {
@@ -323,6 +324,30 @@ namespace My.Scripts.Core
                 currentPageIndex = targetIndex;
             }
             catch (OperationCanceledException) { }
+            catch (Exception e)
+            {
+                if (_baseLogger != null)
+                {
+                    _baseLogger.ZLogError(e, $"[LevelManager] 트랜지션 중 치명적 예외 발생: {e.Message}");
+                }
+
+                if (globalBlackCanvasGroup)
+                {
+                    globalBlackCanvasGroup.blocksRaycasts = false;
+                    globalBlackCanvasGroup.gameObject.SetActive(false);
+                }
+
+                currentPageIndex = targetIndex;
+                if (pages != null && targetIndex >= 0 && targetIndex < pages.Length)
+                {
+                    GamePage fallbackPage = pages[targetIndex];
+                    if (fallbackPage)
+                    {
+                        fallbackPage.OnEnter();
+                        fallbackPage.SetAlpha(1f);
+                    }
+                }
+            }
             finally
             {
                 isTransitioning = false;
