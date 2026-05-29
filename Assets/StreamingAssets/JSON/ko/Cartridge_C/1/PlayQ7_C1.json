@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -760, "y": 412},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "상대방이 화가 났을 때,\n먼저 감정을 달래기보다\n문제의 원인을\n파악하려는 편이다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 0, "y": 0 }   
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.상대방이 화가 났을 때, 먼저 감정을 달래기보다 문제의 원인을 파악하려는 편이다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

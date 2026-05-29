@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": 380, "y": -128},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "데이트 장소를 고를 때,\n계획에 없던 곳이라도\n느낌이 좋으면\n들어가 본다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 3, "y": 2 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.데이트 장소를 고를 때, 계획에 없던 곳이라도 느낌이 좋으면 들어가 본다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}
