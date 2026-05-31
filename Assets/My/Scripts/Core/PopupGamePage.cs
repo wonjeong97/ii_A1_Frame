@@ -103,6 +103,8 @@ namespace My.Scripts.Core
             popupFadeCts?.Cancel();
             popupFadeCts?.Dispose();
 
+            currentIdleTime = 0f;
+            
             base.OnDestroy(); 
         }
 

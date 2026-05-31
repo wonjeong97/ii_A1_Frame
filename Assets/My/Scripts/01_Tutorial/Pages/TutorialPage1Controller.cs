@@ -216,9 +216,8 @@ namespace My.Scripts._01_Tutorial.Pages
                 {
                     if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
                     {   
-                        _logger?.ZLogWarning($"[TutorialPage1] 방 상태 EMPTY, 1초 뒤 타이틀로 돌아감.");
-                        await UniTask.Delay(1000, ignoreTimeScale: true, cancellationToken: token);
-                        if (_gameManager) _gameManager.ReturnToTitle();
+                        _logger?.ZLogWarning($"[TutorialPage1] 방 상태 EMPTY, 15초 뒤 타이틀로 돌아감.");
+                        HandleEmptyUserTimeout();
                         return;
                     }
                     
