@@ -32,7 +32,7 @@ namespace My.Scripts.Core
         protected string msgWarning;
         protected string msgReset;
 
-        protected float inactivityThreshold = 30f;
+        protected float inactivityThreshold = 20f;
         protected float countdownDuration = 10f;
 
         protected float currentIdleTime;
@@ -74,6 +74,10 @@ namespace My.Scripts.Core
 
                 float calculatedDuration = settings.resetTime - settings.warningTime - warningDuration;
                 if (calculatedDuration > 0) countdownDuration = calculatedDuration;
+            }
+            else
+            {
+                _logger?.LogWarning("No settings found for path: " + path);
             }
         }
 

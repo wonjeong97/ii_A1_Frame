@@ -67,7 +67,9 @@ namespace My.Scripts.Core.Data
             _sessionManager = sessionManager;
         }
 
-        /// <summary> 일반 레벨 데이터를 JSON에서 로드하고 병합함. </summary>
+        /// <summary>
+        /// 일반 레벨 데이터를 JSON에서 로드하고 공통 데이터를 병합함.
+        /// </summary>
         public StandardLevelSetting LoadStandardLevel(string levelID, UserType levelType)
         {
             string lang = string.IsNullOrWhiteSpace(_sessionManager?.CurrentLanguage) ? "ko" : _sessionManager.CurrentLanguage.Trim();
@@ -81,14 +83,16 @@ namespace My.Scripts.Core.Data
             string path = ZString.Format("JSON/{0}/Cartridge_{1}/{2}/Play{3}_{4}.json", lang, cartridge, relation, levelID, typeStr);
             StandardLevelSetting specificData = JsonLoader.Load<StandardLevelSetting>(path);
             
-            if (specificData == null)
+            // 파일이 없어 빈 객체가 반환된 경우를 대비해 Page2 존재 여부로 실패를 판단.
+            if (specificData == null || specificData.Page2 == null)
             {
                 string fallbackPath = ZString.Format("JSON/{0}/Cartridge_{1}/1/Play{2}_{3}1.json", lang, cartridge, levelID, cartridge);
                 Debug.LogWarning($"JSON 누락됨: {path}. 폴백 적용 -> {fallbackPath}");
                 specificData = JsonLoader.Load<StandardLevelSetting>(fallbackPath);
             }
 
-            if (specificData == null)
+            // 폴백 이후에도 유효한 데이터가 없으면 로드 실패 처리.
+            if (specificData == null || specificData.Page2 == null)
             {
                 Debug.LogError($"레벨 데이터 로드 실패. 최종 경로: {path}");
                 return null;

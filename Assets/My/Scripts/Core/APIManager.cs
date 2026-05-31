@@ -129,7 +129,7 @@ namespace My.Scripts.Core
             _sessionManager.PlayerAColor = ColorData.Green;
             _sessionManager.PlayerBColor = ColorData.Yellow;
             _sessionManager.CurrentLanguage = "ko";
-            _sessionManager.CurrentUserType = UserType.B5;
+            _sessionManager.CurrentUserType = UserType.A2;
             _sessionManager.BlockCode = "A1,B1,C1,D1";
 
             _logger.ZLogInformation($"[Debug] 테스트 세션 주입 완료");

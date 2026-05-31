@@ -215,7 +215,8 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (stateReq.result == UnityWebRequest.Result.Success)
                 {
                     if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
+                    {   
+                        _logger?.ZLogWarning($"[TutorialPage1] 방 상태 EMPTY, 1초 뒤 타이틀로 돌아감.");
                         await UniTask.Delay(1000, ignoreTimeScale: true, cancellationToken: token);
                         if (_gameManager) _gameManager.ReturnToTitle();
                         return;
@@ -256,7 +257,8 @@ namespace My.Scripts._01_Tutorial.Pages
             }
 
             if (Time.unscaledTime - emptyUserStartTime >= 15f)
-            {
+            {   
+                _logger?.ZLogWarning($"[TutorialPage1] 15초 경과, 유저 데이터 없음으로 타이틀로 돌아감.");
                 if (_gameManager) _gameManager.ReturnToTitle();
             }
         }
