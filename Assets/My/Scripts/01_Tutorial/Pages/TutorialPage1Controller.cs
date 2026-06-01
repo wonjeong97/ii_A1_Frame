@@ -43,7 +43,7 @@ namespace My.Scripts._01_Tutorial.Pages
         
         private string cachedCheckUrl;
         private string cachedUserUrl;
-        private float emptyUserStartTime;
+        private float emptyStartTime;
         private bool _isFetchingData;
 
         // --- 의존성 주입 (DI) 변수 ---
@@ -107,7 +107,7 @@ namespace My.Scripts._01_Tutorial.Pages
                 _arduinoManager.SendCommandToLight(GameConstants.Hardware.CmdLightOff);
             }
     
-            emptyUserStartTime = -1f;
+            emptyStartTime = -1f;
             _isFetchingData = false; 
 
             if (descriptionText && pageData?.descriptionText != null)
@@ -155,7 +155,7 @@ namespace My.Scripts._01_Tutorial.Pages
             }
             else
             {
-                if (emptyUserStartTime < 0f && !_isFetchingData)
+                if (emptyStartTime < 0f && !_isFetchingData)
                 {
                     UpdateInactivity();
                 }
@@ -215,12 +215,13 @@ namespace My.Scripts._01_Tutorial.Pages
                 if (stateReq.result == UnityWebRequest.Result.Success)
                 {
                     if (stateReq.downloadHandler.text.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
-                    {   
-                        _logger?.ZLogWarning($"[TutorialPage1] 방 상태 EMPTY, 15초 뒤 타이틀로 돌아감.");
-                        HandleEmptyUserTimeout();
+                    {
+                        // EMPTY: 타이머 기록 시작 → 15초 초과 시 타이틀 복귀 / userUrl 실행 불필요
+                        HandleEmptyTimeout();
                         return;
                     }
-                    
+
+                    // USING: 유저 상태 확인 (리셋은 유저 확인 후에만)
                     await ProcessUserStateAsync(token);
                 }
             }
@@ -238,26 +239,28 @@ namespace My.Scripts._01_Tutorial.Pages
                 string rawText = userReq.downloadHandler.text;
                 if (rawText.IndexOf(GameConstants.Api.StatusEmpty, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    HandleEmptyUserTimeout();
+                    // EMPTY: 타이머 기록 시작 (없으면) → 15초 초과 시 타이틀 복귀
+                    HandleEmptyTimeout();
                 }
                 else if (rawText.Contains(","))
                 {
-                    emptyUserStartTime = -1f;
+                    // 유저 있음: 타이머 리셋 → 데이터 페치
+                    emptyStartTime = -1f;
                     await FetchAndApplyUserDataAsync(rawText, token);
                 }
             }
         }
 
-        private void HandleEmptyUserTimeout()
+        private void HandleEmptyTimeout()
         {
-            if (emptyUserStartTime < 0f)
+            if (emptyStartTime < 0f)
             {
-                emptyUserStartTime = Time.unscaledTime;
+                emptyStartTime = Time.unscaledTime;
             }
 
-            if (Time.unscaledTime - emptyUserStartTime >= 15f)
-            {   
-                _logger?.ZLogWarning($"[TutorialPage1] 15초 경과, 유저 데이터 없음으로 타이틀로 돌아감.");
+            if (Time.unscaledTime - emptyStartTime >= 15f)
+            {
+                _logger?.ZLogWarning($"[TutorialPage1] 15초 경과, 빈 상태로 타이틀로 돌아감.");
                 if (_gameManager) _gameManager.ReturnToTitle();
             }
         }
