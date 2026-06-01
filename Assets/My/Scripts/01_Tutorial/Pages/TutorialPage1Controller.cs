@@ -221,8 +221,7 @@ namespace My.Scripts._01_Tutorial.Pages
                         return;
                     }
 
-                    // USING: 이전 EMPTY 타이머 리셋 후 유저 상태 확인
-                    emptyStartTime = -1f;
+                    // USING: 유저 상태 확인 (리셋은 유저 확인 후에만)
                     await ProcessUserStateAsync(token);
                 }
             }
