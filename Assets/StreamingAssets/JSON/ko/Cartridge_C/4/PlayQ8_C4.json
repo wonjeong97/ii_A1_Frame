@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -760, "y": -132},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "마음에 걸리는 말이\n있어도, 서로에게\n상처 주지 않으려\n말하는 방식을\n조절하곤 한다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 0, "y": 2 }
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.마음에 걸리는 말이 있어도, 서로에게 상처 주지 않으려 말하는 방식을 조절하곤 한다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

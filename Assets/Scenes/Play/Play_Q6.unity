@@ -378,9 +378,9 @@ PrefabInstance:
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_Text
-      value: "\uC77C\uC0C1\uC758 \uD06C\uACE0 \uC791\uC740\r\n\uACB0\uC815\uB4E4\uC744
-        \uC0C1\uB300\uBC29\uACFC\r\n\uCDA9\uBD84\uD788 \uC0C1\uC758\uD558\uBA70\r\n\uB0B4\uB9AC\uB294
-        \uD3B8\uC774\uB2E4."
+      value: "\uC11C\uC6B4\uD55C \uC77C\uC774 \uC0DD\uAE38 \uB54C,\n\uB098\uC5D0\uAC8C\uB3C4
+        \uC27D\uAC8C \uC591\uBCF4\uD558\uAE30\n\uC5B4\uB824\uC6B4 \uAE30\uC900\uC774\n\uC788\uB2E4\uB294
+        \uAC83\uC744 \uB290\uB080\uB2E4."
       objectReference: {fileID: 0}
     - target: {fileID: 5095290077112456613, guid: 213377b1783306047a683581e1952b67,
         type: 3}
@@ -435,7 +435,7 @@ PrefabInstance:
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 380
+      value: 384
       objectReference: {fileID: 0}
     - target: {fileID: 8975098813810559756, guid: 213377b1783306047a683581e1952b67,
         type: 3}

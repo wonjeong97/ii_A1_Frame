@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -380, "y": 400},
+        "position": {"x": -384, "y": 400},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "상대가 나를 배려하려는\n말투나 표정의 변화\n비교적 빨리 느낀다.",
         "fontName": "font7",

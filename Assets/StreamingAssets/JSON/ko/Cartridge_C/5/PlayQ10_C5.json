@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": 0, "y": 132},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "정답을 찾기보다,\n지금 우리에게 더 잘 맞는\n쪽이 좋은 선택이라고\n생각한다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      { "x": 2, "y": 1 }            
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.정답을 찾기보다, 지금 우리에게 더 잘 맞는 쪽이 좋은 선택이라고 생각한다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

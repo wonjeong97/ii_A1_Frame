@@ -1,0 +1,29 @@
+{
+  "page1": {
+    "questions": [
+      {
+        "name": "01",
+        "position": {"x": -760, "y": 140},
+        "scale": {"x": 1, "y": 1, "z": 1},
+        "text": "현실적인 조건\n(비용, 시간 등)보다\n지금 우리 관계에서\n무엇이 더 가치 있는지를\n먼저 고려한다.",
+        "fontName": "font7",
+        "fontSize": 40,
+        "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+      }
+    ],
+    "questionSpots": [
+      {"x": 0, "y": 1}      
+    ]
+  },
+  "page2": {
+    "questionText": {
+      "name": "Text_Question",
+      "position": {"x": 0, "y": 0},
+      "scale": {"x": 1, "y": 1, "z": 1},
+      "text": "Q.현실적인 조건(비용, 시간 등)보다\n지금 우리 관계에서 무엇이 더 가치 있는지를 먼저 고려한다.",
+      "fontName": "font7",
+      "fontSize": 40,
+      "fontColor": {"r": 0.4, "g": 0.3568628, "b": 0.3294118, "a": 1}
+    }
+  }
+}

@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -380, "y": -398},
+        "position": {"x": -384, "y": -398},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "When I'm with someone,\nthe feeling of the moment\nstays with me more than words.",
         "fontName": "font7",
