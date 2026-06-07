@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -380, "y": 400},
+        "position": {"x": -384, "y": 400},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "오픈된 공간보다는\n독립된 공간에서\n각자 일하는 환경을\n선호한다. ",
         "fontName": "font7",

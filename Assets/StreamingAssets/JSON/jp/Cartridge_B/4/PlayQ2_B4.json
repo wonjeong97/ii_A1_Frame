@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -380, "y": 140},
+        "position": {"x": -384, "y": 140},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "함께 시간을 보내는 것도\n좋지만 나만의 생활 방식을\n유지하는 공간이\n꼭 필요하다.",
         "fontName": "font7",

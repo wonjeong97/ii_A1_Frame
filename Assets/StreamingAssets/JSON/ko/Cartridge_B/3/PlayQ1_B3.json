@@ -3,7 +3,7 @@
     "questions": [
       {
         "name": "01",
-        "position": {"x": -380, "y": -398},
+        "position": {"x": -384, "y": -398},
         "scale": {"x": 1, "y": 1, "z": 1},
         "text": "내 생각이나 의견을\n상대에게 직접적으로\n표현하는 것이\n조심스럽다.",
         "fontName": "font7",
