@@ -191,7 +191,14 @@ namespace My.Scripts._01_Tutorial.Pages
                     _logger?.ZLogWarning($"[TutorialPage1] 폴링 루프 예외 발생 (재시도 대기): {e.Message}");
                 }
 
-                await UniTask.Delay(intervalMs, ignoreTimeScale: true, cancellationToken: token);
+                try
+                {
+                    await UniTask.Delay(intervalMs, ignoreTimeScale: true, cancellationToken: token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
 
@@ -260,7 +267,8 @@ namespace My.Scripts._01_Tutorial.Pages
 
             if (Time.unscaledTime - emptyStartTime >= 15f)
             {
-                _logger?.ZLogWarning($"[TutorialPage1] 15초 경과, 빈 상태로 타이틀로 돌아감.");
+                _logger?.ZLogWarning($"[TutorialPage1] 15초 경과, 유저 데이터 없음으로 타이틀로 돌아감.");
+                pollCts?.Cancel();
                 if (_gameManager) _gameManager.ReturnToTitle();
             }
         }
